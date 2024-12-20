@@ -24,6 +24,37 @@ public class QuestionnaireFieldEditModel
     public string Description { get; set; } = string.Empty;
 
     public QuestionnaireFieldType? Type { get; set; }
+
+    public QuestionnaireTextFieldOptionsModel? TextOptions { get; set; }
+    public QuestionnaireNumberFieldOptionsModel? NumberOptions { get; set; }
+    public QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; set; }
+}
+
+public class QuestionnaireTextFieldOptionsModel
+{
+    public bool IsMultiline { get; set; }
+
+    public int? MinLength { get; set; }
+    public int? MaxLength { get; set; }
+}
+
+public class QuestionnaireNumberFieldOptionsModel
+{
+    public decimal? MinValue { get; set; }
+    public decimal? MaxValue { get; set; }
+}
+
+public class QuestionnaireFileUploadFieldOptionsModel
+{
+    /// <summary>
+    /// If empty - any extension
+    /// </summary>
+    public List<string> AllowedExtensions { get; set; } = new();
+
+    public bool IsMultiple { get; set; }
+    
+    public decimal? MaxItemSize { get; set; }
+    public int? MaxItemCount { get; set; }
 }
 
 public enum QuestionnaireFieldType

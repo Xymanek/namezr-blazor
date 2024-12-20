@@ -2,7 +2,7 @@
 
 <div class="row">
     <div class="col-7">
-        <HxInputText @bind-Value="Value!.Title" Label="Title"/>
+        <HxInputText @bind-Value="Value.Title" Label="Title"/>
     </div>
     <div class="col-3">
         <HxSelect
@@ -10,6 +10,7 @@
             TValue="QuestionnaireFieldType?"
             Label="Field type"
             @bind-Value="Value.Type"
+            @bind-Value:after="() => OnSyncOptionsToNewType.InvokeAsync(Value.Type)"
             Data="QuestionnaireFieldTypes"
             ValueSelector="@(x => x.type)"
             TextSelector="@(x => x.label)"
@@ -45,7 +46,89 @@
 </div>
 
 <div>
-    <HxInputTextArea @bind-Value="Value.Description" Label="Title"/>
+    <HxInputTextArea @bind-Value="Value.Description" Label="Description"/>
+
+    @if (Value.TextOptions is not null)
+    {
+        <div class="row">
+            <div class="col-4">
+                <HxInputNumber
+                    @bind-Value="Value.TextOptions.MinLength"
+                    Label="Minimum length"
+                    Placeholder="None"
+                />
+            </div>
+            <div class="col-4">
+                <HxInputNumber
+                    @bind-Value="Value.TextOptions.MaxLength"
+                    Label="Maximum length"
+                    Placeholder="None"
+                />
+            </div>
+            <div class="col-4">
+                <HxCheckbox @bind-Value="Value.TextOptions.IsMultiline" Label="Multiline"/>
+            </div>
+        </div>
+    }
+
+    @if (Value.NumberOptions is not null)
+    {
+        <div class="row">
+            <div class="col-4">
+                <HxInputNumber
+                    @bind-Value="Value.NumberOptions.MinValue"
+                    Label="Minimum value"
+                    Placeholder="None"
+                />
+            </div>
+            <div class="col-4">
+                <HxInputNumber
+                    @bind-Value="Value.NumberOptions.MaxValue"
+                    Label="Maximum value"
+                    Placeholder="None"
+                />
+            </div>
+        </div>
+    }
+
+    @if (Value.FileUploadOptions is not null)
+    {
+        <div class="row">
+            <div class="col-2">
+                <HxCheckbox
+                    @bind-Value="Value.FileUploadOptions.IsMultiple"
+                    Label="Multiple files"
+                />
+            </div>
+            <div class="col-10">
+                <HxInputTags
+                    @bind-Value="Value.FileUploadOptions.AllowedExtensions"
+                    Label="Allowed file extensions"
+                    Placeholder="Any"
+                />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <HxInputNumber
+                    @bind-Value="Value.FileUploadOptions.MaxItemSize"
+                    Label="@(Value.FileUploadOptions.IsMultiple ? "Maximum file size per file" : "Maximum file size")"
+                    Placeholder="None"
+                />
+            </div>
+            
+            @* TODO: pointless to have both toggle and this *@
+            <div class="col-6">
+                <HxInputNumber
+                    Enabled="Value.FileUploadOptions.IsMultiple"
+                    @bind-Value="Value.FileUploadOptions.MaxItemCount"
+                    Label="Maximum number of files"
+                    Placeholder="No limit"
+                />
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -67,6 +150,9 @@
 
     [Parameter]
     public EventCallback OnRemove { get; set; }
+
+    [Parameter]
+    public EventCallback<QuestionnaireFieldType?> OnSyncOptionsToNewType { get; set; }
 
     private static readonly IReadOnlyList<(QuestionnaireFieldType type, string label)> QuestionnaireFieldTypes =
     [

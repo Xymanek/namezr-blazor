@@ -41,6 +41,7 @@
             OnMoveDown="() => MoveField(fieldIndex, +1)"
             CanRemove="Model.Fields.Count > 1"
             OnRemove="() => Model.Fields.RemoveAt(fieldIndex)"
+            OnSyncOptionsToNewType="newType => SyncOptionsToNewType(fieldIndex, newType)"
         />
 
         if (fieldIndex + 1 < Model.Fields.Count)
@@ -61,7 +62,7 @@
     [Parameter]
     public required QuestionnaireEditModel InitialModel { get; set; }
 
-    private QuestionnaireEditModel Model { get; set; }
+    private QuestionnaireEditModel Model { get; set; } = null!;
 
     protected override void OnInitialized()
     {
@@ -81,6 +82,31 @@
         Console.WriteLine("Got submit");
         Console.WriteLine(Model.Title);
         Console.WriteLine(Model.Description);
+    }
+
+    private void SyncOptionsToNewType(int i, QuestionnaireFieldType? newType)
+    {
+        QuestionnaireFieldEditModel field = Model.Fields[i];
+
+        if (newType != QuestionnaireFieldType.Text) field.TextOptions = null;
+        if (newType != QuestionnaireFieldType.Number) field.NumberOptions = null;
+        if (newType != QuestionnaireFieldType.FileUpload) field.FileUploadOptions = null;
+
+        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+        switch (newType)
+        {
+            case QuestionnaireFieldType.Text when field.TextOptions == null:
+                field.TextOptions = new QuestionnaireTextFieldOptionsModel();
+                break;
+
+            case QuestionnaireFieldType.Number when field.NumberOptions == null:
+                field.NumberOptions = new QuestionnaireNumberFieldOptionsModel();
+                break;
+
+            case QuestionnaireFieldType.FileUpload when field.FileUploadOptions == null:
+                field.FileUploadOptions = new QuestionnaireFileUploadFieldOptionsModel();
+                break;
+        }
     }
 
 }
