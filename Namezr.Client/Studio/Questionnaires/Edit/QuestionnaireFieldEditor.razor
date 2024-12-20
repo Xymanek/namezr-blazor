@@ -1,0 +1,78 @@
+﻿@inherits Editor<QuestionnaireFieldEditModel>
+
+<div class="row">
+    <div class="col-7">
+        <HxInputText @bind-Value="Value!.Title" Label="Title"/>
+    </div>
+    <div class="col-3">
+        <HxSelect
+            TItem="(QuestionnaireFieldType type, string label)"
+            TValue="QuestionnaireFieldType?"
+            Label="Field type"
+            @bind-Value="Value.Type"
+            Data="QuestionnaireFieldTypes"
+            ValueSelector="@(x => x.type)"
+            TextSelector="@(x => x.label)"
+            Nullable="true"
+            NullText="Pick one"
+        />
+    </div>
+    <div class="col-2">
+        <HxButtonGroup>
+            <HxButton
+                Icon="@BootstrapIcon.ArrowUp"
+                Color="ThemeColor.Secondary"
+                Tooltip="Move above"
+                Enabled="CanMoveUp"
+                OnClick="OnMoveUp"
+            />
+            <HxButton
+                Icon="@BootstrapIcon.ArrowDown"
+                Color="ThemeColor.Secondary"
+                Tooltip="Move below"
+                Enabled="CanMoveDown"
+                OnClick="OnMoveDown"
+            />
+            <HxButton
+                Icon="@BootstrapIcon.Trash"
+                Color="ThemeColor.Danger"
+                Tooltip="Remove"
+                Enabled="CanRemove"
+                OnClick="OnRemove"
+            />
+        </HxButtonGroup>
+    </div>
+</div>
+
+<div>
+    <HxInputTextArea @bind-Value="Value.Description" Label="Title"/>
+</div>
+
+@code {
+
+    [Parameter]
+    public bool CanMoveUp { get; set; }
+
+    [Parameter]
+    public EventCallback OnMoveUp { get; set; }
+
+    [Parameter]
+    public bool CanMoveDown { get; set; }
+
+    [Parameter]
+    public EventCallback OnMoveDown { get; set; }
+
+    [Parameter]
+    public bool CanRemove { get; set; }
+
+    [Parameter]
+    public EventCallback OnRemove { get; set; }
+
+    private static readonly IReadOnlyList<(QuestionnaireFieldType type, string label)> QuestionnaireFieldTypes =
+    [
+        (QuestionnaireFieldType.Text, "Text"),
+        (QuestionnaireFieldType.Number, "Number"),
+        (QuestionnaireFieldType.FileUpload, "File upload")
+    ];
+
+}

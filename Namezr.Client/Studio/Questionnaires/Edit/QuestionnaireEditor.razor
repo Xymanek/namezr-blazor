@@ -2,10 +2,10 @@
 
 <h3>QuestionnaireEditor</h3>
 
-<EditForm 
+<EditForm
     Model="Model"
     OnValidSubmit="HandleValidSubmit"
-    >
+>
     <HxInputText
         Label="Title"
         @bind-Value="Model.Title"
@@ -14,6 +14,40 @@
         Label="Description"
         @bind-Value="Model.Description"
     />
+
+    <div class="row">
+        <div class="col-11">
+            <h3>Fields</h3>
+        </div>
+        <div class="col-1 text-right">
+            <HxButton
+                Icon="@BootstrapIcon.Plus"
+                Color="ThemeColor.Success"
+                Tooltip="Add"
+                OnClick="Model.AddBlankField"
+            />
+        </div>
+    </div>
+
+    @for (int i = 0; i < Model.Fields.Count; i++)
+    {
+        int fieldIndex = i;
+
+        <QuestionnaireFieldEditor
+            @bind-Value="Model.Fields[fieldIndex]"
+            CanMoveUp="fieldIndex > 0"
+            OnMoveUp="() => MoveField(fieldIndex, -1)"
+            CanMoveDown="fieldIndex + 1 < Model.Fields.Count"
+            OnMoveDown="() => MoveField(fieldIndex, +1)"
+            CanRemove="Model.Fields.Count > 1"
+            OnRemove="() => Model.Fields.RemoveAt(fieldIndex)"
+        />
+
+        if (fieldIndex + 1 < Model.Fields.Count)
+        {
+            <hr/>
+        }
+    }
 
     <HxSubmit
         Text="Save"
@@ -32,6 +66,14 @@
     protected override void OnInitialized()
     {
         Model = InitialModel.Clone();
+    }
+
+    private void MoveField(int fieldIndex, int change)
+    {
+        QuestionnaireFieldEditModel field = Model.Fields[fieldIndex];
+
+        Model.Fields.RemoveAt(fieldIndex);
+        Model.Fields.Insert(fieldIndex + change, field);
     }
 
     private void HandleValidSubmit()
