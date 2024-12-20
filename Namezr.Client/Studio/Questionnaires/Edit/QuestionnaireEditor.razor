@@ -1,5 +1,7 @@
 ﻿@rendermode InteractiveWebAssembly
 
+@inject IServiceProvider ServiceProvider
+
 <h3>QuestionnaireEditor</h3>
 
 <EditForm
@@ -54,6 +56,7 @@
         Text="Save"
         Color="@ThemeColor.Primary"
         Enabled="RendererInfo.IsInteractive"
+        Spinner="IsSending"
     />
 </EditForm>
 
@@ -63,6 +66,8 @@
     public required QuestionnaireEditModel InitialModel { get; set; }
 
     private QuestionnaireEditModel Model { get; set; } = null!;
+
+    private bool? IsSending { get; set; }
 
     protected override void OnInitialized()
     {
@@ -77,11 +82,24 @@
         Model.Fields.Insert(fieldIndex + change, field);
     }
 
-    private void HandleValidSubmit()
+    private async Task HandleValidSubmit()
     {
         Console.WriteLine("Got submit");
         Console.WriteLine(Model.Title);
         Console.WriteLine(Model.Description);
+
+        HttpClient http = ServiceProvider.GetRequiredService<HttpClient>();
+
+        IsSending = true;
+        try
+        {
+            HttpResponseMessage response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesSave, Model);
+            response.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            IsSending = false;
+        }
     }
 
     private void SyncOptionsToNewType(int i, QuestionnaireFieldType? newType)

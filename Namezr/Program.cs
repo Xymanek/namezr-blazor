@@ -1,7 +1,13 @@
+using FastEndpoints;
 using Namezr.Client;
 using Namezr.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFastEndpoints();
+
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -21,10 +27,14 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+app.UseAuthorization();
 
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+app.MapFastEndpoints();
+
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly);
