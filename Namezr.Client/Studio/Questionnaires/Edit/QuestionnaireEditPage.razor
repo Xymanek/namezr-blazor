@@ -1,0 +1,21 @@
+﻿@page "/studio/questionnaires/edit"
+
+<h3>QuestionnaireEditPage</h3>
+
+<QuestionnaireEditor
+    InitialModel="InitialModel"
+/>
+
+@code {
+    public QuestionnaireEditModel? InitialModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: load from DB via URL
+        await Task.CompletedTask;
+        InitialModel = new QuestionnaireEditModel()
+        {
+            Title = "Abc",
+        };
+    }
+}

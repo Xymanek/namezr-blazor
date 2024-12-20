@@ -1,4 +1,4 @@
-using Namezr.Client.Pages;
+using Namezr.Client;
 using Namezr.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddAppShared();
 
 var app = builder.Build();
 

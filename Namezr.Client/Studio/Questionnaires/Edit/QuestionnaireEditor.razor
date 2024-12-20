@@ -1,0 +1,44 @@
+﻿@rendermode InteractiveWebAssembly
+
+<h3>QuestionnaireEditor</h3>
+
+<EditForm 
+    Model="Model"
+    OnValidSubmit="HandleValidSubmit"
+    >
+    <HxInputText
+        Label="Title"
+        @bind-Value="Model.Title"
+    />
+    <HxInputTextArea
+        Label="Description"
+        @bind-Value="Model.Description"
+    />
+
+    <HxSubmit
+        Text="Save"
+        Color="@ThemeColor.Primary"
+        Enabled="RendererInfo.IsInteractive"
+    />
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public required QuestionnaireEditModel InitialModel { get; set; }
+
+    private QuestionnaireEditModel Model { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Model = InitialModel.Clone();
+    }
+
+    private void HandleValidSubmit()
+    {
+        Console.WriteLine("Got submit");
+        Console.WriteLine(Model.Title);
+        Console.WriteLine(Model.Description);
+    }
+
+}
