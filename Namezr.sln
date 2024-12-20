@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namezr", "Namezr\Namezr\Namezr.csproj", "{2FE41219-D427-40B7-9673-D47580541584}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namezr.Client", "Namezr\Namezr.Client\Namezr.Client.csproj", "{1CFAD504-E477-4776-8A87-29DB5EE64CED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2FE41219-D427-40B7-9673-D47580541584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FE41219-D427-40B7-9673-D47580541584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FE41219-D427-40B7-9673-D47580541584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FE41219-D427-40B7-9673-D47580541584}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
