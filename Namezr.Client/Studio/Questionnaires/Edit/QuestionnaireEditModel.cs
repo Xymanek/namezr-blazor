@@ -34,6 +34,7 @@ public class QuestionnaireTextFieldOptionsModel
 {
     public bool IsMultiline { get; set; }
 
+    // TODO: validate less than
     public int? MinLength { get; set; }
     public int? MaxLength { get; set; }
 }
