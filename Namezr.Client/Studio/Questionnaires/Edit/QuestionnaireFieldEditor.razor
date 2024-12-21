@@ -12,6 +12,7 @@
             @bind-Value="Value.Type"
             @bind-Value:after="() => OnSyncOptionsToNewType.InvokeAsync(Value.Type)"
             Data="QuestionnaireFieldTypes"
+            AutoSort="@false"
             ValueSelector="@(x => x.type)"
             TextSelector="@(x => x.label)"
             Nullable="true"
