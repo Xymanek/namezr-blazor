@@ -74,14 +74,14 @@
     @if (Value.NumberOptions is not null)
     {
         <div class="row">
-            <div class="col-4">
+            <div class="col-6">
                 <HxInputNumber
                     @bind-Value="Value.NumberOptions.MinValue"
                     Label="Minimum value"
                     Placeholder="None"
                 />
             </div>
-            <div class="col-4">
+            <div class="col-6">
                 <HxInputNumber
                     @bind-Value="Value.NumberOptions.MaxValue"
                     Label="Maximum value"
@@ -95,36 +95,24 @@
     {
         <div class="row">
             <div class="col-2">
-                <HxCheckbox
-                    @bind-Value="Value.FileUploadOptions.IsMultiple"
-                    Label="Multiple files"
+                <HxInputNumber
+                    @bind-Value="Value.FileUploadOptions.MaxItemCount"
+                    Label="Maximum number of files"
+                    Placeholder="No limit"
                 />
             </div>
-            <div class="col-10">
+            <div class="col-2">
+                <HxInputNumber
+                    @bind-Value="Value.FileUploadOptions.MaxItemSize"
+                    Label="@(Value.FileUploadOptions.MaxItemCount > 1 ? "Maximum file size per file" : "Maximum file size")"
+                    Placeholder="None"
+                />
+            </div>
+            <div class="col-8">
                 <HxInputTags
                     @bind-Value="Value.FileUploadOptions.AllowedExtensions"
                     Label="Allowed file extensions"
                     Placeholder="Any"
-                />
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-6">
-                <HxInputNumber
-                    @bind-Value="Value.FileUploadOptions.MaxItemSize"
-                    Label="@(Value.FileUploadOptions.IsMultiple ? "Maximum file size per file" : "Maximum file size")"
-                    Placeholder="None"
-                />
-            </div>
-            
-            @* TODO: pointless to have both toggle and this *@
-            <div class="col-6">
-                <HxInputNumber
-                    Enabled="Value.FileUploadOptions.IsMultiple"
-                    @bind-Value="Value.FileUploadOptions.MaxItemCount"
-                    Label="Maximum number of files"
-                    Placeholder="No limit"
                 />
             </div>
         </div>

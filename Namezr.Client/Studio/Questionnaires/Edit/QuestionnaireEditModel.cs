@@ -25,7 +25,6 @@ public class QuestionnaireEditModel
         )
         {
             RuleFor(x => x.Title)
-                .NotEmpty()
                 .MinimumLength(3)
                 .MaximumLength(50);
 
@@ -51,12 +50,27 @@ public class QuestionnaireFieldEditModel
     [RegisterSingleton(typeof(IValidator<QuestionnaireFieldEditModel>))]
     internal sealed class Validator : AbstractValidator<QuestionnaireFieldEditModel>
     {
-        public Validator()
+        public Validator(
+            IValidator<QuestionnaireTextFieldOptionsModel> textOptionsValidator,
+            IValidator<QuestionnaireNumberFieldOptionsModel> numberOptionsValidator,
+            IValidator<QuestionnaireFileUploadFieldOptionsModel> fileUploadOptionsValidator
+        )
         {
             RuleFor(x => x.Title)
-                .NotEmpty()
                 .MinimumLength(3)
                 .MaximumLength(50);
+
+            RuleFor(x => x.Type)
+                .NotNull();
+
+            RuleFor(x => x.TextOptions)
+                .SetValidator(textOptionsValidator!);
+
+            RuleFor(x => x.NumberOptions)
+                .SetValidator(numberOptionsValidator!);
+
+            RuleFor(x => x.FileUploadOptions)
+                .SetValidator(fileUploadOptionsValidator!);
         }
     }
 }
@@ -65,15 +79,42 @@ public class QuestionnaireTextFieldOptionsModel
 {
     public bool IsMultiline { get; set; }
 
-    // TODO: validate less than
     public int? MinLength { get; set; }
     public int? MaxLength { get; set; }
+
+    [RegisterSingleton(typeof(IValidator<QuestionnaireTextFieldOptionsModel>))]
+    internal sealed class Validator : AbstractValidator<QuestionnaireTextFieldOptionsModel>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.MinLength)
+                .LessThanOrEqualTo(x => x.MaxLength)
+                .When(x => x.MinLength is not null && x.MaxLength is not null);
+
+            RuleFor(x => x.MinLength)
+                .GreaterThan(0);
+            
+            RuleFor(x => x.MaxLength)
+                .GreaterThan(0);
+        }
+    }
 }
 
 public class QuestionnaireNumberFieldOptionsModel
 {
     public decimal? MinValue { get; set; }
     public decimal? MaxValue { get; set; }
+
+    [RegisterSingleton(typeof(IValidator<QuestionnaireNumberFieldOptionsModel>))]
+    internal sealed class Validator : AbstractValidator<QuestionnaireNumberFieldOptionsModel>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.MinValue)
+                .LessThanOrEqualTo(x => x.MaxValue)
+                .When(x => x.MinValue is not null && x.MaxValue is not null);
+        }
+    }
 }
 
 public class QuestionnaireFileUploadFieldOptionsModel
@@ -83,10 +124,21 @@ public class QuestionnaireFileUploadFieldOptionsModel
     /// </summary>
     public List<string> AllowedExtensions { get; set; } = new();
 
-    public bool IsMultiple { get; set; }
-
     public decimal? MaxItemSize { get; set; }
-    public int? MaxItemCount { get; set; }
+    public int MaxItemCount { get; set; } = 1;
+
+    [RegisterSingleton(typeof(IValidator<QuestionnaireFileUploadFieldOptionsModel>))]
+    internal sealed class Validator : AbstractValidator<QuestionnaireFileUploadFieldOptionsModel>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.MaxItemSize)
+                .GreaterThan(0);
+
+            RuleFor(x => x.MaxItemCount)
+                .GreaterThan(0);
+        }
+    }
 }
 
 public enum QuestionnaireFieldType
