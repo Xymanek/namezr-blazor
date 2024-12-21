@@ -26,12 +26,18 @@ public class QuestionnaireEditModel
         {
             RuleFor(x => x.Title)
                 .MinimumLength(3)
-                .MaximumLength(50);
+                .MaximumLength(TitleMaxLength);
+
+            RuleFor(x => x.Description)
+                .MaximumLength(DescriptionMaxLength);
 
             RuleForEach(x => x.Fields)
                 .SetValidator(fieldValidator);
         }
     }
+
+    public const int TitleMaxLength = 50;
+    public const int DescriptionMaxLength = 1000;
 }
 
 public class QuestionnaireFieldEditModel
@@ -58,7 +64,10 @@ public class QuestionnaireFieldEditModel
         {
             RuleFor(x => x.Title)
                 .MinimumLength(3)
-                .MaximumLength(50);
+                .MaximumLength(TitleMaxLength);
+
+            RuleFor(x => x.Description)
+                .MaximumLength(DescriptionMaxLength);
 
             RuleFor(x => x.Type)
                 .NotNull();
@@ -73,6 +82,9 @@ public class QuestionnaireFieldEditModel
                 .SetValidator(fileUploadOptionsValidator!);
         }
     }
+
+    public const int TitleMaxLength = 50;
+    public const int DescriptionMaxLength = 1000;
 }
 
 public class QuestionnaireTextFieldOptionsModel
@@ -93,7 +105,7 @@ public class QuestionnaireTextFieldOptionsModel
 
             RuleFor(x => x.MinLength)
                 .GreaterThan(0);
-            
+
             RuleFor(x => x.MaxLength)
                 .GreaterThan(0);
         }

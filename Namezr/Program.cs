@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Namezr;
 using Namezr.Client;
 using Namezr.Components;
+using Namezr.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,11 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddProblemDetails();
+
+builder.Services.AddDbContextFactory<ApplicationDbContext>(
+    opt =>
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+);
 
 var app = builder.Build();
 

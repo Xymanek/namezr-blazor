@@ -18,6 +18,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly"/>
         <PackageReference Include="Riok.Mapperly" />
         <PackageReference Include="vNext.BlazorComponents.FluentValidation" />
+        <PackageReference Include="Vogen" />
     </ItemGroup>
 
 </Project>

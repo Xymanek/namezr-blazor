@@ -4,6 +4,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>5a2fca76-8e3d-46f6-920f-d16576a59da5</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,7 +19,14 @@
         <PackageReference Include="AutoRegisterInject" />
         <PackageReference Include="FluentValidation" />
         <PackageReference Include="Immediate.Apis" />
+        <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+        <PackageReference Include="Vogen" />
     </ItemGroup>
 
 </Project>
