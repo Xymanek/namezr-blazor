@@ -1,10 +1,11 @@
-using FastEndpoints;
+using Namezr;
 using Namezr.Client;
 using Namezr.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddFastEndpoints();
+builder.Services.AddNamezrHandlers();
+builder.Services.AddNamezrBehaviors();
 
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
@@ -33,7 +34,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 
-app.MapFastEndpoints();
+app.MapNamezrEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()

@@ -2,5 +2,5 @@
 
 public static class ApiEndpointPaths
 {
-    public static readonly string QuestionnairesSave = "/api/questionnaires/save";
+    public const string QuestionnairesSave = "/api/questionnaires/save";
 }
