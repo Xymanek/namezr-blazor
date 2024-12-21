@@ -1,0 +1,37 @@
+﻿@page "/studio/questionnaires/edit"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@inject ApplicationDbContext DbContext
+
+<h3>QuestionnaireEditPage</h3>
+
+@if (InitialModel is not null)
+{
+    <QuestionnaireEditor
+        InitialModel="InitialModel"
+    />   
+}
+
+@code {
+    public QuestionnaireEditModel? InitialModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO: based on URL
+        QuestionnaireEntity entity = await DbContext.Questionnaires
+            .AsNoTracking()
+            .Include(x => x.Fields)
+            .FirstAsync();
+
+        InitialModel = entity.MapToEditModel();
+
+        if (InitialModel.Fields.Count == 0)
+        {
+            InitialModel.AddBlankField();
+        }
+    }
+}

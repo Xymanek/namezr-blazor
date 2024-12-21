@@ -6,8 +6,9 @@ namespace Namezr.Features.Questionnaires.Data;
 [Mapper(UseDeepCloning = true)]
 public static partial class QuestionnaireEntityMapper
 {
-    // public static partial QuestionnaireEditModel MapToEditModel(this QuestionnaireEntity source);
-    
+    [MapperIgnoreSource(nameof(QuestionnaireEntity.Id))]
+    public static partial QuestionnaireEditModel MapToEditModel(this QuestionnaireEntity source);
+
     // TODO: does not work for updating (always new instances)
     [MapperIgnoreTarget(nameof(QuestionnaireEntity.Id))]
     public static partial QuestionnaireEntity MapToEntity(this QuestionnaireEditModel source);
