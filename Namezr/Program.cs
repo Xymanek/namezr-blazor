@@ -4,6 +4,9 @@ using Namezr.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAppShared();
+builder.Services.AutoRegister();
+
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
 
@@ -14,7 +17,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-builder.Services.AddAppShared();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 

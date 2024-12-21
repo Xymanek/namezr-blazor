@@ -10,5 +10,7 @@ public static class DiExtensions
     public static void AddAppShared(this IServiceCollection services)
     {
         services.AddHxServices();
+
+        services.AutoRegister();
     }
 }

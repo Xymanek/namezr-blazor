@@ -1,4 +1,6 @@
-﻿namespace Namezr.Client.Studio.Questionnaires.Edit;
+﻿using FluentValidation;
+
+namespace Namezr.Client.Studio.Questionnaires.Edit;
 
 public class QuestionnaireEditModel
 {
@@ -14,6 +16,23 @@ public class QuestionnaireEditModel
             Id = Guid.NewGuid(),
         });
     }
+
+    [RegisterSingleton(typeof(IValidator<QuestionnaireEditModel>))]
+    internal sealed class Validator : AbstractValidator<QuestionnaireEditModel>
+    {
+        public Validator(
+            IValidator<QuestionnaireFieldEditModel> fieldValidator
+        )
+        {
+            RuleFor(x => x.Title)
+                .NotEmpty()
+                .MinimumLength(3)
+                .MaximumLength(50);
+
+            RuleForEach(x => x.Fields)
+                .SetValidator(fieldValidator);
+        }
+    }
 }
 
 public class QuestionnaireFieldEditModel
@@ -28,6 +47,18 @@ public class QuestionnaireFieldEditModel
     public QuestionnaireTextFieldOptionsModel? TextOptions { get; set; }
     public QuestionnaireNumberFieldOptionsModel? NumberOptions { get; set; }
     public QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; set; }
+
+    [RegisterSingleton(typeof(IValidator<QuestionnaireFieldEditModel>))]
+    internal sealed class Validator : AbstractValidator<QuestionnaireFieldEditModel>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Title)
+                .NotEmpty()
+                .MinimumLength(3)
+                .MaximumLength(50);
+        }
+    }
 }
 
 public class QuestionnaireTextFieldOptionsModel
@@ -53,7 +84,7 @@ public class QuestionnaireFileUploadFieldOptionsModel
     public List<string> AllowedExtensions { get; set; } = new();
 
     public bool IsMultiple { get; set; }
-    
+
     public decimal? MaxItemSize { get; set; }
     public int? MaxItemCount { get; set; }
 }

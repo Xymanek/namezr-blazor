@@ -1,0 +1,15 @@
+﻿<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="FluentValidation" Version="11.11.0" />
+    <PackageVersion Include="Immediate.Apis" Version="1.4.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
+    <PackageVersion Include="AutoRegisterInject" Version="1.4.1" />
+    <PackageVersion Include="Havit.Blazor.Components.Web.Bootstrap" Version="4.7.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
+    <PackageVersion Include="Riok.Mapperly" Version="4.1.1" />
+    <PackageVersion Include="vNext.BlazorComponents.FluentValidation" Version="1.1.3" />
+  </ItemGroup>
+</Project>

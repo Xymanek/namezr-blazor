@@ -1,4 +1,6 @@
-﻿@rendermode InteractiveWebAssembly
+﻿@using vNext.BlazorComponents.FluentValidation
+
+@rendermode InteractiveWebAssembly
 
 @inject IServiceProvider ServiceProvider
 
@@ -8,6 +10,8 @@
     Model="Model"
     OnValidSubmit="HandleValidSubmit"
 >
+    <FluentValidationValidator />
+
     <HxInputText
         Label="Title"
         @bind-Value="Model.Title"
