@@ -1,0 +1,13 @@
+﻿@page "/studio/questionnaires/new"
+
+@using Namezr.Client.Studio.Questionnaires.Edit
+
+<h3>QuestionnaireEditPage</h3>
+
+<QuestionnaireEditor
+    InitialModel="InitialModel"
+/>
+
+@code {
+    private QuestionnaireEditModel InitialModel { get; } = new();
+}

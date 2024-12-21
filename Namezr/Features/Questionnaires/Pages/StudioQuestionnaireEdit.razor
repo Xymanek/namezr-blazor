@@ -1,4 +1,4 @@
-﻿@page "/studio/questionnaires/edit"
+﻿@page "/studio/questionnaires/{id:guid}/edit"
 
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Studio.Questionnaires.Edit
@@ -15,23 +15,27 @@
         InitialModel="InitialModel"
     />   
 }
+/* TODO: conflates with is loading */
+else
+{
+    <div>Not found</div>
+}
 
 @code {
-    public QuestionnaireEditModel? InitialModel { get; set; }
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    private QuestionnaireEditModel? InitialModel { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: based on URL
-        QuestionnaireEntity entity = await DbContext.Questionnaires
+        QuestionnaireId id = QuestionnaireId.From(Id);
+
+        QuestionnaireEntity? entity = await DbContext.Questionnaires
             .AsNoTracking()
             .Include(x => x.Fields)
-            .FirstAsync();
+            .FirstOrDefaultAsync(q => q.Id == id);
 
-        InitialModel = entity.MapToEditModel();
-
-        if (InitialModel.Fields.Count == 0)
-        {
-            InitialModel.AddBlankField();
-        }
+        InitialModel = entity?.MapToEditModel();
     }
 }

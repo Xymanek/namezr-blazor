@@ -76,6 +76,11 @@
     protected override void OnInitialized()
     {
         Model = InitialModel.Clone();
+
+        if (Model.Fields.Count == 0)
+        {
+            Model.AddBlankField();
+        }
     }
 
     private void MoveField(int fieldIndex, int change)

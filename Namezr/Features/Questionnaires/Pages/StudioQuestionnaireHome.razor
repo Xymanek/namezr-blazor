@@ -1,0 +1,43 @@
+﻿@page "/studio/questionnaires"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@inject ApplicationDbContext DbContext
+
+<h3>StudioQuestionnaireHome</h3>
+
+<a href="/studio/questionnaires/new">New questionnaire</a>
+
+@if (Questionnaires is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (Questionnaires.Any())
+{
+    <ul>
+        @foreach (QuestionnaireEntity questionnaire in Questionnaires)
+        {
+            <li>
+                <a href="/studio/questionnaires/@questionnaire.Id.ToString("N")/edit">
+                    @questionnaire.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No questionnaires yet.</p>
+}
+
+@code {
+    private List<QuestionnaireEntity>? Questionnaires { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Questionnaires = await DbContext.Questionnaires.ToListAsync();
+    }
+
+}
