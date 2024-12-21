@@ -31,6 +31,9 @@ public class QuestionnaireEditModel
             RuleFor(x => x.Description)
                 .MaximumLength(DescriptionMaxLength);
 
+            RuleFor(x => x.Fields)
+                .NotEmpty();
+
             RuleForEach(x => x.Fields)
                 .SetValidator(fieldValidator);
         }
