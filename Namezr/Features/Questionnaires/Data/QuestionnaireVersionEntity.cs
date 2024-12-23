@@ -1,20 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Namezr.Client.Studio.Questionnaires.Edit;
 using NodaTime;
-using Vogen;
 
 namespace Namezr.Features.Questionnaires.Data;
-
-[ValueObject<Guid>]
-public readonly partial struct QuestionnaireVersionId;
 
 [EntityTypeConfiguration(typeof(QuestionnaireVersionEntityConfiguration))]
 public class QuestionnaireVersionEntity
 {
-    public QuestionnaireVersionId Id { get; set; }
+    public Guid Id { get; set; }
 
-    public QuestionnaireId QuestionnaireId { get; set; }
+    public Guid QuestionnaireId { get; set; }
     public QuestionnaireEntity Questionnaire { get; set; } = null!;
 
     public Instant CreatedAt { get; set; }

@@ -5,7 +5,7 @@ namespace Namezr.Features.Questionnaires.Data;
 
 public class QuestionnaireEntity
 {
-    public QuestionnaireId Id { get; set; }
+    public Guid Id { get; set; }
 
     [MaxLength(QuestionnaireEditModel.TitleMaxLength)]
     public required string Title { get; set; }

@@ -33,8 +33,6 @@ public static partial class QuestionnaireEntityToFormMapper
     [MapperIgnoreSource(nameof(QuestionnaireFieldConfigurationEntity.Order))]
     [MapNestedProperties(nameof(QuestionnaireFieldConfigurationEntity.Field))]
     private static partial QuestionnaireFieldEditModel MapToEditModel(QuestionnaireFieldConfigurationEntity source);
-
-    private static QuestionnaireFieldId Map(QuestionnaireFieldId source) => source;
 }
 
 /// <summary>
@@ -43,7 +41,7 @@ public static partial class QuestionnaireEntityToFormMapper
 [Mapper(UseDeepCloning = true, RequiredMappingStrategy = RequiredMappingStrategy.Source)]
 public partial class QuestionnaireFormToEntityMapper
 {
-    private readonly Dictionary<QuestionnaireFieldId, QuestionnaireFieldEntity> _fields = new();
+    private readonly Dictionary<Guid, QuestionnaireFieldEntity> _fields = new();
 
     public QuestionnaireFormToEntityMapper()
     {
@@ -65,8 +63,27 @@ public partial class QuestionnaireFormToEntityMapper
         {
             MapToVersionEntity(source),
         };
+        UpdateFields(entity);
 
         return entity;
+    }
+
+    /// <summary>
+    /// Must be after <see cref="P:Namezr.Features.Questionnaires.Data.QuestionnaireEntity.Versions"/>
+    /// is mapped as that populates the <see cref="_fields"/>.
+    /// </summary>
+    private void UpdateFields(QuestionnaireEntity entity)
+    {
+        if (entity.Fields == null)
+        {
+            entity.Fields = _fields.Values.ToHashSet();
+            return;
+        }
+
+        foreach (QuestionnaireFieldEntity fieldEntity in _fields.Values.Except(_fields.Values))
+        {
+            entity.Fields.Add(fieldEntity);
+        }
     }
 
     [MapperIgnoreSource(nameof(QuestionnaireEntity.Fields))]
@@ -76,6 +93,7 @@ public partial class QuestionnaireFormToEntityMapper
     {
         UpdateEntityProperties(source, target);
         target.Versions!.Add(MapToVersionEntity(source));
+        UpdateFields(target);
     }
 
     [MapperIgnoreSource(nameof(QuestionnaireEntity.Fields))]

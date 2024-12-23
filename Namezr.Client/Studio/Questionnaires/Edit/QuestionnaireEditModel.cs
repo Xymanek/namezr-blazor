@@ -15,7 +15,7 @@ public class QuestionnaireEditModel
     {
         Fields.Add(new QuestionnaireFieldEditModel
         {
-            Id = QuestionnaireFieldId.New(),
+            Id = Guid.CreateVersion7(),
         });
     }
 
@@ -47,7 +47,7 @@ public class QuestionnaireEditModel
 
 public class QuestionnaireFieldEditModel
 {
-    public required QuestionnaireFieldId Id { get; set; }
+    public required Guid Id { get; set; }
 
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

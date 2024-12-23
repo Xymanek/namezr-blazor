@@ -27,6 +27,6 @@ internal static partial class SaveQuestionnaireRequest
         dbContext.Questionnaires.Add(entity);
         await dbContext.SaveChangesAsync(ct);
 
-        return entity.Id.Value;
+        return entity.Id;
     }
 }

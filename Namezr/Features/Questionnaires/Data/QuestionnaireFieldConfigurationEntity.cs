@@ -5,12 +5,13 @@ using Namezr.Client.Studio.Questionnaires.Edit;
 
 namespace Namezr.Features.Questionnaires.Data;
 
+[EntityTypeConfiguration(typeof(QuestionnaireFieldConfigurationEntityConfiguration))]
 public class QuestionnaireFieldConfigurationEntity
 {
-    public QuestionnaireFieldId FieldId { get; set; }
+    public Guid FieldId { get; set; }
     public QuestionnaireFieldEntity Field { get; set; } = null!;
 
-    public QuestionnaireVersionId VersionId { get; set; }
+    public Guid VersionId { get; set; }
     public QuestionnaireVersionEntity Version { get; set; } = null!;
 
     public int Order { get; set; }

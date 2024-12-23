@@ -10,11 +10,4 @@ public partial class ApplicationDbContext(DbContextOptions options) : DbContext(
 
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution);
     }
-
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        base.ConfigureConventions(configurationBuilder);
-
-        configurationBuilder.RegisterAllInQuestionnaireEfConverters();
-    }
 }

@@ -1,16 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Namezr.Client.Studio.Questionnaires.Edit;
 
 namespace Namezr.Features.Questionnaires.Data;
 
 [EntityTypeConfiguration(typeof(QuestionnaireFieldValueEntityConfiguration))]
 public class QuestionnaireFieldValueEntity
 {
-    public QuestionnaireSubmissionId SubmissionId { get; set; }
+    public Guid SubmissionId { get; set; }
     public QuestionnaireSubmissionEntity Submission { get; set; } = null!;
 
-    public QuestionnaireFieldId FieldId { get; set; }
+    public Guid FieldId { get; set; }
     public QuestionnaireFieldEntity Field { get; set; } = null!;
 
     // ReSharper disable once EntityFramework.ModelValidation.UnlimitedStringLength

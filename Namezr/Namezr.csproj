@@ -27,7 +27,6 @@
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
-        <PackageReference Include="Vogen" />
     </ItemGroup>
 
 </Project>

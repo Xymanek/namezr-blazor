@@ -30,14 +30,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        QuestionnaireId id = QuestionnaireId.From(Id);
-
         QuestionnaireVersionEntity? entity = await DbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(q => q.Questionnaire.Id == id);
+            .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id);
 
         InitialModel = entity?.MapToEditModel();
     }

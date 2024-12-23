@@ -15,7 +15,7 @@ internal static partial class UpdateQuestionnaireRequest
 {
     internal class Request
     {
-        public required QuestionnaireId Id { get; set; }
+        public required Guid Id { get; set; }
 
         // TODO: convert description to null if empty
         public required QuestionnaireEditModel Model { get; set; }
