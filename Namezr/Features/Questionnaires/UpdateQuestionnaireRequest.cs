@@ -33,6 +33,7 @@ internal static partial class UpdateQuestionnaireRequest
             throw new Exception("Questionnaire not found");
         }
 
+        // TODO: broken when load existing -> add new field -> move new to 1st
         new QuestionnaireFormToEntityMapper(questionnaireEntity.Fields!)
             .UpdateEntityWithNewVersion(request.Model, questionnaireEntity);
 
