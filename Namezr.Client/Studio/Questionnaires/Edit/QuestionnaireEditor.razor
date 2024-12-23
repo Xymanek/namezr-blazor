@@ -68,6 +68,9 @@
 @code {
 
     [Parameter]
+    public Guid? QuestionnaireId { get; set; }
+
+    [Parameter]
     public required QuestionnaireEditModel InitialModel { get; set; }
 
     private IReadOnlySet<Guid> ForbidTypeChangeFields { get; set; } = null!;
@@ -109,7 +112,23 @@
         IsSending = true;
         try
         {
-            HttpResponseMessage response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesNew, Model);
+            HttpResponseMessage response;
+            if (!QuestionnaireId.HasValue)
+            {
+                response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesNew, Model);
+            }
+            else
+            {
+                response = await http.PostAsJsonAsync(
+                    ApiEndpointPaths.QuestionnairesUpdate,
+                    new UpdateQuestionnaireCommand
+                    {
+                        Id = QuestionnaireId.Value,
+                        Model = Model.Clone(),
+                    }
+                );
+            }
+
             response.EnsureSuccessStatusCode();
         }
         finally

@@ -12,6 +12,7 @@
 @if (InitialModel is not null)
 {
     <QuestionnaireEditor
+        QuestionnaireId="QuestionnaireId"
         InitialModel="InitialModel"
     />
 }
@@ -26,6 +27,11 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
+    /// <remarks>
+    /// Separate from <see cref="Id"/> as we don't handle not found yet
+    /// </remarks>
+    private Guid? QuestionnaireId { get; set; }
+
     private QuestionnaireEditModel? InitialModel { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -37,7 +43,10 @@ else
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id);
 
+        // TODO: Handle not found
+
         InitialModel = entity?.MapToEditModel();
+        QuestionnaireId = entity?.QuestionnaireId;
     }
 
 }

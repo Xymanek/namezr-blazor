@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using Immediate.Apis.Shared;
+﻿using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
@@ -13,26 +12,8 @@ namespace Namezr.Features.Questionnaires;
 [MapPost(ApiEndpointPaths.QuestionnairesUpdate)]
 internal static partial class UpdateQuestionnaireRequest
 {
-    internal class Request
-    {
-        public required Guid Id { get; set; }
-
-        // TODO: convert description to null if empty
-        public required QuestionnaireEditModel Model { get; set; }
-    }
-
-    [RegisterSingleton(typeof(IValidator<Request>))]
-    internal class Validator : AbstractValidator<Request>
-    {
-        public Validator(IValidator<QuestionnaireEditModel> modelValidator)
-        {
-            RuleFor(x => x.Model)
-                .SetValidator(modelValidator);
-        }
-    }
-
     private static async ValueTask HandleAsync(
-        Request request,
+        UpdateQuestionnaireCommand request,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         CancellationToken ct
     )
