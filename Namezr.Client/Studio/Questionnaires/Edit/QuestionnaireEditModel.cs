@@ -7,13 +7,15 @@ public class QuestionnaireEditModel
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
+    public QuestionnaireApprovalMode ApprovalMode { get; set; }
+    
     public List<QuestionnaireFieldEditModel> Fields { get; set; } = new();
 
     public void AddBlankField()
     {
         Fields.Add(new QuestionnaireFieldEditModel
         {
-            Id = Guid.NewGuid(),
+            Id = QuestionnaireFieldId.New(),
         });
     }
 
@@ -45,7 +47,7 @@ public class QuestionnaireEditModel
 
 public class QuestionnaireFieldEditModel
 {
-    public required Guid Id { get; set; }
+    public required QuestionnaireFieldId Id { get; set; }
 
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -161,4 +163,11 @@ public enum QuestionnaireFieldType
     Text,
     Number,
     FileUpload,
+}
+
+public enum QuestionnaireApprovalMode
+{
+    NotRequired,
+    KeepApprovedWhilePending,
+    DeactivateWhilePending,
 }

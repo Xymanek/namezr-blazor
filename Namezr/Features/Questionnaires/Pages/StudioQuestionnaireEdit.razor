@@ -13,7 +13,7 @@
 {
     <QuestionnaireEditor
         InitialModel="InitialModel"
-    />   
+    />
 }
 /* TODO: conflates with is loading */
 else
@@ -22,20 +22,24 @@ else
 }
 
 @code {
+
     [Parameter]
     public Guid Id { get; set; }
-    
+
     private QuestionnaireEditModel? InitialModel { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         QuestionnaireId id = QuestionnaireId.From(Id);
 
-        QuestionnaireEntity? entity = await DbContext.Questionnaires
+        QuestionnaireVersionEntity? entity = await DbContext.QuestionnaireVersions
             .AsNoTracking()
-            .Include(x => x.Fields)
-            .FirstOrDefaultAsync(q => q.Id == id);
+            .Include(x => x.Questionnaire)
+            .Include(x => x.Fields!).ThenInclude(x => x.Field)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(q => q.Questionnaire.Id == id);
 
         InitialModel = entity?.MapToEditModel();
     }
+
 }

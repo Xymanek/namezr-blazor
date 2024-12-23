@@ -40,6 +40,7 @@
         int fieldIndex = i;
 
         <QuestionnaireFieldEditor
+            ForbidTypeChangeFields="ForbidTypeChangeFields"
             @bind-Value="Model.Fields[fieldIndex]"
             CanMoveUp="fieldIndex > 0"
             OnMoveUp="() => MoveField(fieldIndex, -1)"
@@ -69,6 +70,7 @@
     [Parameter]
     public required QuestionnaireEditModel InitialModel { get; set; }
 
+    private IReadOnlySet<QuestionnaireFieldId> ForbidTypeChangeFields { get; set; } = null!;
     private QuestionnaireEditModel Model { get; set; } = null!;
 
     private bool? IsSending { get; set; }
@@ -81,6 +83,10 @@
         {
             Model.AddBlankField();
         }
+        
+        ForbidTypeChangeFields = Model.Fields
+            .Select(x => x.Id)
+            .ToHashSet();
     }
 
     private void MoveField(int fieldIndex, int change)
@@ -102,7 +108,7 @@
         IsSending = true;
         try
         {
-            HttpResponseMessage response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesSave, Model);
+            HttpResponseMessage response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesNew, Model);
             response.EnsureSuccessStatusCode();
         }
         finally

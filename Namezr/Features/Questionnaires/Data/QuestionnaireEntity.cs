@@ -13,5 +13,8 @@ public class QuestionnaireEntity
     [MaxLength(QuestionnaireEditModel.DescriptionMaxLength)]
     public required string? Description { get; set; }
 
+    public required QuestionnaireApprovalMode ApprovalMode { get; set; }
+
     public ICollection<QuestionnaireFieldEntity>? Fields { get; set; }
+    public ICollection<QuestionnaireVersionEntity>? Versions { get; set; }
 }

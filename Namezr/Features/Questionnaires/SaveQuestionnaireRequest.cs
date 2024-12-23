@@ -9,21 +9,18 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires;
 
 [Handler]
-[MapPost(ApiEndpointPaths.QuestionnairesSave)]
-public static partial class SaveQuestionnaireRequest
+[MapPost(ApiEndpointPaths.QuestionnairesNew)]
+internal static partial class SaveQuestionnaireRequest
 {
     private static async ValueTask<Guid> HandleAsync(
+        // TODO: convert description to null if empty
         QuestionnaireEditModel model,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         CancellationToken ct
     )
     {
-        // TODO: convert description to null if empty
-        QuestionnaireEntity entity = model.MapToEntity();
-        
-        // TODO: UUIDv7
-        // TODO: remove the need to manually do this
-        entity.Id = QuestionnaireId.From(Guid.NewGuid());
+        QuestionnaireEntity entity = new QuestionnaireFormToEntityMapper()
+            .MapToEntity(model);
 
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
 

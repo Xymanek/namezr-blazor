@@ -6,4 +6,7 @@ namespace Namezr.Client.Studio.Questionnaires.Edit;
 public readonly partial struct QuestionnaireId;
 
 [ValueObject<Guid>]
-public readonly partial struct QuestionnaireFieldId;
+public readonly partial struct QuestionnaireFieldId
+{
+    public static QuestionnaireFieldId New() => From(Guid.CreateVersion7());
+}

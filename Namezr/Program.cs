@@ -21,10 +21,16 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddProblemDetails();
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(
-    opt =>
-        opt.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
-);
+builder.Services.AddDbContextFactory<ApplicationDbContext>(opt =>
+{
+    opt.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default"),
+        postges =>
+        {
+            postges.UseNodaTime();
+        }
+    );
+});
 
 var app = builder.Build();
 
