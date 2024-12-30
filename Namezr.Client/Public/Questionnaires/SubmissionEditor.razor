@@ -1,0 +1,90 @@
+﻿@using System.Diagnostics
+@using Namezr.Client.Studio.Questionnaires.Edit
+
+<h3>SubmissionEditor</h3>
+
+<EditForm Model="Values">
+    <SubmissionValidator
+        ConfigModel="Config"/>
+
+    <h1>@Config.Title</h1>
+
+    @if (Config.Description is not null)
+    {
+        <p>@Config.Description</p>
+    }
+
+    <ul>
+        @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
+        {
+            Guid fieldId = field.Id;
+            string fieldIdStr = fieldId.ToString();
+
+            <li>
+                <strong>@field.Title</strong>
+                <br/>
+                @field.Description
+                <br/>
+
+                @switch (field.Type)
+                {
+                    case QuestionnaireFieldType.Text:
+                        <HxInputText
+                            Value="@((string)Values[fieldId])"
+                            ValueExpression="@(() => ValuesAsStrings[fieldIdStr])"
+                            ValueChanged="@((string value) => Values[fieldId] = value)"
+                        />
+                        break;
+
+                    case QuestionnaireFieldType.Number:
+                        <HxInputNumber
+                            @bind-Value="Values[fieldId]"
+                        />
+                        break;
+
+                    case QuestionnaireFieldType.FileUpload:
+                        @*<HxInputFile/>*@
+                        /* TODO: file upload */
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            </li>
+        }
+    </ul>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public required QuestionnaireConfigModel Config { get; init; }
+
+    private Dictionary<Guid, object> Values { get; } = new();
+
+    /// <summary>
+    /// Only for expression evaluation
+    /// </summary>
+    private Dictionary<string, string> ValuesAsStrings => throw new UnreachableException();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        foreach (QuestionnaireConfigFieldModel field in Config.Fields)
+        {
+            if (!Values.ContainsKey(field.Id))
+            {
+                Values.Add(field.Id, field.Type switch
+                {
+                    QuestionnaireFieldType.Text => string.Empty,
+                    QuestionnaireFieldType.Number => 0,
+                    QuestionnaireFieldType.FileUpload => null!,
+
+                    _ => throw new ArgumentOutOfRangeException(),
+                });
+            }
+        }
+    }
+
+}

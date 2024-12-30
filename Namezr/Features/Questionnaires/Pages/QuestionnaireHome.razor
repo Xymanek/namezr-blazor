@@ -1,0 +1,38 @@
+﻿@page "/questionnaires/{QuestionnaireId:guid}"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@inject ApplicationDbContext DbContext
+
+<h3>QuestionnaireHome</h3>
+
+@if (ConfigModel is not null)
+{
+    <SubmissionEditor
+        Config="ConfigModel"
+    />
+}
+
+@code {
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+    
+    private QuestionnaireConfigModel? ConfigModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        QuestionnaireVersionEntity? versionEntity = await DbContext.QuestionnaireVersions
+            .AsNoTracking()
+            .Include(x => x.Questionnaire)
+            .Include(x => x.Fields!).ThenInclude(x => x.Field)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
+        
+        ConfigModel = versionEntity?.MapToConfigModel();
+    }
+
+}

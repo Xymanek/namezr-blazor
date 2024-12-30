@@ -86,7 +86,7 @@
             .Select(x => x.Id)
             .ToHashSet();
 
-        // Must be after ForbidTypeChangeFields is built, else the it will include the default empty field
+        // Must be after ForbidTypeChangeFields is built, else it will include the default empty field
         if (Model.Fields.Count == 0)
         {
             Model.AddBlankField();
