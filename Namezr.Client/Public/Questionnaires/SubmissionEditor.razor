@@ -1,11 +1,14 @@
 ﻿@using System.Diagnostics
+@using FluentValidation
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using vNext.BlazorComponents.FluentValidation
+
+@rendermode InteractiveWebAssembly
 
 <h3>SubmissionEditor</h3>
 
 <EditForm Model="Values">
-    <SubmissionValidator
-        ConfigModel="Config"/>
+    <FluentValidationValidator Validator="Validator"/>
 
     <h1>@Config.Title</h1>
 
@@ -17,8 +20,7 @@
     <ul>
         @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
         {
-            Guid fieldId = field.Id;
-            string fieldIdStr = fieldId.ToString();
+            string fieldIdStr = field.Id.ToString();
 
             <li>
                 <strong>@field.Title</strong>
@@ -30,15 +32,13 @@
                 {
                     case QuestionnaireFieldType.Text:
                         <HxInputText
-                            Value="@((string)Values[fieldId])"
-                            ValueExpression="@(() => ValuesAsStrings[fieldIdStr])"
-                            ValueChanged="@((string value) => Values[fieldId] = value)"
+                            @bind-Value="Values[fieldIdStr].StringValue"
                         />
                         break;
 
                     case QuestionnaireFieldType.Number:
                         <HxInputNumber
-                            @bind-Value="Values[fieldId]"
+                            @bind-Value="Values[fieldIdStr].NumberValue"
                         />
                         break;
 
@@ -53,6 +53,12 @@
             </li>
         }
     </ul>
+    
+    <HxSubmit
+        Text="Submit"
+        Color="@ThemeColor.Primary"
+        Enabled="RendererInfo.IsInteractive"
+    />
 </EditForm>
 
 @code {
@@ -60,31 +66,20 @@
     [Parameter]
     public required QuestionnaireConfigModel Config { get; init; }
 
-    private Dictionary<Guid, object> Values { get; } = new();
+    private Dictionary<string, SubmissionValueModel> Values { get; } = new();
 
-    /// <summary>
-    /// Only for expression evaluation
-    /// </summary>
-    private Dictionary<string, string> ValuesAsStrings => throw new UnreachableException();
-
+    private IValidator Validator { get; set; }
+    
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
 
         foreach (QuestionnaireConfigFieldModel field in Config.Fields)
         {
-            if (!Values.ContainsKey(field.Id))
-            {
-                Values.Add(field.Id, field.Type switch
-                {
-                    QuestionnaireFieldType.Text => string.Empty,
-                    QuestionnaireFieldType.Number => 0,
-                    QuestionnaireFieldType.FileUpload => null!,
-
-                    _ => throw new ArgumentOutOfRangeException(),
-                });
-            }
+            Values.TryAdd(field.Id.ToString(), new SubmissionValueModel());
         }
+        
+        Validator = new SubmissionModelValidator(Config);
     }
 
 }
