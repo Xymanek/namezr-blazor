@@ -1,12 +1,11 @@
-﻿using System.Text.Json;
-using Immediate.Apis.Shared;
+﻿using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
-using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Pages;
+using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
 using NodaTime;
 
@@ -19,6 +18,7 @@ public partial class SubmissionCreateRequest
     private static async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
         IClock clock,
+        IFieldValueSerializer fieldValueSerializer,
         ApplicationDbContext dbContext,
         CancellationToken ct
     )
@@ -41,8 +41,8 @@ public partial class SubmissionCreateRequest
         // TODO: keys - GUID or string?
         // new SubmissionModelValidator(SubmissionModelValidator.CreateRuleMap(configModel)).ValidateAsync(model);
 
-        Dictionary<Guid,QuestionnaireFieldConfigurationEntity> fieldConfigsById 
-            = questionnaireVersion.Fields! .ToDictionary(x => x.Field.Id, x => x);
+        Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
+            = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
         QuestionnaireSubmissionEntity entity = new()
         {
@@ -53,7 +53,7 @@ public partial class SubmissionCreateRequest
                 .Select(pair => new QuestionnaireFieldValueEntity
                 {
                     FieldId = pair.Key,
-                    ValueSerialized = SerializeValue(pair.Value, fieldConfigsById[pair.Key].Field),
+                    ValueSerialized = fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
                 })
                 .ToHashSet(),
         };
@@ -63,23 +63,5 @@ public partial class SubmissionCreateRequest
         await dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
-    }
-
-    private static string SerializeValue(SubmissionValueModel value, QuestionnaireFieldEntity field)
-    {
-        switch (field.Type)
-        {
-            case QuestionnaireFieldType.Text:
-                return JsonSerializer.Serialize(value.StringValue);
-            
-            case QuestionnaireFieldType.Number:
-                return JsonSerializer.Serialize(value.NumberValue);
-            
-            case QuestionnaireFieldType.FileUpload:
-                throw new NotImplementedException();
-            
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
     }
 }
