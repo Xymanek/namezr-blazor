@@ -1,8 +1,9 @@
-﻿@using vNext.BlazorComponents.FluentValidation
+﻿@using Namezr.Client.Infra
+@using vNext.BlazorComponents.FluentValidation
 
 @rendermode InteractiveWebAssembly
 
-@inject IServiceProvider ServiceProvider
+@inject ISpaHttpClientProvider HttpClientProvider
 
 <h3>QuestionnaireEditor</h3>
 
@@ -103,11 +104,7 @@
 
     private async Task HandleValidSubmit()
     {
-        Console.WriteLine("Got submit");
-        Console.WriteLine(Model.Title);
-        Console.WriteLine(Model.Description);
-
-        HttpClient http = ServiceProvider.GetRequiredService<HttpClient>();
+        HttpClient http = HttpClientProvider.HttpClient;
 
         IsSending = true;
         try
