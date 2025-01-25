@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namezr.BackendServiceDefaults", "Namezr.BackendServiceDefaults\Namezr.BackendServiceDefaults.csproj", "{B7B446D7-F913-4D17-9E82-B16EE734D8FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,5 +25,9 @@ Global
 		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1CFAD504-E477-4776-8A87-29DB5EE64CED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7B446D7-F913-4D17-9E82-B16EE734D8FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7B446D7-F913-4D17-9E82-B16EE734D8FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7B446D7-F913-4D17-9E82-B16EE734D8FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7B446D7-F913-4D17-9E82-B16EE734D8FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

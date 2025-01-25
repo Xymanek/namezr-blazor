@@ -4,10 +4,9 @@ namespace Namezr.Infrastructure.Data;
 
 public partial class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 {
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public static void DefaultConfigure(DbContextOptionsBuilder optionsBuilder)
     {
-        base.OnConfiguring(optionsBuilder);
-
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution);
+        optionsBuilder.UseNpgsql(postgres => postgres.UseNodaTime());
     }
 }

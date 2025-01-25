@@ -14,12 +14,10 @@ internal static partial class UpdateQuestionnaireRequest
 {
     private static async ValueTask HandleAsync(
         UpdateQuestionnaireCommand request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
-
         QuestionnaireEntity? questionnaireEntity = await dbContext.Questionnaires
             .Include(x => x.Versions)
             .Include(x => x.Fields)
