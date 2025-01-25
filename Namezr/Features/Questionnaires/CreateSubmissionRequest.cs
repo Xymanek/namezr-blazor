@@ -1,4 +1,6 @@
-﻿using Immediate.Apis.Shared;
+﻿using FluentValidation;
+using FluentValidation.Results;
+using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
@@ -37,9 +39,15 @@ public partial class SubmissionCreateRequest
 
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
+        SubmissionModelValuesValidator valuesOnlyValidator = new(
+            new SubmissionValuesValidator<Guid>(configModel, guid => guid)
+        );
 
-        // TODO: keys - GUID or string?
-        // new SubmissionModelValidator(SubmissionModelValidator.CreateRuleMap(configModel)).ValidateAsync(model);
+        ValidationResult valuesValidationResult = await valuesOnlyValidator.ValidateAsync(model, ct);
+        if (!valuesValidationResult.IsValid)
+        {
+            ThrowFailedValuesValidation();
+        }
 
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
@@ -59,9 +67,24 @@ public partial class SubmissionCreateRequest
         };
 
         dbContext.QuestionnaireSubmissions.Add(entity);
-
         await dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
+
+        void ThrowFailedValuesValidation()
+        {
+            // TODO: field ID is not included in the error message,
+            // e.g. `Values.NumberValue` instead of `Values[Guid].NumberValue`
+            throw new ValidationException(valuesValidationResult.Errors);
+        }
+    }
+
+    private class SubmissionModelValuesValidator : AbstractValidator<SubmissionCreateModel>
+    {
+        public SubmissionModelValuesValidator(IValidator<Dictionary<Guid, SubmissionValueModel>> fieldsValidator)
+        {
+            RuleFor(x => x.Values)
+                .SetValidator(fieldsValidator);
+        }
     }
 }

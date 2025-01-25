@@ -9,20 +9,16 @@ public class SubmissionValueModel
     public decimal? NumberValue { get; set; }
 }
 
-public class SubmissionModelValidator : AbstractValidator<Dictionary<string, SubmissionValueModel>>
+/// <typeparam name="TKey">
+/// Usually <see cref="Guid"/> but <see cref="string"/> when validating in form context.
+/// </typeparam>
+public class SubmissionValuesValidator<TKey> : AbstractValidator<Dictionary<TKey, SubmissionValueModel>>
+    where TKey : notnull
 {
-    public SubmissionModelValidator(IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap)
+    public SubmissionValuesValidator(QuestionnaireConfigModel config, Func<Guid, TKey> keySelector)
     {
-        foreach ((string fieldId, IValidator<SubmissionValueModel> validator) in fieldValidatorMap)
-        {
-            RuleFor(x => x[fieldId]).SetValidator(validator);
-        }
-    }
-    
-    public static IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> CreateRuleMap(QuestionnaireConfigModel config)
-    {
-        Dictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap = new();
-        
+        Dictionary<TKey, IValidator<SubmissionValueModel>> fieldValidatorMap = new();
+
         foreach (QuestionnaireConfigFieldModel fieldConfig in config.Fields)
         {
             IValidator<SubmissionValueModel>? validator;
@@ -35,18 +31,23 @@ public class SubmissionModelValidator : AbstractValidator<Dictionary<string, Sub
                 case QuestionnaireFieldType.Number:
                     validator = new SubmissionValueNumberValidator(fieldConfig.NumberOptions!);
                     break;
-                
+
                 case QuestionnaireFieldType.FileUpload:
-                    // break;
+                // break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            fieldValidatorMap.Add(fieldConfig.Id.ToString(), validator);
+            TKey key = keySelector(fieldConfig.Id);
+
+            fieldValidatorMap.Add(key, validator);
+            RuleFor(x => x[key]).SetValidator(validator);
         }
-        
-        return fieldValidatorMap;
+
+        PerFieldValidators = fieldValidatorMap;
     }
+
+    public IReadOnlyDictionary<TKey, IValidator<SubmissionValueModel>> PerFieldValidators { get; }
 }
 
 internal class SubmissionValueBaseValidator : AbstractValidator<SubmissionValueModel>
@@ -58,7 +59,7 @@ internal class SubmissionValueBaseValidator : AbstractValidator<SubmissionValueM
             RuleFor(x => x.StringValue)
                 .Null();
         }
-        
+
         if (fieldType != QuestionnaireFieldType.Number)
         {
             RuleFor(x => x.NumberValue)

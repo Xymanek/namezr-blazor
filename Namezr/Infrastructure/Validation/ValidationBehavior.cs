@@ -20,9 +20,14 @@ public sealed partial class ValidationBehavior<TRequest, TResponse> : Behavior<T
 
         if (failures.Any())
         {
-            throw new ValidationException(failures);
+            Throw();
         }
 
         return await Next(request, cancellationToken).ConfigureAwait(false);
+
+        void Throw()
+        {
+            throw new ValidationException(failures);
+        }
     }
 }

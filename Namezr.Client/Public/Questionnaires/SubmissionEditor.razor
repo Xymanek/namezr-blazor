@@ -94,7 +94,7 @@
     // TODO: FluentValidationValidator does not unsubscribe when removed
     private IReadOnlyDictionary<string, FieldValidatorProvider> FieldValidatorProviders { get; set; } = null!;
 
-    private IValidator Validator { get; set; } = null!;
+    private SubmissionValuesValidator<string> Validator { get; set; } = null!;
 
     protected override void OnParametersSet()
     {
@@ -105,17 +105,13 @@
             Values.TryAdd(field.Id.ToString(), new SubmissionValueModel());
         }
 
-        IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap
-            = SubmissionModelValidator.CreateRuleMap(Config);
-
-        FieldValidatorProviders = fieldValidatorMap
+        Validator = new SubmissionValuesValidator<string>(Config, x => x.ToString());
+        FieldValidatorProviders = Validator.PerFieldValidators
             .ToDictionary(x => x.Key, x => new FieldValidatorProvider
             {
                 Validator = x.Value,
                 Model = Values[x.Key],
             });
-
-        Validator = new SubmissionModelValidator(fieldValidatorMap);
     }
 
     private bool? IsSending { get; set; }
