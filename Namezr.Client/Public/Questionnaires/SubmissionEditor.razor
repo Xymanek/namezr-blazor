@@ -25,7 +25,7 @@
             {
                 <FluentValidationValidator ValidatorFactory="validatorProvider"/>
             }
-            
+
             <li>
                 <strong>@field.Title</strong>
                 <br/>
@@ -72,7 +72,21 @@
 
     private Dictionary<string, SubmissionValueModel> Values { get; } = new();
 
+    /// <summary>
+    /// <para>
+    /// The <see cref="P:Microsoft.AspNetCore.Components.Forms.FieldChangedEventArgs.FieldIdentifier"/> that
+    /// the validator(s) get "starts" with the <see cref="SubmissionValueModel"/> as the model
+    /// so they cannot figure out the path from the root of the form.
+    /// </para>
+    /// <para>
+    /// So we abuse <see cref="vNext.BlazorComponents.FluentValidation.IValidatorFactory"/> and the ability
+    /// to register multiple validators for the same form to "supplement" the root validator.
+    /// </para>
+    /// </summary>
+    // TODO: Create GH issues (with child enrolment example)- aspnet (Blazor), vNext.BlazorComponents.FluentValidation
+    // TODO: FluentValidationValidator does not unsubscribe when removed
     private IReadOnlyDictionary<string, FieldValidatorProvider> FieldValidatorProviders { get; set; } = null!;
+
     private IValidator Validator { get; set; } = null!;
 
     protected override void OnParametersSet()
@@ -84,9 +98,7 @@
             Values.TryAdd(field.Id.ToString(), new SubmissionValueModel());
         }
 
-        // TODO: explain why we need to do this
-        
-        IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap 
+        IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap
             = SubmissionModelValidator.CreateRuleMap(Config);
 
         FieldValidatorProviders = fieldValidatorMap
