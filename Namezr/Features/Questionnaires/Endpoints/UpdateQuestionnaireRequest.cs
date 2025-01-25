@@ -6,7 +6,7 @@ using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
 
-namespace Namezr.Features.Questionnaires;
+namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [MapPost(ApiEndpointPaths.QuestionnairesUpdate)]

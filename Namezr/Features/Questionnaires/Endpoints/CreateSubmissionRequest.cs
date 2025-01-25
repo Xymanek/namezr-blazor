@@ -11,7 +11,7 @@ using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
 using NodaTime;
 
-namespace Namezr.Features.Questionnaires;
+namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionCreate)]
