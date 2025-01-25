@@ -4,14 +4,18 @@
 @using System.Security.Claims
 @using System.Text
 @using System.Text.Encodings.Web
+@using System.Text.Json
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using Namezr.Features.Identity.Data
+@using Namezr.Features.ThirdParty
+@using Namezr.Infrastructure.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @* @inject IEmailSender<ApplicationUser> EmailSender *@
+@inject ApplicationDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ExternalLogin> Logger
@@ -141,7 +145,47 @@
         var result = await UserManager.CreateAsync(user);
         if (result.Succeeded)
         {
-            result = await UserManager.AddLoginAsync(user, externalLoginInfo);
+            ApplicationUser? existingUserForLogin = await UserManager
+                .FindByLoginAsync(externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey)
+                .ConfigureAwait(false);
+            
+            if (existingUserForLogin is not null)
+            {
+                result = IdentityResult.Failed(UserManager.ErrorDescriber.LoginAlreadyAssociated());
+            }
+            
+            if (result.Succeeded)
+            {
+                ApplicationUserLogin userLogin = new()
+                {
+                    UserId = user.Id,
+                    LoginProvider = externalLoginInfo.LoginProvider,
+                    ProviderKey = externalLoginInfo.ProviderKey,
+                    ProviderDisplayName = externalLoginInfo.ProviderDisplayName,
+                };
+
+                string? accessToken = externalLoginInfo.AuthenticationTokens
+                    ?.SingleOrDefault(token => token.Name == "access_token")
+                    ?.Value;
+                
+                if (accessToken is not null)
+                {
+                    // TODO: move to twitch-specific service
+                    userLogin.ThirdPartyToken = new ThirdPartyToken
+                    {
+                        ServiceType = externalLoginInfo.LoginProvider,
+                        ServiceAccountId = externalLoginInfo.ProviderKey,
+                        TokenType = ThirdPartyToken.DefaultTokenType,
+                        Value = JsonSerializer.SerializeToDocument(new TwitchToken(accessToken, null)),
+                        Context = null, // TODO: expires at
+                    };
+                }
+                
+                DbContext.UserLogins.Add(userLogin);
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            // result = await UserManager.AddLoginAsync(user, externalLoginInfo);
             if (result.Succeeded)
             {
                 Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
@@ -168,6 +212,8 @@
 
         message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
     }
+    
+    private record TwitchToken(string AccessToken, string? RefreshToken);
 
     private ApplicationUser CreateUser()
     {
