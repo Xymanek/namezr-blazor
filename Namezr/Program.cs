@@ -3,6 +3,7 @@ using Namezr;
 using Namezr.Client;
 using Namezr.Components;
 using Namezr.Infrastructure.Data;
+using NodaTime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,8 @@ builder.Services.AddNamezrBehaviors();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
-// Add services to the container.
+builder.Services.AddSingleton<IClock>(SystemClock.Instance);
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 

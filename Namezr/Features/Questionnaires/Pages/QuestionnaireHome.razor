@@ -13,6 +13,7 @@
 {
     <SubmissionEditor
         Config="ConfigModel"
+        QuestionnaireVersionId="QuestionnaireVersionId!.Value"
     />
 }
 
@@ -22,6 +23,7 @@
     public Guid QuestionnaireId { get; set; }
     
     private QuestionnaireConfigModel? ConfigModel { get; set; }
+    private Guid? QuestionnaireVersionId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,6 +35,7 @@
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
         
         ConfigModel = versionEntity?.MapToConfigModel();
+        QuestionnaireVersionId = versionEntity?.Id;
     }
 
 }

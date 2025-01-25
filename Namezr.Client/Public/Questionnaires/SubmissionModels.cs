@@ -9,7 +9,7 @@ public class SubmissionValueModel
     public decimal? NumberValue { get; set; }
 }
 
-internal class SubmissionModelValidator : AbstractValidator<Dictionary<string, SubmissionValueModel>>
+public class SubmissionModelValidator : AbstractValidator<Dictionary<string, SubmissionValueModel>>
 {
     public SubmissionModelValidator(IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap)
     {

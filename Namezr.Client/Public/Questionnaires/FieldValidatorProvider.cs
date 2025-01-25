@@ -4,7 +4,10 @@ using IValidatorFactory = vNext.BlazorComponents.FluentValidation.IValidatorFact
 
 namespace Namezr.Client.Public.Questionnaires;
 
-public class FieldValidatorProvider : IValidatorFactory
+/// <summary>
+/// See explanation in <see cref="P:Namezr.Client.Public.Questionnaires.SubmissionEditor.FieldValidatorProviders"/>
+/// </summary>
+internal class FieldValidatorProvider : IValidatorFactory
 {
     public required IValidator<SubmissionValueModel> Validator { private get; init; }
     public required SubmissionValueModel Model { private get; init; }
