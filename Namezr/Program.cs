@@ -32,7 +32,22 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 builder.Services.AddAuthorization();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddAuthentication().AddTwitch(options =>
+{
+    options.ClientId =
+        builder.Configuration["Twitch:ClientId"] ?? throw new Exception("Missing Twitch:ClientId");
+
+    options.ClientSecret =
+        builder.Configuration["Twitch:ClientSecret"] ?? throw new Exception("Missing Twitch:ClientSecret");
+
+    options.SaveTokens = true;
+});
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        // TODO: update this once the email management is finalized
+        options.SignIn.RequireConfirmedAccount = false;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
