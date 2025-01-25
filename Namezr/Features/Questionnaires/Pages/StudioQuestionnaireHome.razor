@@ -1,9 +1,11 @@
 ﻿@page "/studio/questionnaires"
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 
+@attribute [Authorize]
 @inject ApplicationDbContext DbContext
 
 <h3>StudioQuestionnaireHome</h3>

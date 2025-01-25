@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Namezr.Features.Identity.Data;
 
 namespace Namezr.Infrastructure.Data;
 
-public partial class ApplicationDbContext(DbContextOptions options) : DbContext(options)
+public partial class ApplicationDbContext(DbContextOptions options)
+    : IdentityUserContext<ApplicationUser, Guid>(options)
 {
     public static void DefaultConfigure(DbContextOptionsBuilder optionsBuilder)
     {

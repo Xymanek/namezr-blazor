@@ -5,6 +5,10 @@ using vNext.BlazorComponents.FluentValidation;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthenticationStateDeserialization();
+
 builder.Services.AddAppShared();
 
 builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

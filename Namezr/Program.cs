@@ -1,7 +1,10 @@
 using AspireRunner.AspNetCore;
+using Microsoft.AspNetCore.Identity;
 using Namezr;
 using Namezr.Client;
 using Namezr.Components;
+using Namezr.Components.Account;
+using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Data;
 using NodaTime;
 using OpenTelemetry;
@@ -17,8 +20,22 @@ builder.Services.AutoRegister();
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
 
-builder.Services.AddAuthentication();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IdentityUserAccessor>();
+builder.Services.AddScoped<IdentityRedirectManager>();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    })
+    .AddIdentityCookies();
 builder.Services.AddAuthorization();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 
@@ -70,5 +87,7 @@ app.MapNamezrEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly);
+
+app.MapAdditionalIdentityEndpoints();
 
 app.Run();
