@@ -1,5 +1,8 @@
 using AspireRunner.AspNetCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Internal;
 using Namezr;
 using Namezr.Client;
 using Namezr.Components;
@@ -41,6 +44,9 @@ builder.Services.AddAuthentication().AddTwitch(options =>
         builder.Configuration["Twitch:ClientSecret"] ?? throw new Exception("Missing Twitch:ClientSecret");
 
     options.SaveTokens = true;
+    
+    options.Scope.Add("user:read:subscriptions");
+    options.Scope.Add("user:read:follows");
 });
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -63,6 +69,18 @@ builder.AddNpgsqlDbContext<ApplicationDbContext>(
     connectionName: "postgresdb",
     configureDbContextOptions: ApplicationDbContext.DefaultConfigure
 );
+
+// AddNpgsqlDbContext uses AddDbContextPool which does not register an IDbContextFactory
+// and everything's internal, so the only way to get a DbContext is to create a service scope...
+// While this ctor is [EntityFrameworkInternal], it seems stable enough and all pooling setup is done already anyway.
+// TODO: create GH issues.
+#pragma warning disable EF1001
+builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
+    sp => new PooledDbContextFactory<ApplicationDbContext>(
+        sp.GetRequiredService<IDbContextPool<ApplicationDbContext>>()
+    )
+);
+#pragma warning restore EF1001
 
 if (builder.Environment.IsDevelopment())
 {

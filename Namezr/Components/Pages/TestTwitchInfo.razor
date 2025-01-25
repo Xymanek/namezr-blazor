@@ -1,0 +1,45 @@
+﻿@page "/TestTwitchInfo"
+
+@using Microsoft.AspNetCore.Authorization
+@using Namezr.Components.Account
+@using Namezr.Features.Identity.Data
+@using Namezr.Features.Twitch
+@using TwitchLib.Api.Helix.Models.Channels.GetFollowedChannels
+@using TwitchLib.Api.Interfaces
+
+@attribute [Authorize]
+
+@inject ITwitchApiProvider TwitchApiProvider
+@inject IdentityUserAccessor UserAccessor
+
+<h3>TestTwitchInfo</h3>
+
+@if (_followedChannels is not null)
+{
+    <ul>
+        @foreach (FollowedChannel channel in _followedChannels)
+        {
+            <li>
+                @channel.BroadcasterName
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private FollowedChannel[]? _followedChannels;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        ITwitchAPI twitchApi = await TwitchApiProvider.GetTwitchApiForUser(user.Id);
+
+        // TODO: figure out the API design for fetching user's connections, API, etc.
+        GetFollowedChannelsResponse response = await twitchApi.Helix.Channels.GetFollowedChannelsAsync("");
+
+        _followedChannels = response.Data;
+    }
+
+}

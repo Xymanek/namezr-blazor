@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using Namezr.Features.Identity.Data
 @using Namezr.Features.ThirdParty
+@using Namezr.Features.Twitch
 @using Namezr.Infrastructure.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
@@ -176,7 +177,7 @@
                         ServiceType = externalLoginInfo.LoginProvider,
                         ServiceAccountId = externalLoginInfo.ProviderKey,
                         TokenType = ThirdPartyToken.DefaultTokenType,
-                        Value = JsonSerializer.SerializeToDocument(new TwitchToken(accessToken, null)),
+                        Value = JsonSerializer.SerializeToDocument(new TwitchTokenData(accessToken, null)),
                         Context = null, // TODO: expires at
                     };
                 }
@@ -212,8 +213,6 @@
 
         message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
     }
-    
-    private record TwitchToken(string AccessToken, string? RefreshToken);
 
     private ApplicationUser CreateUser()
     {
