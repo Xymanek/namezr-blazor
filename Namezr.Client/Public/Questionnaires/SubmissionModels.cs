@@ -11,23 +11,29 @@ public class SubmissionValueModel
 
 internal class SubmissionModelValidator : AbstractValidator<Dictionary<string, SubmissionValueModel>>
 {
-    public SubmissionModelValidator(QuestionnaireConfigModel config)
+    public SubmissionModelValidator(IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap)
     {
+        foreach ((string fieldId, IValidator<SubmissionValueModel> validator) in fieldValidatorMap)
+        {
+            RuleFor(x => x[fieldId]).SetValidator(validator);
+        }
+    }
+    
+    public static IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> CreateRuleMap(QuestionnaireConfigModel config)
+    {
+        Dictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap = new();
+        
         foreach (QuestionnaireConfigFieldModel fieldConfig in config.Fields)
         {
-            IRuleBuilderInitial<Dictionary<string,SubmissionValueModel>,SubmissionValueModel> ruleBuilder 
-                = RuleFor(x => x[fieldConfig.Id.ToString()]);
-
+            IValidator<SubmissionValueModel>? validator;
             switch (fieldConfig.Type)
             {
                 case QuestionnaireFieldType.Text:
-                    ruleBuilder
-                        .SetValidator(new SubmissionValueStringValidator(fieldConfig.TextOptions!));
+                    validator = new SubmissionValueStringValidator(fieldConfig.TextOptions!);
                     break;
 
                 case QuestionnaireFieldType.Number:
-                    ruleBuilder
-                        .SetValidator(new SubmissionValueNumberValidator(fieldConfig.NumberOptions!));
+                    validator = new SubmissionValueNumberValidator(fieldConfig.NumberOptions!);
                     break;
                 
                 case QuestionnaireFieldType.FileUpload:
@@ -35,7 +41,11 @@ internal class SubmissionModelValidator : AbstractValidator<Dictionary<string, S
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            fieldValidatorMap.Add(fieldConfig.Id.ToString(), validator);
         }
+        
+        return fieldValidatorMap;
     }
 }
 

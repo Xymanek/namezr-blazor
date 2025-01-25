@@ -16,10 +16,10 @@ public class QuestionnaireConfigFieldModel
 
     public required string Title { get; init; }
     public required string? Description { get; init; }
-    
+
     public required QuestionnaireFieldType Type { get; init; }
-    
-    public required QuestionnaireTextFieldOptionsModel? TextOptions { get; init; }
-    public required QuestionnaireNumberFieldOptionsModel? NumberOptions { get; init; }
-    public required QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; init; }
+
+    public QuestionnaireTextFieldOptionsModel? TextOptions { get; init; }
+    public QuestionnaireNumberFieldOptionsModel? NumberOptions { get; init; }
+    public QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; init; }
 }

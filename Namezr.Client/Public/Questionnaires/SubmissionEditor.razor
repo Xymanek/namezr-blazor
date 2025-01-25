@@ -1,5 +1,4 @@
-﻿@using System.Diagnostics
-@using FluentValidation
+﻿@using FluentValidation
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using vNext.BlazorComponents.FluentValidation
 
@@ -22,6 +21,11 @@
         {
             string fieldIdStr = field.Id.ToString();
 
+            if (FieldValidatorProviders.TryGetValue(fieldIdStr, out FieldValidatorProvider? validatorProvider))
+            {
+                <FluentValidationValidator ValidatorFactory="validatorProvider"/>
+            }
+            
             <li>
                 <strong>@field.Title</strong>
                 <br/>
@@ -53,7 +57,7 @@
             </li>
         }
     </ul>
-    
+
     <HxSubmit
         Text="Submit"
         Color="@ThemeColor.Primary"
@@ -68,8 +72,9 @@
 
     private Dictionary<string, SubmissionValueModel> Values { get; } = new();
 
-    private IValidator Validator { get; set; }
-    
+    private IReadOnlyDictionary<string, FieldValidatorProvider> FieldValidatorProviders { get; set; } = null!;
+    private IValidator Validator { get; set; } = null!;
+
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
@@ -78,8 +83,20 @@
         {
             Values.TryAdd(field.Id.ToString(), new SubmissionValueModel());
         }
+
+        // TODO: explain why we need to do this
         
-        Validator = new SubmissionModelValidator(Config);
+        IReadOnlyDictionary<string, IValidator<SubmissionValueModel>> fieldValidatorMap 
+            = SubmissionModelValidator.CreateRuleMap(Config);
+
+        FieldValidatorProviders = fieldValidatorMap
+            .ToDictionary(x => x.Key, x => new FieldValidatorProvider
+            {
+                Validator = x.Value,
+                Model = Values[x.Key],
+            });
+
+        Validator = new SubmissionModelValidator(fieldValidatorMap);
     }
 
 }
