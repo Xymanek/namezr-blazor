@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Questionnaires.Data;
 
@@ -7,6 +8,9 @@ public class QuestionnaireEntity
 {
     public Guid Id { get; set; }
 
+    public CreatorEntity Creator { get; set; } = null!;
+    public Guid CreatorId { get; set; }
+    
     [MaxLength(QuestionnaireEditModel.TitleMaxLength)]
     public required string Title { get; set; }
 

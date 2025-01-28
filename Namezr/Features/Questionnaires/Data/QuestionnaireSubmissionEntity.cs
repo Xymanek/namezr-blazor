@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Namezr.Features.Identity.Data;
 using NodaTime;
 
 namespace Namezr.Features.Questionnaires.Data;
@@ -8,12 +9,15 @@ namespace Namezr.Features.Questionnaires.Data;
 public class QuestionnaireSubmissionEntity
 {
     public Guid Id { get; set; }
-    
-    public Guid VersionId { get; set; }
+
     public QuestionnaireVersionEntity Version { get; set; } = null!;
+    public Guid VersionId { get; set; }
+
+    public ApplicationUser User { get; set; } = null!;
+    public Guid UserId { get; set; }
 
     public Instant SubmittedAt { get; set; }
-    
+
     // TODO: approval
 
     public ICollection<QuestionnaireFieldValueEntity>? FieldValues { get; set; }
