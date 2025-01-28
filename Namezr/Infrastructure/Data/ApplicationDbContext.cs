@@ -24,14 +24,16 @@ public partial class ApplicationDbContext : IdentityUserContext<
 
     public static void DefaultConfigure(DbContextOptionsBuilder optionsBuilder)
     {
+        // TODO: does identity work with NoTracking?
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution);
+
         optionsBuilder.UseNpgsql(postgres => postgres.UseNodaTime());
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        
+
         OnModelCreatingThirdParty(builder);
     }
 }

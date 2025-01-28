@@ -1,5 +1,6 @@
 ﻿using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires.Edit;
@@ -9,6 +10,7 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[Authorize]
 [MapPost(ApiEndpointPaths.QuestionnairesUpdate)]
 internal static partial class UpdateQuestionnaireRequest
 {

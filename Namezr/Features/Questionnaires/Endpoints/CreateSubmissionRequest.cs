@@ -2,9 +2,12 @@
 using FluentValidation.Results;
 using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
+using Namezr.Components.Account;
+using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Pages;
 using Namezr.Features.Questionnaires.Services;
@@ -14,11 +17,14 @@ using NodaTime;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[Authorize]
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionCreate)]
-public partial class SubmissionCreateRequest
+internal partial class SubmissionCreateRequest
 {
     private static async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
+        IHttpContextAccessor httpContextAccessor,
+        IdentityUserAccessor userAccessor,
         IClock clock,
         IFieldValueSerializer fieldValueSerializer,
         ApplicationDbContext dbContext,
@@ -52,9 +58,13 @@ public partial class SubmissionCreateRequest
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
+        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        
         QuestionnaireSubmissionEntity entity = new()
         {
             VersionId = model.QuestionnaireVersionId,
+            UserId = currentUser.Id,
+            
             SubmittedAt = clock.GetCurrentInstant(),
 
             FieldValues = model.Values

@@ -1,5 +1,6 @@
 ﻿@page "/questionnaires/{QuestionnaireId:guid}"
 
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
@@ -9,13 +10,22 @@
 
 <h3>QuestionnaireHome</h3>
 
-@if (ConfigModel is not null)
-{
-    <SubmissionEditor
-        Config="ConfigModel"
-        QuestionnaireVersionId="QuestionnaireVersionId!.Value"
-    />
-}
+@* TODO: display the form, but disabled *@
+<AuthorizeView>
+    <Authorized>
+        @if (ConfigModel is not null)
+        {
+            <SubmissionEditor
+                Config="ConfigModel"
+                QuestionnaireVersionId="QuestionnaireVersionId!.Value"
+            />
+        }        
+    </Authorized>
+    
+    <NotAuthorized>
+        <p>You must be logged in to submit a response.</p>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
 

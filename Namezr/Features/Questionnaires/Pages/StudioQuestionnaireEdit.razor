@@ -1,9 +1,12 @@
 ﻿@page "/studio/questionnaires/{id:guid}/edit"
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext DbContext
 
