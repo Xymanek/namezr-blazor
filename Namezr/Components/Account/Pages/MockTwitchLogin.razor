@@ -1,0 +1,61 @@
+﻿@page "/Account/MockTwitchLogin"
+
+@using System.Security.Claims
+@using AspNet.Security.OAuth.Twitch
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Microsoft.AspNetCore.Authentication
+
+@inject NavigationManager NavigationManager
+
+<h3>MockTwitchLogin</h3>
+
+<EditForm Model="Model" OnValidSubmit="OnSubmit">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
+
+    <HxInputText @bind-Value="Model.UserId" Label=""/>
+
+    <button type="submit">Submit</button>
+</EditForm>
+
+@code {
+
+    [SupplyParameterFromForm]
+    private ModelClass? Model { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new ModelClass();
+    }
+
+    private async Task OnSubmit()
+    {
+        // TODO: Call the API
+
+        await HttpContext.SignInAsync(
+            TwitchAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>
+            {
+                // TODO: ID & code
+                new(ClaimTypes.NameIdentifier, Model.UserId),
+            })),
+            new AuthenticationProperties
+            {
+                // TODO: token
+                RedirectUri = NavigationManager.ToBaseRelativePath(NavigationManager.Uri),
+            }
+        );
+        
+        // TODO: query params
+        NavigationManager.NavigateTo("/Account/ExternalLogin");
+    }
+
+    private class ModelClass
+    {
+        public string UserId { get; set; } = string.Empty;
+    }
+
+}

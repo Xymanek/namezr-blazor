@@ -35,6 +35,7 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 builder.Services.AddAuthorization();
 
+// TODO: different logic when mock api is configured
 builder.Services.AddAuthentication().AddTwitch(options =>
 {
     options.ClientId =
@@ -119,7 +120,9 @@ app.MapNamezrEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly)
+    // TODO: do not route MockTwitchLogin when not configured
+    ;
 
 app.MapAdditionalIdentityEndpoints();
 
