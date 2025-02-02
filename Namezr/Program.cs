@@ -8,6 +8,7 @@ using Namezr.Client;
 using Namezr.Components;
 using Namezr.Components.Account;
 using Namezr.Features.Identity.Data;
+using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 using NodaTime;
 using OpenTelemetry;
@@ -57,6 +58,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 
