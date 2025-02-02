@@ -7,6 +7,8 @@ internal record TwitchTokenData(string AccessToken, string? RefreshToken);
 internal record TwitchTokenContext
 {
     public required Instant ExpiresAt { get; set; }
+    
+    // TODO: scopes
 }
 
 internal record TwitchTokenPayload

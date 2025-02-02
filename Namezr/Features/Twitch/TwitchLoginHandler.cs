@@ -44,7 +44,7 @@ public partial class TwitchLoginHandler : ILoginProviderHandler
                 ServiceAccountId = signInInfo.ExternalLoginInfo.ProviderKey,
                 TokenType = ThirdPartyToken.DefaultTokenType,
                 Value = value,
-                Context = null, // TODO: expires at
+                Context = context,
             };
         }
         else
