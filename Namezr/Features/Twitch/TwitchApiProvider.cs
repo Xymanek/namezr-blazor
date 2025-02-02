@@ -71,16 +71,20 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             // TODO: should not be done more often than every 1 hour
             try
             {
+                LogValidatingToken(token.Id, token.ServiceAccountId);
+
                 ValidateAccessTokenResponse response = await twitchApi.Auth.ValidateAccessTokenAsync();
-                
+
                 if (response is null)
                 {
                     throw new ValidateAccessTokenResponseNullException();
                 }
+
+                LogTokenValidationSuccessful(token.Id, token.ServiceAccountId);
             }
             catch (Exception e) when (e is HttpResponseException or ValidateAccessTokenResponseNullException)
             {
-                LogTokenValidationFailed(e);
+                LogTokenValidationFailed(e, token.Id, token.ServiceAccountId);
                 mustRefresh = true;
             }
         }
@@ -91,6 +95,8 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             {
                 throw new Exception("Attempting to refresh twitch token but no refresh token is stored");
             }
+
+            LogRefreshingToken(token.Id, token.ServiceAccountId);
 
             // TODO: somehow gracefully handle this and instead inform the user that there is a problem with twitch connection
             // TODO: stampede protection
@@ -116,10 +122,39 @@ public partial class TwitchApiProvider : ITwitchApiProvider
         return twitchApi;
     }
 
+    [LoggerMessage(
+        LogLevel.Trace,
+        "Sending token validation request. " +
+        "ThirdPartyToken ID: {tokenId}. " +
+        "Twitch User ID: {twitchUserId}."
+    )]
+    private partial void LogValidatingToken(long tokenId, string twitchUserId);
+
+    [LoggerMessage(
+        LogLevel.Trace,
+        "Token validation successful. " +
+        "ThirdPartyToken ID: {tokenId}. " +
+        "Twitch User ID: {twitchUserId}."
+    )]
+    private partial void LogTokenValidationSuccessful(long tokenId, string twitchUserId);
+
     private class ValidateAccessTokenResponseNullException() : Exception("ValidateAccessTokenResponse is null");
 
-    [LoggerMessage(LogLevel.Debug, "Token validation failed")]
-    private partial void LogTokenValidationFailed(Exception e);
+    [LoggerMessage(
+        LogLevel.Trace,
+        "Sending token refresh request. " +
+        "ThirdPartyToken ID: {tokenId}. " +
+        "Twitch User ID: {twitchUserId}."
+    )]
+    private partial void LogRefreshingToken(long tokenId, string twitchUserId);
+
+    [LoggerMessage(
+        LogLevel.Debug,
+        "Token validation failed. " +
+        "ThirdPartyToken ID: {tokenId}. " +
+        "Twitch User ID: {twitchUserId}."
+    )]
+    private partial void LogTokenValidationFailed(Exception e, long tokenId, string twitchUserId);
 
     [LoggerMessage(
         LogLevel.Error,
@@ -147,5 +182,15 @@ public partial class TwitchApiProvider : ITwitchApiProvider
         });
 
         await dbContext.SaveChangesAsync();
+
+        LogStoredRefreshedToken(oldEntity.Id, oldEntity.ServiceAccountId);
     }
+
+    [LoggerMessage(
+        LogLevel.Debug,
+        "Successfully stored refreshed token. " +
+        "ThirdPartyToken ID: {tokenId}. " +
+        "Twitch User ID: {twitchUserId}."
+    )]
+    private partial void LogStoredRefreshedToken(long tokenId, string twitchUserId);
 }
