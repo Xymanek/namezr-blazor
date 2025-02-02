@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
@@ -32,7 +33,31 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
     }
 
     // TODO: SignInWithClaimsAsync (for 1st time)
-    
+
+    public override async Task SignInWithClaimsAsync(
+        ApplicationUser user,
+        AuthenticationProperties? authenticationProperties,
+        IEnumerable<Claim> additionalClaims
+    )
+    {
+        ExternalLoginInfo? externalLoginInfo = await GetExternalLoginInfoAsync();
+        if (externalLoginInfo == null)
+        {
+            await InvokeBase();
+            return;
+        }
+
+        await InvokeBase();
+        await NotifyOnExternalSignIn(user, externalLoginInfo);
+
+        return;
+
+        Task InvokeBase()
+        {
+            return base.SignInWithClaimsAsync(user, authenticationProperties, additionalClaims);
+        }
+    }
+
     protected override async Task<SignInResult> SignInOrTwoFactorAsync(
         ApplicationUser user,
         bool isPersistent,
@@ -58,20 +83,7 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
 
         if (result.Succeeded)
         {
-            if (!_loginProviderHandlers.TryGetValue(loginProvider, out ILoginProviderHandler? handler))
-            {
-                LogLoginProviderHandlerMissing(loginProvider);
-            }
-            else
-            {
-                await handler.OnSignInAsync(new ExternalSignInInfo
-                {
-                    User = user,
-                    IsPersistent = isPersistent,
-                    LoginProvider = loginProvider,
-                    ExternalLoginInfo = externalLoginInfo,
-                });
-            }
+            await NotifyOnExternalSignIn(user, externalLoginInfo);
         }
 
         return result;
@@ -79,6 +91,23 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
         Task<SignInResult> InvokeBase()
         {
             return base.SignInOrTwoFactorAsync(user, isPersistent, loginProvider, bypassTwoFactor);
+        }
+    }
+
+    private async Task NotifyOnExternalSignIn(ApplicationUser user, ExternalLoginInfo externalLoginInfo)
+    {
+        if (!_loginProviderHandlers.TryGetValue(externalLoginInfo.LoginProvider, out ILoginProviderHandler? handler))
+        {
+            LogLoginProviderHandlerMissing(externalLoginInfo.LoginProvider);
+        }
+        else
+        {
+            await handler.OnSignInAsync(new ExternalSignInInfo
+            {
+                User = user,
+                LoginProvider = externalLoginInfo.LoginProvider,
+                ExternalLoginInfo = externalLoginInfo,
+            });
         }
     }
 
