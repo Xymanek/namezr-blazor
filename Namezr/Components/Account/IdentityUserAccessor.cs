@@ -9,7 +9,7 @@ internal sealed class IdentityUserAccessor(
 {
     public async Task<ApplicationUser> GetRequiredUserAsync(HttpContext context)
     {
-        var user = await userManager.GetUserAsync(context.User);
+        var user = await GetUserAsync(context);
 
         if (user is null)
         {
@@ -18,5 +18,10 @@ internal sealed class IdentityUserAccessor(
         }
 
         return user;
+    }
+
+    public Task<ApplicationUser?> GetUserAsync(HttpContext context)
+    {
+        return userManager.GetUserAsync(context.User);
     }
 }

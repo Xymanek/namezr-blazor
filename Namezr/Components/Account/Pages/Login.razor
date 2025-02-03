@@ -9,6 +9,7 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IdentityUserAccessor UserAccessor
 
 <PageTitle>Log in</PageTitle>
 
@@ -79,6 +80,13 @@
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
+            // Just redirect if already logged in
+            if (await UserAccessor.GetUserAsync(HttpContext) != null)
+            {
+                Logger.LogTrace("User is already logged in, skipping login flow");
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
+            
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
