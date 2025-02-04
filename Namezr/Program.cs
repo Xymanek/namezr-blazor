@@ -60,6 +60,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInManager>();
+builder.Services.AddScoped<IUserStore<ApplicationUser>, ApplicationUserStore>();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 

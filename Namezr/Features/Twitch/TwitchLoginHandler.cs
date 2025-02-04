@@ -17,11 +17,12 @@ public partial class TwitchLoginHandler : ILoginProviderHandler
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly ILogger<TwitchLoginHandler> _logger;
 
+    /// <inheritdoc />
     public string LoginProvider => TwitchAuthenticationDefaults.AuthenticationScheme;
 
-    public async ValueTask OnSignInAsync(ExternalSignInInfo signInInfo)
+    /// <inheritdoc />
+    public async ValueTask OnSignIn(ExternalSignInInfo signInInfo)
     {
-        // TODO: how to wrap this in a transaction when creating a new user?
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
 
         ApplicationUserLogin userLogin = await dbContext.UserLogins
@@ -29,6 +30,20 @@ public partial class TwitchLoginHandler : ILoginProviderHandler
             .Include(x => x.ThirdPartyToken)
             .SingleAsync(x => x.UserId == signInInfo.User.Id && x.LoginProvider == LoginProvider);
 
+        AugmentUserLogin(signInInfo, userLogin);
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    /// <inheritdoc />
+    public ValueTask OnAssociate(ApplicationUserLogin userLogin, ExternalSignInInfo signInInfo)
+    {
+        AugmentUserLogin(signInInfo, userLogin);
+        return ValueTask.CompletedTask;
+    }
+
+    private void AugmentUserLogin(ExternalSignInInfo signInInfo, ApplicationUserLogin userLogin)
+    {
         TwitchTokenPayload tokenPayload = GetTokenPayload(signInInfo);
 
         JsonDocument value = JsonSerializer.SerializeToDocument(tokenPayload.Data);
@@ -56,8 +71,6 @@ public partial class TwitchLoginHandler : ILoginProviderHandler
             userLogin.ThirdPartyToken.Value = value;
             userLogin.ThirdPartyToken.Context = context;
         }
-
-        await dbContext.SaveChangesAsync();
     }
 
     [LoggerMessage(

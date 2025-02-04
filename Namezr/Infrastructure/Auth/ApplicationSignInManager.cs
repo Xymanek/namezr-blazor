@@ -1,15 +1,14 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
 
 namespace Namezr.Infrastructure.Auth;
 
-public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
+internal partial class ApplicationSignInManager : SignInManager<ApplicationUser>
 {
+    private readonly ILoginProviderHandlerCollection _loginProviderHandlers;
     private readonly ILogger<ApplicationSignInManager> _logger;
-    private readonly IReadOnlyDictionary<string, ILoginProviderHandler> _loginProviderHandlers;
 
     public ApplicationSignInManager(
         UserManager<ApplicationUser> userManager,
@@ -20,44 +19,19 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
         IAuthenticationSchemeProvider schemes,
         IUserConfirmation<ApplicationUser> confirmation,
         ILogger<ApplicationSignInManager> logger,
-        IEnumerable<ILoginProviderHandler> loginProviderHandlers
+        ILoginProviderHandlerCollection loginProviderHandlers
     ) : base(
         userManager, contextAccessor, claimsFactory,
         optionsAccessor, baseLogger, schemes, confirmation
     )
     {
         _logger = logger;
-
-        _loginProviderHandlers = loginProviderHandlers
-            .ToDictionary(x => x.LoginProvider);
+        _loginProviderHandlers = loginProviderHandlers;
     }
 
-    // TODO: SignInWithClaimsAsync (for 1st time)
 
-    public override async Task SignInWithClaimsAsync(
-        ApplicationUser user,
-        AuthenticationProperties? authenticationProperties,
-        IEnumerable<Claim> additionalClaims
-    )
-    {
-        ExternalLoginInfo? externalLoginInfo = await GetExternalLoginInfoAsync();
-        if (externalLoginInfo == null)
-        {
-            await InvokeBase();
-            return;
-        }
-
-        await InvokeBase();
-        await NotifyOnExternalSignIn(user, externalLoginInfo);
-
-        return;
-
-        Task InvokeBase()
-        {
-            return base.SignInWithClaimsAsync(user, authenticationProperties, additionalClaims);
-        }
-    }
-
+    // If I was to override ExternalLoginSignInAsync, I'd need to fully replace the logic to be able to get
+    // the user object. This way, I only decorate existing logic, not replace it.
     protected override async Task<SignInResult> SignInOrTwoFactorAsync(
         ApplicationUser user,
         bool isPersistent,
@@ -70,6 +44,8 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
             return await InvokeBase();
         }
 
+        // Need to get it here because base method does
+        // await Context.SignOutAsync(IdentityConstants.ExternalScheme);
         ExternalLoginInfo? externalLoginInfo = await GetExternalLoginInfoAsync();
         if (externalLoginInfo == null) return await InvokeBase();
 
@@ -83,7 +59,16 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
 
         if (result.Succeeded)
         {
-            await NotifyOnExternalSignIn(user, externalLoginInfo);
+            if (_loginProviderHandlers.TryGetLogMissing(
+                    externalLoginInfo.LoginProvider, out ILoginProviderHandler? handler, _logger
+                ))
+            {
+                await handler.OnSignIn(new ExternalSignInInfo
+                {
+                    User = user,
+                    ExternalLoginInfo = externalLoginInfo,
+                });
+            }
         }
 
         return result;
@@ -94,23 +79,6 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
         }
     }
 
-    private async Task NotifyOnExternalSignIn(ApplicationUser user, ExternalLoginInfo externalLoginInfo)
-    {
-        if (!_loginProviderHandlers.TryGetValue(externalLoginInfo.LoginProvider, out ILoginProviderHandler? handler))
-        {
-            LogLoginProviderHandlerMissing(externalLoginInfo.LoginProvider);
-        }
-        else
-        {
-            await handler.OnSignInAsync(new ExternalSignInInfo
-            {
-                User = user,
-                LoginProvider = externalLoginInfo.LoginProvider,
-                ExternalLoginInfo = externalLoginInfo,
-            });
-        }
-    }
-
     [LoggerMessage(
         LogLevel.Warning,
         "Login provider mismatch between external login provider from info ({retrievedLoginProvider}) and " +
@@ -118,11 +86,4 @@ public partial class ApplicationSignInManager : SignInManager<ApplicationUser>
         "Will not fire per-provider sign in events."
     )]
     private partial void LogLoginProviderMismatch(string retrievedLoginProvider, string expectedLoginProvider);
-
-    [LoggerMessage(
-        LogLevel.Warning,
-        "Missing handler for login provider ({loginProvider}). " +
-        "Will not fire per-provider sign in events."
-    )]
-    private partial void LogLoginProviderHandlerMissing(string loginProvider);
 }
