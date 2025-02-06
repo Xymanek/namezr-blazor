@@ -21,6 +21,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="9.0.2" />
+    <PackageVersion Include="Patreon.Net" Version="1.0.3" />
     <PackageVersion Include="Riok.Mapperly" Version="4.1.1" />
     <PackageVersion Include="TwitchLib.Api" Version="3.9.0" />
     <PackageVersion Include="vNext.BlazorComponents.FluentValidation" Version="1.1.3" />

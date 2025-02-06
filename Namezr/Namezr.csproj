@@ -32,6 +32,7 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
+        <PackageReference Include="Patreon.Net" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>
 

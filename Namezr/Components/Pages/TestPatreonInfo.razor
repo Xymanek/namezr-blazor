@@ -1,0 +1,52 @@
+﻿@page "/TestPatreonInfo"
+
+@using Microsoft.AspNetCore.Authorization
+@using Namezr.Components.Account
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Patreon
+@using Patreon.Net
+@using Patreon.Net.Models
+
+@attribute [Authorize]
+
+@inject IPatreonApiProvider PatreonApiProvider
+@inject IdentityUserAccessor UserAccessor
+
+<h3>TestPatreonInfo</h3>
+
+<table class="table">
+    <tbody>
+    <tr>
+        <th>Id</th>
+        <td>@_patreonIdentity?.Id</td>
+    </tr>
+    <tr>
+        <th>Email</th>
+        <td>@_patreonIdentity?.Email</td>
+    </tr>
+    <tr>
+        <th>First Name</th>
+        <td>@_patreonIdentity?.FirstName</td>
+    </tr>
+    <tr>
+        <th>Last Name</th>
+        <td>@_patreonIdentity?.LastName</td>
+    </tr>
+    </tbody>
+</table>
+
+
+@code {
+    private User? _patreonIdentity;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        using PatreonClient patreonApi = await PatreonApiProvider.GetPatreonApiForUser(user.Id);
+
+        _patreonIdentity = await patreonApi.GetIdentityAsync();
+    }
+
+}
