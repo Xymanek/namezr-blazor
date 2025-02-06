@@ -50,6 +50,17 @@ builder.Services.AddAuthentication().AddTwitch(options =>
     options.Scope.Add("user:read:follows");
 });
 
+builder.Services.AddAuthentication().AddPatreon(options =>
+{
+    options.ClientId =
+        builder.Configuration["Patreon:ClientId"] ?? throw new Exception("Missing Patreon:ClientId");
+
+    options.ClientSecret =
+        builder.Configuration["Patreon:ClientSecret"] ?? throw new Exception("Missing Patreon:ClientSecret");
+
+    options.SaveTokens = true;
+});
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         // TODO: update this once the email management is finalized

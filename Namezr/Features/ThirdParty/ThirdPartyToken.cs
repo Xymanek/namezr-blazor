@@ -12,6 +12,7 @@ public class ThirdPartyToken
     
     public long Id { get; set; }
 
+    // TODO: this should become an enum
     [MaxLength(100)]
     public required string ServiceType { get; set; }
 

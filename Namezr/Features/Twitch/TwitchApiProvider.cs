@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.ThirdParty;
 using Namezr.Infrastructure.Data;
+using Namezr.Infrastructure.OAuth;
 using NodaTime;
 using TwitchLib.Api;
 using TwitchLib.Api.Auth;
@@ -47,12 +48,12 @@ public partial class TwitchApiProvider : ITwitchApiProvider
         TwitchAuthenticationOptions twitchOptions = _twitchOptions
             .Get(TwitchAuthenticationDefaults.AuthenticationScheme);
 
-        TwitchTokenData tokenData =
-            token.Value.Deserialize<TwitchTokenData>()
+        OAuthTokenData tokenData =
+            token.Value.Deserialize<OAuthTokenData>()
             ?? throw new Exception("Deserialized token data is null??");
 
-        TwitchTokenContext tokenContext =
-            token.Context?.Deserialize<TwitchTokenContext>()
+        OAuthTokenContext tokenContext =
+            token.Context?.Deserialize<OAuthTokenContext>()
             ?? throw new Exception("Deserialized token context is null??");
 
         TwitchAPI twitchApi = new(_loggerFactory)
@@ -172,9 +173,9 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             .SingleAsync(x => x.Id == oldEntity.Id);
 
         entity.Value =
-            JsonSerializer.SerializeToDocument(new TwitchTokenData(response.AccessToken, response.RefreshToken));
+            JsonSerializer.SerializeToDocument(new OAuthTokenData(response.AccessToken, response.RefreshToken));
 
-        entity.Context = JsonSerializer.SerializeToDocument(new TwitchTokenContext
+        entity.Context = JsonSerializer.SerializeToDocument(new OAuthTokenContext
         {
             ExpiresAt = _clock.GetCurrentInstant()
                 // TODO: is this seconds? Or something else?
