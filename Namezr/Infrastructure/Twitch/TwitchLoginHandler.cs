@@ -2,7 +2,7 @@
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.OAuth;
 
-namespace Namezr.Features.Twitch;
+namespace Namezr.Infrastructure.Twitch;
 
 [AutoConstructor]
 [RegisterSingleton(typeof(ILoginProviderHandler))]

@@ -12,7 +12,7 @@ using TwitchLib.Api.Auth;
 using TwitchLib.Api.Core.Exceptions;
 using TwitchLib.Api.Interfaces;
 
-namespace Namezr.Features.Twitch;
+namespace Namezr.Infrastructure.Twitch;
 
 public interface ITwitchApiProvider
 {

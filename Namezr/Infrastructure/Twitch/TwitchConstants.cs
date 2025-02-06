@@ -1,4 +1,4 @@
-﻿namespace Namezr.Features.Twitch;
+﻿namespace Namezr.Infrastructure.Twitch;
 
 public static class TwitchConstants
 {
