@@ -47,6 +47,12 @@
         using PatreonClient patreonApi = await PatreonApiProvider.GetPatreonApiForUser(user.Id);
 
         _patreonIdentity = await patreonApi.GetIdentityAsync();
+
+        List<object> list = new();
+        await foreach (Campaign campaign in await patreonApi.GetCampaignsAsync())
+        {
+            list.Add(campaign);
+        }
     }
 
 }
