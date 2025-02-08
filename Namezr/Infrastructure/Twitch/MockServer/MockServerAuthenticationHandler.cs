@@ -1,30 +1,43 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Globalization;
+using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Web;
+using AspNet.Security.OAuth.Twitch;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using TwitchLib.Api;
+using TwitchLib.Api.Helix.Models.Users.GetUsers;
 
 namespace Namezr.Infrastructure.Twitch.MockServer;
 
-// TODO: this should be OAuthOptions
-internal class MockServerAuthenticationHandler : RemoteAuthenticationHandler<RemoteAuthenticationOptions>
+[AutoConstructor]
+internal partial class MockServerAuthenticationHandler : TwitchAuthenticationHandler
 {
+    // TODO: custom authentication options
     private readonly IOptionsMonitor<TwitchOptions> _twitchOptions;
 
-    public MockServerAuthenticationHandler(
-        IOptionsMonitor<RemoteAuthenticationOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder,
-        IOptionsMonitor<TwitchOptions> twitchOptions
-    ) : base(options, logger, encoder)
+    private readonly ITwitchHttpFactory _twitchHttpFactory;
+    private readonly ILoggerFactory _loggerFactory;
+
+    protected override string BuildChallengeUrl(AuthenticationProperties properties, string redirectUri)
     {
-        _twitchOptions = twitchOptions;
+        Dictionary<string, string> parameters = new()
+        {
+            ["state"] = Options.StateDataFormat.Protect(properties),
+        };
+
+        return QueryHelpers.AddQueryString(Options.CallbackPath, parameters!);
     }
 
     protected override async Task<HandleRequestResult> HandleRemoteAuthenticateAsync()
     {
+        AuthenticationProperties properties =
+            Options.StateDataFormat.Unprotect(Request.Query["state"])
+            ?? throw new InvalidOperationException();
+
         string? errorMessage = null;
 
         if (Context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
@@ -37,11 +50,11 @@ internal class MockServerAuthenticationHandler : RemoteAuthenticationHandler<Rem
             string uri = twitchOptions.MockServerUrl + "/auth/authorize";
             uri = QueryHelpers.AddQueryString(uri, new Dictionary<string, string?>
             {
-                ["client_id"] = twitchOptions.OAuth.ClientId,
-                ["client_secret"] = twitchOptions.OAuth.ClientSecret,
+                ["client_id"] = Options.ClientId,
+                ["client_secret"] = Options.ClientSecret,
                 ["grant_type"] = "user_token",
                 ["user_id"] = userId,
-                ["scope"] = "user:read:email", // TODO
+                ["scope"] = FormatScope(), // TODO
             });
 
             using var request = new HttpRequestMessage(HttpMethod.Post, uri);
@@ -53,36 +66,74 @@ internal class MockServerAuthenticationHandler : RemoteAuthenticationHandler<Rem
             {
                 // TODO
 
-                // TODO: call userinfo endpoint
+                using JsonDocument payload =
+                    JsonDocument.Parse(await response.Content.ReadAsStringAsync(Context.RequestAborted));
+
+                OAuthTokenResponse tokens = OAuthTokenResponse.Success(payload);
+
+                TwitchAPI api = new(
+                    loggerFactory: _loggerFactory,
+
+                    // this sets the URL override
+                    http: _twitchHttpFactory.Create()
+                )
+                {
+                    Settings =
+                    {
+                        AccessToken = tokens.AccessToken,
+                        ClientId = Options.ClientId,
+                        Secret = Options.ClientSecret,
+                    }
+                };
+
+                GetUsersResponse userResponse = await api.Helix.Users.GetUsersAsync(ids: [userId]);
+                User userInfo = userResponse.Users.Single();
+
+                // TODO: convert to manual HttpClient call + OAuthCreatingTicketContext.RunClaimActions()
+                ClaimsIdentity userIdentity = new(ClaimsIssuer);
+                userIdentity.AddClaims([
+                    new Claim(ClaimTypes.NameIdentifier, userInfo.Id),
+                    new Claim(ClaimTypes.Name, userInfo.Login),
+                    new Claim(TwitchAuthenticationConstants.Claims.DisplayName, userInfo.DisplayName),
+                    new Claim(ClaimTypes.Email, userInfo.Email),
+                    new Claim(TwitchAuthenticationConstants.Claims.Type, userInfo.Type),
+                    new Claim(TwitchAuthenticationConstants.Claims.BroadcasterType, userInfo.BroadcasterType),
+                    new Claim(TwitchAuthenticationConstants.Claims.Description, userInfo.Description),
+                    new Claim(TwitchAuthenticationConstants.Claims.ProfileImageUrl, userInfo.ProfileImageUrl),
+                    new Claim(TwitchAuthenticationConstants.Claims.OfflineImageUrl, userInfo.OfflineImageUrl),
+                ]);
+                ClaimsPrincipal user = new(userIdentity);
+
+                if (Options.SaveTokens)
+                {
+                    var authTokens = new List<AuthenticationToken>();
+
+                    authTokens.Add(new AuthenticationToken { Name = "access_token", Value = tokens.AccessToken! });
+
+                    if (!string.IsNullOrEmpty(tokens.TokenType))
+                    {
+                        authTokens.Add(new AuthenticationToken { Name = "token_type", Value = tokens.TokenType });
+                    }
+
+                    if (!string.IsNullOrEmpty(tokens.ExpiresIn))
+                    {
+                        int value;
+                        if (int.TryParse(tokens.ExpiresIn, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+                        {
+                            // https://www.w3.org/TR/xmlschema-2/#dateTime
+                            // https://learn.microsoft.com/dotnet/standard/base-types/standard-date-and-time-format-strings
+                            var expiresAt = TimeProvider.GetUtcNow() + TimeSpan.FromSeconds(value);
+                            authTokens.Add(new AuthenticationToken
+                            {
+                                Name = "expires_at",
+                                Value = expiresAt.ToString("o", CultureInfo.InvariantCulture)
+                            });
+                        }
+                    }
+
+                    properties.StoreTokens(authTokens);
+                }
                 
-                ClaimsPrincipal user = new();
-                user.AddIdentity(new ClaimsIdentity([
-                    new Claim(ClaimTypes.NameIdentifier, "123"),
-                    new Claim(ClaimTypes.Name, "astraldescend"),
-                    new Claim("urn:twitch:displayname", "AstralDescend"),
-                ]));
-
-                // public TwitchAuthenticationOptions()
-
-                // ClaimActions.MapCustomJson(ClaimTypes.NameIdentifier, user => GetData(user, "id"));
-                // ClaimActions.MapCustomJson(ClaimTypes.Name, user => GetData(user, "login"));
-                // ClaimActions.MapCustomJson(Claims.DisplayName, user => GetData(user, "display_name"));
-                // ClaimActions.MapCustomJson(ClaimTypes.Email, user => GetData(user, "email"));
-                // ClaimActions.MapCustomJson(Claims.Type, user => GetData(user, "type"));
-                // ClaimActions.MapCustomJson(Claims.BroadcasterType, user => GetData(user, "broadcaster_type"));
-                // ClaimActions.MapCustomJson(Claims.Description, user => GetData(user, "description"));
-                // ClaimActions.MapCustomJson(Claims.ProfileImageUrl, user => GetData(user, "profile_image_url"));
-                // ClaimActions.MapCustomJson(Claims.OfflineImageUrl, user => GetData(user, "offline_image_url"));
-
-                // using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Context.RequestAborted));
-                //
-                // var principal = new ClaimsPrincipal(identity);
-                // var context = new OAuthCreatingTicketContext(principal, properties, Context, Scheme, Options, Backchannel, tokens, payload.RootElement);
-                // context.RunClaimActions();
-
-                AuthenticationProperties properties = new();
-                properties.Items.Add(".Token.access_token", "123");
-
                 return HandleRequestResult.Success(new AuthenticationTicket(user, properties, Scheme.Name));
             }
 
@@ -122,10 +173,10 @@ internal class MockServerAuthenticationHandler : RemoteAuthenticationHandler<Rem
                      {errorMessage}
                  </div>
                  
-                 <form>
+                 <form method="post">
                      <div style='margin-bottom: 1em;'>
                          <label for="user_id">User ID</label>
-                         <input type="text" id="user_id" name="user_id" value="123"/>
+                         <input type="text" id="user_id" name="user_id" />
                      </div>
                      
                      <button type="submit">Submit</button>
@@ -134,5 +185,7 @@ internal class MockServerAuthenticationHandler : RemoteAuthenticationHandler<Rem
              </html>
              """
         );
+        
+        await writer.FlushAsync();
     }
 }

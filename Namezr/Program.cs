@@ -53,20 +53,18 @@ TwitchOptions twitchOptions = builder.Configuration
 if (twitchOptions.MockServerUrl is not null)
 {
     builder.Services.AddAuthentication()
-        .AddRemoteScheme<RemoteAuthenticationOptions, MockServerAuthenticationHandler>(
+        .AddOAuth<TwitchAuthenticationOptions, MockServerAuthenticationHandler>(
             TwitchAuthenticationDefaults.AuthenticationScheme,
             TwitchAuthenticationDefaults.DisplayName,
             options =>
             {
-                // TODO
-                
-                // options.ClientId = twitchOptions.OAuth.ClientId;
-                // options.ClientSecret = twitchOptions.OAuth.ClientSecret;
+                options.ClientId = twitchOptions.OAuth.ClientId;
+                options.ClientSecret = twitchOptions.OAuth.ClientSecret;
     
                 options.SaveTokens = true;
     
-                // options.Scope.Add("user:read:subscriptions");
-                // options.Scope.Add("user:read:follows");
+                options.Scope.Add("user:read:subscriptions");
+                options.Scope.Add("user:read:follows");
             }
         );
 }

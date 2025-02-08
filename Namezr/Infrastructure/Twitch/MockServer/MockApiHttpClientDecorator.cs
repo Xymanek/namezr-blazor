@@ -36,19 +36,10 @@ public class MockApiHttpClientDecorator : IHttpCallHandler
     
     #nullable restore
 
-    private static readonly IReadOnlySet<string> TwitchOrigins = new HashSet<string>
-    {
-        "https://id.twitch.tv",
-        "https://api.twitch.tv",
-    };
-
     private string RewriteUrl(string url)
     {
-        foreach (string origin in TwitchOrigins)
-        {
-            if (!url.StartsWith(origin)) continue;
-            return string.Concat(MockServerUrl, url.AsSpan(origin.Length));
-        }
+        url = url.Replace("https://id.twitch.tv/oauth2", MockServerUrl + "/auth");
+        url = url.Replace("https://api.twitch.tv/helix", MockServerUrl + "/mock");
 
         return url;
     }
