@@ -1,4 +1,6 @@
 using AspireRunner.AspNetCore;
+using AspNet.Security.OAuth.Twitch;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -10,9 +12,12 @@ using Namezr.Components.Account;
 using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
+using Namezr.Infrastructure.Twitch;
+using Namezr.Infrastructure.Twitch.MockServer;
 using NodaTime;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using SystemClock = NodaTime.SystemClock;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,19 +41,48 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 builder.Services.AddAuthorization();
 
-builder.Services.AddAuthentication().AddTwitch(options =>
+builder.Services
+    .AddOptions<TwitchOptions>()
+    .BindConfiguration(TwitchOptions.SectionPath)
+    .ValidateDataAnnotations();
+
+TwitchOptions twitchOptions = builder.Configuration
+    .GetRequiredSection(TwitchOptions.SectionPath)
+    .Get<TwitchOptions>()!;
+
+if (twitchOptions.MockServerUrl is not null)
 {
-    options.ClientId =
-        builder.Configuration["Twitch:ClientId"] ?? throw new Exception("Missing Twitch:ClientId");
-
-    options.ClientSecret =
-        builder.Configuration["Twitch:ClientSecret"] ?? throw new Exception("Missing Twitch:ClientSecret");
-
-    options.SaveTokens = true;
+    builder.Services.AddAuthentication()
+        .AddRemoteScheme<RemoteAuthenticationOptions, MockServerAuthenticationHandler>(
+            TwitchAuthenticationDefaults.AuthenticationScheme,
+            TwitchAuthenticationDefaults.DisplayName,
+            options =>
+            {
+                // TODO
+                
+                // options.ClientId = twitchOptions.OAuth.ClientId;
+                // options.ClientSecret = twitchOptions.OAuth.ClientSecret;
     
-    options.Scope.Add("user:read:subscriptions");
-    options.Scope.Add("user:read:follows");
-});
+                options.SaveTokens = true;
+    
+                // options.Scope.Add("user:read:subscriptions");
+                // options.Scope.Add("user:read:follows");
+            }
+        );
+}
+else
+{
+    builder.Services.AddAuthentication().AddTwitch(options =>
+    {
+        options.ClientId = twitchOptions.OAuth.ClientId;
+        options.ClientSecret = twitchOptions.OAuth.ClientSecret;
+    
+        options.SaveTokens = true;
+    
+        options.Scope.Add("user:read:subscriptions");
+        options.Scope.Add("user:read:follows");
+    });    
+}
 
 builder.Services.AddAuthentication().AddPatreon(options =>
 {

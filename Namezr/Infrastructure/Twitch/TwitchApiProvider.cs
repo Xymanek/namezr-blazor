@@ -25,6 +25,7 @@ public partial class TwitchApiProvider : ITwitchApiProvider
 {
     private readonly IOptionsMonitor<TwitchAuthenticationOptions> _twitchOptions;
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly ITwitchHttpFactory _twitchHttpFactory;
     private readonly ILogger<TwitchApiProvider> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IClock _clock;
@@ -56,7 +57,7 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             token.Context?.Deserialize<OAuthTokenContext>()
             ?? throw new Exception("Deserialized token context is null??");
 
-        TwitchAPI twitchApi = new(_loggerFactory)
+        TwitchAPI twitchApi = new(_loggerFactory, http: _twitchHttpFactory.Create())
         {
             Settings =
             {
@@ -74,6 +75,7 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             {
                 LogValidatingToken(token.Id, token.ServiceAccountId);
 
+                // TODO: this works differently under mock API
                 ValidateAccessTokenResponse response = await twitchApi.Auth.ValidateAccessTokenAsync();
 
                 if (response is null)
