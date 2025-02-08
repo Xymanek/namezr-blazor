@@ -50,8 +50,15 @@ TwitchOptions twitchOptions = builder.Configuration
     .GetRequiredSection(TwitchOptions.SectionPath)
     .Get<TwitchOptions>()!;
 
-if (twitchOptions.MockServerUrl is not null)
+if (twitchOptions.MockServerUrl is not null && builder.Environment.IsProduction())
 {
+    Console.Error.WriteLine("Twitch mock server is not supported in production, ignoring");
+}
+
+if (twitchOptions.MockServerUrl is not null && !builder.Environment.IsProduction())
+{
+    // TODO: the whole mock server integration is an extremely shoddy implementation
+    
     builder.Services.AddAuthentication()
         .AddOAuth<TwitchAuthenticationOptions, MockServerAuthenticationHandler>(
             TwitchAuthenticationDefaults.AuthenticationScheme,
