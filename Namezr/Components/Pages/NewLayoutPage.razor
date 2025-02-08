@@ -2,8 +2,21 @@
 
 @using Namezr.Components.Layout
 @using Namezr.Client.Shared
+@using Havit.Blazor.Components.Web.Bootstrap
 
 @layout NewLayout
+
+@* TODO: de-emphasize the breadcrumbs *@
+<HxCard CssClass="text-bg-primary text-white mb-3">
+    <BodyTemplate>
+        <HxBreadcrumb Divider=">">
+            @* TODO: link color *@
+            <HxBreadcrumbItem Href="#" Text="Home"/>
+            <HxBreadcrumbItem Href="#" Text="Library"/>
+            <HxBreadcrumbItem Text="Data" Active="true"/>
+        </HxBreadcrumb>
+    </BodyTemplate>
+</HxCard>
 
 <p>Body</p>
 
