@@ -1,6 +1,5 @@
 using AspireRunner.AspNetCore;
 using AspNet.Security.OAuth.Twitch;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;

@@ -3,7 +3,6 @@ using TwitchLib.Api.Core.Interfaces;
 
 namespace Namezr.Infrastructure.Twitch.MockServer;
 
-
 public class MockApiHttpClientDecorator : IHttpCallHandler
 {
     public required IHttpCallHandler Inner { private get; init; }
