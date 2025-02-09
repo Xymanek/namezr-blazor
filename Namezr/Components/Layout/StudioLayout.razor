@@ -1,0 +1,15 @@
+﻿@layout NewLayout
+
+@inherits LayoutComponentBase
+
+<div class="main-container">
+    <div class="sidebar">
+        <StudioMenu/>
+    </div>
+
+    <main>
+        <div class="container pt-3">
+            @Body
+        </div>
+    </main>
+</div>

@@ -33,7 +33,7 @@
                             </a>
                             <ul class="dropdown-menu text-small">
                                 <li><a class="dropdown-item" href="#">My creators</a></li>
-                                <li><a class="dropdown-item" href="#">Settings</a></li>
+                                <li><a class="dropdown-item" href="Account/Manage">My account</a></li>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
@@ -60,17 +60,7 @@
         </div>
     </header>
 
-    <div class="main-container">
-        <div class="sidebar">
-            <NavMenu/>
-        </div>
-
-        <main>
-            <div class="container">
-                @Body
-            </div>
-        </main>
-    </div>
+    @Body
 </div>
 
 <BlazorErrorUI/>
