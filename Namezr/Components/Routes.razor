@@ -1,9 +1,8 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
-@using Namezr.Client.Shared
+﻿@using Namezr.Client.Shared
 
 <Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.PublicLayout)">
             <NotAuthorized>
                 <RedirectToLogin/>
             </NotAuthorized>

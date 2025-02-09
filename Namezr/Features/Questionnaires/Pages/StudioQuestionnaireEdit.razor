@@ -3,10 +3,12 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Components.Layout
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 
 @attribute [Authorize]
+@layout StudioLayout
 
 @inject ApplicationDbContext DbContext
 

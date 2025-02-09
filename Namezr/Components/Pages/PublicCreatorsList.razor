@@ -1,0 +1,41 @@
+﻿@page "/PublicCreatorsList"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@inject ApplicationDbContext DbContext
+
+<h3>PublicCreatorsList</h3>
+
+@foreach (CreatorEntity creator in _creators)
+{
+    <h3>@creator.DisplayName</h3>
+    
+    <ul>
+        @foreach (QuestionnaireEntity questionnaire in creator.Questionnaires!)
+        {
+            <li>
+                <a href="/questionnaires/@questionnaire.Id.ToString("N")">
+                    @questionnaire.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private CreatorEntity[] _creators = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _creators = await DbContext.Creators
+            .Include(x => x.Questionnaires)
+            .AsSplitQuery()
+            .ToArrayAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+}
