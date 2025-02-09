@@ -1,0 +1,57 @@
+﻿@page "/studio/onboarding"
+
+@using Microsoft.AspNetCore.Authorization
+@using Namezr.Components.Account
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Identity.Data
+
+@attribute [Authorize]
+
+@inject ICreatorOnboardingService OnboardingService
+@inject IdentityUserAccessor UserAccessor
+
+<h3>CreatorOnboarding</h3>
+
+Options:
+
+@foreach (PotentialSupportTarget target in _targets)
+{
+    <div>
+        @switch (target)
+        {
+            case PotentialTwitchSupportTarget twitchTarget:
+                <div>Twitch</div>
+                <div>@twitchTarget.UserTwitchId</div>
+                <div>@twitchTarget.TwitchDisplayName</div>
+                <div>@twitchTarget.TwitchProfileUrl</div>
+                <div>@twitchTarget.BroadcasterType</div>
+                break;
+            
+            case PotentialPatreonSupportTarget patreonTarget:
+                <div>Patreon</div>
+                <div>@patreonTarget.CampaignId</div>
+                <div>@patreonTarget.Title</div>
+                <div>@patreonTarget.Url</div>
+                <div>@string.Join(", ", patreonTarget.Tiers)</div>
+                break;
+        }
+    </div>
+}
+
+//
+
+
+@code {
+    private IReadOnlyList<PotentialSupportTarget> _targets = [];
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { private get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplicationUser currentUser = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        _targets = await OnboardingService.GetPotentialSupportTargets(currentUser.Id);
+    }
+
+}

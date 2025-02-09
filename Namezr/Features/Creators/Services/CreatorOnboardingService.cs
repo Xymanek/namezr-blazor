@@ -13,9 +13,14 @@ using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 
 namespace Namezr.Features.Creators.Services;
 
+internal interface ICreatorOnboardingService
+{
+    Task<IReadOnlyList<PotentialSupportTarget>> GetPotentialSupportTargets(Guid userId);
+}
+
 [AutoConstructor]
 [RegisterSingleton]
-internal partial class CreatorOnboardingService
+internal partial class CreatorOnboardingService : ICreatorOnboardingService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IPatreonApiProvider _patreonApiProvider;
