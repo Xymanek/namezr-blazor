@@ -1,5 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.Net.Http.Headers;
+using System.Text.Json;
 using AspNet.Security.OAuth.Twitch;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
@@ -23,8 +25,9 @@ public interface ITwitchApiProvider
 [RegisterSingleton]
 public partial class TwitchApiProvider : ITwitchApiProvider
 {
-    private readonly IOptionsMonitor<TwitchAuthenticationOptions> _twitchOptions;
+    private readonly IOptionsMonitor<TwitchAuthenticationOptions> _twitchAuthOptions;
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IOptionsMonitor<TwitchOptions> _twitchOptions;
     private readonly ITwitchHttpFactory _twitchHttpFactory;
     private readonly ILogger<TwitchApiProvider> _logger;
     private readonly ILoggerFactory _loggerFactory;
@@ -46,7 +49,7 @@ public partial class TwitchApiProvider : ITwitchApiProvider
 
     private async ValueTask<ITwitchAPI> GetTwitchApi(ThirdPartyToken token)
     {
-        TwitchAuthenticationOptions twitchOptions = _twitchOptions
+        TwitchAuthenticationOptions twitchAuthOptions = _twitchAuthOptions
             .Get(TwitchAuthenticationDefaults.AuthenticationScheme);
 
         OAuthTokenData tokenData =
@@ -61,7 +64,7 @@ public partial class TwitchApiProvider : ITwitchApiProvider
         {
             Settings =
             {
-                ClientId = twitchOptions.ClientId,
+                ClientId = twitchAuthOptions.ClientId,
                 AccessToken = tokenData.AccessToken,
             }
         };
@@ -101,13 +104,21 @@ public partial class TwitchApiProvider : ITwitchApiProvider
 
             LogRefreshingToken(token.Id, token.ServiceAccountId);
 
-            // TODO: somehow gracefully handle this and instead inform the user that there is a problem with twitch connection
-            // TODO: stampede protection
-            RefreshResponse response = await twitchApi.Auth.RefreshAuthTokenAsync(
-                tokenData.RefreshToken, twitchOptions.ClientSecret,
-                // TODO: this is optional - should we use it?
-                twitchOptions.ClientId
-            );
+            RefreshResponse response;
+            if (_twitchOptions.CurrentValue.MockServerUrl is not null)
+            {
+                response = await RefreshViaMockServer(token.ServiceAccountId);
+            }
+            else
+            {
+                // TODO: somehow gracefully handle this and instead inform the user that there is a problem with twitch connection
+                // TODO: stampede protection
+                response = await twitchApi.Auth.RefreshAuthTokenAsync(
+                    tokenData.RefreshToken, twitchAuthOptions.ClientSecret,
+                    // TODO: this is optional - should we use it?
+                    twitchAuthOptions.ClientId
+                );
+            }
 
             try
             {
@@ -123,6 +134,34 @@ public partial class TwitchApiProvider : ITwitchApiProvider
         }
 
         return twitchApi;
+    }
+    
+    // TODO: unify this with the handler
+    private async ValueTask<RefreshResponse> RefreshViaMockServer(string userId)
+    {
+        TwitchAuthenticationOptions twitchAuthOptions = _twitchAuthOptions
+            .Get(TwitchAuthenticationDefaults.AuthenticationScheme);
+
+        string uri = _twitchOptions.CurrentValue.MockServerUrl + "/auth/authorize";
+        uri = QueryHelpers.AddQueryString(uri, new Dictionary<string, string?>
+        {
+            ["client_id"] = twitchAuthOptions.ClientId,
+            ["client_secret"] = twitchAuthOptions.ClientSecret,
+            ["grant_type"] = "user_token",
+            ["user_id"] = userId,
+            ["scope"] = string.Join(" ", twitchAuthOptions.Scope),
+        });
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await twitchAuthOptions.Backchannel.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        // Newtonsoft since the model has newtonsoft annotations
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<RefreshResponse>(
+            await response.Content.ReadAsStringAsync()
+        ) ?? throw new Exception("Deserialized response is null???");
     }
 
     [LoggerMessage(
