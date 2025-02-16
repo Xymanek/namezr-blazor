@@ -1,27 +1,18 @@
-﻿@using Havit.Blazor.Components.Web.Bootstrap
-@using Microsoft.EntityFrameworkCore
+﻿@using Microsoft.EntityFrameworkCore
 @using Namezr.Components.Account
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Identity.Data
 @using Namezr.Infrastructure.Data
+@using Namezr.Client.Studio
 
-@inject NavigationManager NavigationManager
 @inject IdentityUserAccessor UserAccessor
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <div class="nav-scrollable">
     <nav class="nav flex-column">
-        <HxSelect
-            TItem="CreatorEntity"
-            TValue="CreatorEntity"
-            Label="Creator"
-            Data="_creators"
-            @bind-Value="_selectedCreator"
-            @bind-Value:after="OnCreatorSelected"
-            TextSelector="x => x.DisplayName"
-            ValueSelector="x => x"
-        />
 
+        <CreatorSelector Creators="_creators"/>
+        
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="studio" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
@@ -61,7 +52,7 @@
 </div>
 
 @code {
-    private CreatorEntity[] _creators = null!;
+    private (Guid Id, string DisplayName)[] _creators;
 
     private CreatorEntity? _selectedCreator;
 
@@ -74,16 +65,12 @@
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        _creators = await dbContext.Creators
-            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
-            .ToArrayAsync();
-    }
-
-    private void OnCreatorSelected()
-    {
-        if (_selectedCreator == null) return;
-
-        NavigationManager.NavigateTo($"/studio?id={_selectedCreator!.Id}");
+        _creators = [
+            ..(await dbContext.Creators
+                .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
+                .ToArrayAsync())
+            .Select(entity => (entity.Id, entity.DisplayName))
+        ];
     }
 
 }

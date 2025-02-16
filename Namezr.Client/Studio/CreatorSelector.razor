@@ -1,0 +1,24 @@
+﻿@inject NavigationManager NavigationManager
+
+<HxSelect
+    Label="Creator"
+    Data="Creators"
+    @bind-Value="_selectedCreator"
+    @bind-Value:after="OnCreatorSelected"
+    TextSelector="x => x.DisplayName"
+    ValueSelector="x => x"
+/>
+
+@code {
+    [Parameter]
+    public required (Guid Id, string DisplayName)[] Creators { get; set; }
+    
+    private (Guid Id, string DisplayName)? _selectedCreator;
+    
+    private void OnCreatorSelected()
+    {
+        if (_selectedCreator == null) return;
+
+        NavigationManager.NavigateTo($"/studio?id={_selectedCreator.Value.Id}");
+    }
+}
