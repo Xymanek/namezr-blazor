@@ -33,6 +33,8 @@ public class SupportTargetEntity
 
     public ThirdPartyToken? ServiceToken { get; set; }
     public long? ServiceTokenId { get; set; }
+
+    public ICollection<SupportPlanInfoEntity>? SupportPlansInfos { get; set; }
 }
 
 internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<SupportTargetEntity>

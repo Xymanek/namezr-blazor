@@ -12,5 +12,8 @@ public class CreatorEntity
     
     // TODO: Banner & small image
 
+    public ICollection<SupportTargetEntity>? SupportTargets { get; set; }
+    public ICollection<CreatorStaffEntity>? Staff { get; set; }
+    
     public ICollection<QuestionnaireEntity>? Questionnaires { get; set; }
 }

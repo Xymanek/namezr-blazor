@@ -4,42 +4,91 @@
 @using Namezr.Components.Account
 @using Namezr.Features.Creators.Services
 @using Namezr.Features.Identity.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Microsoft.AspNetCore.Components.Forms
+@using Namezr.Features.Creators.Data
+@using vNext.BlazorComponents.FluentValidation
 
 @attribute [Authorize]
 
 @inject ICreatorOnboardingService OnboardingService
 @inject IdentityUserAccessor UserAccessor
+@inject NavigationManager NavigationManager
 
 <h3>CreatorOnboarding</h3>
 
-Options:
-
-@foreach (PotentialSupportTarget target in _targets)
+@if (_isBadQuery)
 {
-    <div>
-        @switch (target)
-        {
-            case PotentialTwitchSupportTarget twitchTarget:
-                <div>Twitch</div>
-                <div>@twitchTarget.UserTwitchId</div>
-                <div>@twitchTarget.TwitchDisplayName</div>
-                <div>@twitchTarget.TwitchProfileUrl</div>
-                <div>@twitchTarget.BroadcasterType</div>
-                break;
-            
-            case PotentialPatreonSupportTarget patreonTarget:
-                <div>Patreon</div>
-                <div>@patreonTarget.CampaignId</div>
-                <div>@patreonTarget.Title</div>
-                <div>@patreonTarget.Url</div>
-                <div>@string.Join(", ", patreonTarget.Tiers)</div>
-                break;
-        }
-    </div>
+    <HxAlert Color="ThemeColor.Danger">
+        Bad URL
+    </HxAlert>
 }
 
-//
+<div>
+    Selected target: @SelectedTargetType
+</div>
+<div>
+    Selected id: @SelectedTargetId
+</div>
 
+@if (_selectedTarget == null)
+{
+    <div>Options:</div>
+
+    foreach (PotentialSupportTarget target in _targets)
+    {
+        <HxCard>
+            <BodyTemplate>
+                @switch (target)
+                {
+                    case PotentialTwitchSupportTarget twitchTarget:
+                        <div>Twitch</div>
+                        <div>@twitchTarget.UserTwitchId</div>
+                        <div>@twitchTarget.TwitchDisplayName</div>
+                        <div>@twitchTarget.TwitchProfileUrl</div>
+                        <div>@twitchTarget.BroadcasterType</div>
+                        break;
+
+                    case PotentialPatreonSupportTarget patreonTarget:
+                        <div>Patreon</div>
+                        <div>@patreonTarget.CampaignId</div>
+                        <div>@patreonTarget.Title</div>
+                        <div>@patreonTarget.Url</div>
+                        <div>@string.Join(", ", patreonTarget.Tiers)</div>
+                        break;
+                }
+
+                <div>
+                    <form method="get">
+                        <input type="hidden" name="@nameof(SelectedTargetType)" value="@target.ServiceType"/>
+                        <input type="hidden" name="@nameof(SelectedTargetId)" value="@target.ServiceId"/>
+
+                        <HxSubmit
+                            Color="ThemeColor.Primary"
+                            Size="ButtonSize.Large"
+                            Text="Select"/>
+                    </form>
+                </div>
+            </BodyTemplate>
+        </HxCard>
+    }
+}
+else
+{
+    <EditForm Model="Model" method="post" OnValidSubmit="OnValidSubmit" FormName="new-creator-info">
+        <FluentValidationValidator/>
+
+        <HxInputText
+            Label="Creator name"
+            @bind-Value="Model!.CreatorName"
+        />
+
+        <HxSubmit
+            Text="Submit"
+            Color="ThemeColor.Primary"
+        />
+    </EditForm>
+}
 
 @code {
     private IReadOnlyList<PotentialSupportTarget> _targets = [];
@@ -47,11 +96,54 @@ Options:
     [CascadingParameter]
     public required HttpContext HttpContext { private get; set; }
 
+    [SupplyParameterFromQuery]
+    private string? SelectedTargetType { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? SelectedTargetId { get; set; }
+
+    private bool _isBadQuery;
+    private PotentialSupportTarget? _selectedTarget;
+
+    [SupplyParameterFromForm]
+    private CreatorOnboardingModel? Model { get; set; }
+
+    private ApplicationUser _currentUser = null!;
+    
     protected override async Task OnInitializedAsync()
     {
-        ApplicationUser currentUser = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        _currentUser = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        _targets = await OnboardingService.GetPotentialSupportTargets(_currentUser.Id);
 
-        _targets = await OnboardingService.GetPotentialSupportTargets(currentUser.Id);
+        LoadQueryParameters();
+
+        if (_selectedTarget != null && Model == null)
+        {
+            Model = new CreatorOnboardingModel
+            {
+                CreatorName = _selectedTarget.DisplayName,
+            };
+        }
+    }
+
+    private void LoadQueryParameters()
+    {
+        if (SelectedTargetType == null || SelectedTargetId == null) return;
+
+        _selectedTarget = _targets
+            .SingleOrDefault(x => x.ServiceType.ToString() == SelectedTargetType && x.ServiceId == SelectedTargetId);
+
+        if (_selectedTarget is null)
+        {
+            _isBadQuery = true;
+        }
+    }
+
+    private async Task OnValidSubmit()
+    {
+        CreatorEntity creator = await OnboardingService.CreateCreator(_selectedTarget!, Model!, _currentUser);
+
+        NavigationManager.NavigateTo($"/studio?id={creator.Id}");
     }
 
 }

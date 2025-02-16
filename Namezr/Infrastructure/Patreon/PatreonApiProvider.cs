@@ -17,6 +17,8 @@ public interface IPatreonApiProvider
 {
     [MustDisposeResource]
     Task<PatreonClient> GetPatreonApiForUser(Guid userId);
+
+    PatreonClient GetPatreonApi(ThirdPartyToken token);
 }
 
 [AutoConstructor]
@@ -41,7 +43,7 @@ public partial class PatreonApiProvider : IPatreonApiProvider
         return GetPatreonApi(userLogin.ThirdPartyToken!);
     }
 
-    private PatreonClient GetPatreonApi(ThirdPartyToken token)
+    public PatreonClient GetPatreonApi(ThirdPartyToken token)
     {
         OAuthTokenData tokenData =
             token.Value.Deserialize<OAuthTokenData>()
