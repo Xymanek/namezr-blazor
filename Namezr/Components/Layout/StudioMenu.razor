@@ -12,7 +12,7 @@
     <nav class="nav flex-column">
 
         <CreatorSelector Creators="_creators"/>
-        
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="studio" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
@@ -52,7 +52,7 @@
 </div>
 
 @code {
-    private (Guid Id, string DisplayName)[] _creators;
+    private CreatorSelectorOption[] _creators;
 
     private CreatorEntity? _selectedCreator;
 
@@ -65,12 +65,14 @@
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        _creators = [
-            ..(await dbContext.Creators
-                .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
-                .ToArrayAsync())
-            .Select(entity => (entity.Id, entity.DisplayName))
-        ];
+        _creators = await dbContext.Creators
+            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
+            .Select(entity => new CreatorSelectorOption
+            {
+                Id = entity.Id,
+                DisplayName = entity.DisplayName,
+            })
+            .ToArrayAsync();
     }
 
 }

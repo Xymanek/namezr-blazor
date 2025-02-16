@@ -1,4 +1,6 @@
-﻿@inject NavigationManager NavigationManager
+﻿@rendermode InteractiveWebAssembly
+
+@inject NavigationManager NavigationManager
 
 <HxSelect
     Label="Creator"
@@ -11,14 +13,14 @@
 
 @code {
     [Parameter]
-    public required (Guid Id, string DisplayName)[] Creators { get; set; }
+    public required CreatorSelectorOption[] Creators { get; set; }
     
-    private (Guid Id, string DisplayName)? _selectedCreator;
+    private CreatorSelectorOption? _selectedCreator;
     
     private void OnCreatorSelected()
     {
         if (_selectedCreator == null) return;
 
-        NavigationManager.NavigateTo($"/studio?id={_selectedCreator.Value.Id}");
+        NavigationManager.NavigateTo($"/studio?id={_selectedCreator.Id}");
     }
 }
