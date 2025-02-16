@@ -1,7 +1,27 @@
-﻿<div class="nav-scrollable">
+﻿@using Havit.Blazor.Components.Web.Bootstrap
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Account
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Data
+
+@inject NavigationManager NavigationManager
+@inject IdentityUserAccessor UserAccessor
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="nav-scrollable">
     <nav class="nav flex-column">
-        @* TODO: creator selector *@
-        
+        <HxSelect
+            TItem="CreatorEntity"
+            TValue="CreatorEntity"
+            Label="Creator"
+            Data="_creators"
+            @bind-Value="_selectedCreator"
+            @bind-Value:after="OnCreatorSelected"
+            TextSelector="x => x.DisplayName"
+            ValueSelector="x => x"
+        />
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="studio" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
@@ -39,3 +59,31 @@
         </div>
     </nav>
 </div>
+
+@code {
+    private CreatorEntity[] _creators = null!;
+
+    private CreatorEntity? _selectedCreator;
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _creators = await dbContext.Creators
+            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
+            .ToArrayAsync();
+    }
+
+    private void OnCreatorSelected()
+    {
+        if (_selectedCreator == null) return;
+
+        NavigationManager.NavigateTo($"/studio?id={_selectedCreator!.Id}");
+    }
+
+}

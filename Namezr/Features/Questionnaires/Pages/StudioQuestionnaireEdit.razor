@@ -10,7 +10,7 @@
 @attribute [Authorize]
 @layout StudioLayout
 
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <h3>QuestionnaireEditPage</h3>
 
@@ -41,7 +41,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        QuestionnaireVersionEntity? entity = await DbContext.QuestionnaireVersions
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+        
+        QuestionnaireVersionEntity? entity = await dbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)

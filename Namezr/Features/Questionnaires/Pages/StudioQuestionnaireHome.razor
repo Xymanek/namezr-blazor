@@ -9,7 +9,7 @@
 @attribute [Authorize]
 @layout StudioLayout
 
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <h3>StudioQuestionnaireHome</h3>
 
@@ -42,7 +42,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Questionnaires = await DbContext.Questionnaires.ToListAsync();
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        Questionnaires = await dbContext.Questionnaires.ToListAsync();
     }
 
 }
