@@ -1,4 +1,4 @@
-﻿@page "/studio"
+﻿@page "/studio/{creatorId:guid}"
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Components.Layout
@@ -7,3 +7,18 @@
 @layout StudioLayout
 
 <h3>StudioHome</h3>
+
+@code {
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+    }
+
+}

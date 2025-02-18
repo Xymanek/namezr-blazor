@@ -4,12 +4,30 @@
 
 <div class="main-container">
     <div class="sidebar">
-        <StudioMenu/>
+        <StudioMenu
+            CurrentCreatorId="CurrentCreatorId"
+        />
     </div>
 
     <main>
         <div class="container pt-3">
-            @Body
+            <CascadingValue Value="this">
+                @Body
+            </CascadingValue>
         </div>
     </main>
 </div>
+
+@code {
+
+    public Guid? CurrentCreatorId
+    {
+        get => field;
+        set
+        {
+            field = value;
+            StateHasChanged();
+        }
+    }
+
+}

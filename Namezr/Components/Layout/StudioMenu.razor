@@ -11,7 +11,10 @@
 <div class="nav-scrollable">
     <nav class="nav flex-column">
 
-        <CreatorSelector Creators="_creators"/>
+        <CreatorSelector
+            CurrentCreatorId="CurrentCreatorId"
+            Creators="_creators"
+        />
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="studio" Match="NavLinkMatch.All">
@@ -58,6 +61,9 @@
 
     [CascadingParameter]
     public required HttpContext HttpContext { get; set; }
+
+    [Parameter]
+    public Guid? CurrentCreatorId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

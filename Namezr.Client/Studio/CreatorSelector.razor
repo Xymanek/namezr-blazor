@@ -1,26 +1,59 @@
 ﻿@rendermode InteractiveWebAssembly
 
 @inject NavigationManager NavigationManager
+@inject ILogger<CreatorSelector> Logger
 
 <HxSelect
     Label="Creator"
     Data="Creators"
     @bind-Value="_selectedCreator"
     @bind-Value:after="OnCreatorSelected"
+    Nullable="false"
     TextSelector="x => x.DisplayName"
     ValueSelector="x => x"
 />
 
 @code {
+
     [Parameter]
-    public required CreatorSelectorOption[] Creators { get; set; }
-    
+    public CreatorSelectorOption[]? Creators { get; set; }
+
+    [Parameter]
+    public Guid? CurrentCreatorId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        SelectCreatorViaCurrent();
+    }
+
+    private void SelectCreatorViaCurrent()
+    {
+        if (Creators == null || CurrentCreatorId == null)
+        {
+            return;
+        }
+
+        if (CurrentCreatorId == null)
+        {
+            _selectedCreator = null;
+            return;
+        }
+
+        _selectedCreator = Creators.FirstOrDefault(x => x.Id == CurrentCreatorId);
+
+        if (_selectedCreator == null)
+        {
+            Logger.LogError("Could not find creator with id {Id} to select as current.", CurrentCreatorId);
+        }
+    }
+
     private CreatorSelectorOption? _selectedCreator;
-    
+
     private void OnCreatorSelected()
     {
         if (_selectedCreator == null) return;
 
-        NavigationManager.NavigateTo($"/studio?id={_selectedCreator.Id}");
+        NavigationManager.NavigateTo($"/studio/{_selectedCreator.Id}");
     }
+
 }
