@@ -24,6 +24,9 @@
 
 @code {
 
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
     [Parameter]
     public Guid CreatorId { get; set; }
 
@@ -33,6 +36,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        StudioLayout.CurrentCreatorId = CreatorId;
+        
         SupportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToList();
     }
 

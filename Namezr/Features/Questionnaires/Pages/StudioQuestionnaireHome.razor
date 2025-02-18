@@ -26,7 +26,7 @@ else if (Questionnaires.Any())
         @foreach (QuestionnaireEntity questionnaire in Questionnaires)
         {
             <li>
-                <a href="/studio/questionnaires/@questionnaire.Id.NoHyphens()/edit">
+                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@questionnaire.Id.NoHyphens()/edit">
                     @questionnaire.Title
                 </a>
             </li>
@@ -40,6 +40,9 @@ else
 
 @code {
 
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
     [Parameter]
     public Guid CreatorId { get; set; }
 
@@ -47,6 +50,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         Questionnaires = await dbContext.Questionnaires

@@ -34,6 +34,9 @@ else
 
 @code {
 
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
     [Parameter]
     public Guid CreatorId { get; set; }
 
@@ -50,6 +53,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         QuestionnaireVersionEntity? entity = await dbContext.QuestionnaireVersions
@@ -63,7 +68,7 @@ else
 
         InitialModel = entity?.MapToEditModel();
         QuestionnaireId = entity?.QuestionnaireId;
-        
+
         // TODO: in parallel
         SupportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToList();
     }
