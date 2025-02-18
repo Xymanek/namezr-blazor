@@ -1,4 +1,6 @@
-﻿@using Namezr.Client.Infra
+﻿@using System.Text.Json
+@using Namezr.Client.Infra
+@using Namezr.Client.Types
 @using vNext.BlazorComponents.FluentValidation
 
 @rendermode InteractiveWebAssembly
@@ -6,6 +8,13 @@
 @inject ISpaHttpClientProvider HttpClientProvider
 
 <h3>QuestionnaireEditor</h3>
+
+<div>
+    Support plans:
+</div>
+<pre>
+@JsonSerializer.Serialize(SupportPlans, new JsonSerializerOptions { WriteIndented = true })
+</pre>
 
 <EditForm
     Model="Model"
@@ -77,6 +86,9 @@
     [Parameter]
     public required QuestionnaireEditModel InitialModel { get; set; }
 
+    [Parameter]
+    public required List<SupportPlan> SupportPlans { get; set; }
+
     private IReadOnlySet<Guid> ForbidTypeChangeFields { get; set; } = null!;
     private QuestionnaireEditModel Model { get; set; } = null!;
 
@@ -123,7 +135,7 @@
                         Model = Model.Clone(),
                     }
                 );
-                
+
                 // TODO: redirect to studio questionnaire details page
             }
             else

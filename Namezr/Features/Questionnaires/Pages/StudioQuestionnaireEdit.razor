@@ -3,7 +3,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Types
 @using Namezr.Components.Layout
+@using Namezr.Features.Creators.Services
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 
@@ -11,15 +13,17 @@
 @layout StudioLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
 
 <h3>QuestionnaireEditPage</h3>
 
-@if (InitialModel is not null)
+@if (InitialModel is not null && SupportPlans is not null)
 {
     <QuestionnaireEditor
         CreatorId="CreatorId"
         QuestionnaireId="QuestionnaireId"
         InitialModel="InitialModel"
+        SupportPlans="SupportPlans"
     />
 }
 /* TODO: conflates with is loading */
@@ -42,6 +46,7 @@ else
     private Guid? QuestionnaireId { get; set; }
 
     private QuestionnaireEditModel? InitialModel { get; set; }
+    private List<SupportPlan>? SupportPlans { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,6 +63,9 @@ else
 
         InitialModel = entity?.MapToEditModel();
         QuestionnaireId = entity?.QuestionnaireId;
+        
+        // TODO: in parallel
+        SupportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToList();
     }
 
 }

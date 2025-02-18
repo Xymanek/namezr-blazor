@@ -1,4 +1,4 @@
-﻿namespace Namezr.Features.Creators;
+﻿namespace Namezr.Client.Types;
 
 // TODO: move to some other namespace?
 /// <remarks>

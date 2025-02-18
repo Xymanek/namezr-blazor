@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Namezr.Features.Creators.Data;
 
 // Support plan = a way to support creators with defined costs and/or benefits.
-// Some support plans are fully hardcoded (e.g. twitch subscriptions) adn won't have records in this table
+// Some support plans are fully hardcoded (e.g. twitch subscriptions) and won't have records in this table
 // Others are dynamic (e.g. patreon campaigns) and will be stored here
 [EntityTypeConfiguration(typeof(SupportPlanInfoEntityConfiguration))]
 public class SupportPlanInfoEntity

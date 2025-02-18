@@ -1,4 +1,6 @@
-﻿namespace Namezr.Features.Creators.Services;
+﻿using Namezr.Client.Types;
+
+namespace Namezr.Features.Creators.Services;
 
 internal abstract record PotentialSupportTarget
 {

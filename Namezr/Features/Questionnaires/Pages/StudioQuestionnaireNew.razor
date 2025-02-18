@@ -2,17 +2,25 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Types
 @using Namezr.Components.Layout
+@using Namezr.Features.Creators.Services
 
 @attribute [Authorize]
 @layout StudioLayout
 
+@inject ISupportPlansService SupportPlansService
+
 <h3>QuestionnaireEditPage</h3>
 
-<QuestionnaireEditor
-    CreatorId="CreatorId"
-    InitialModel="InitialModel"
-/>
+@if (SupportPlans is not null)
+{
+    <QuestionnaireEditor
+        CreatorId="CreatorId"
+        InitialModel="InitialModel"
+        SupportPlans="SupportPlans"
+    />
+}
 
 @code {
 
@@ -20,4 +28,12 @@
     public Guid CreatorId { get; set; }
 
     private QuestionnaireEditModel InitialModel { get; } = new();
+
+    private List<SupportPlan>? SupportPlans { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SupportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToList();
+    }
+
 }

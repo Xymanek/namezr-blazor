@@ -1,6 +1,7 @@
 ﻿using AspNet.Security.OAuth.Patreon;
 using AspNet.Security.OAuth.Twitch;
 using Microsoft.EntityFrameworkCore;
+using Namezr.Client.Types;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Creators.Pages;
 using Namezr.Features.Identity.Data;
