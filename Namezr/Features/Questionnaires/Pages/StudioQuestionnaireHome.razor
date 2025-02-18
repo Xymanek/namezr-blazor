@@ -1,7 +1,8 @@
-﻿@page "/studio/questionnaires"
+﻿@page "/studio/{creatorId:guid}/questionnaires"
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Components.Layout
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
@@ -13,7 +14,7 @@
 
 <h3>StudioQuestionnaireHome</h3>
 
-<a href="/studio/questionnaires/new">New questionnaire</a>
+<a href="/studio/@CreatorId.NoHyphens()/questionnaires/new">New questionnaire</a>
 
 @if (Questionnaires is null)
 {
@@ -25,7 +26,7 @@ else if (Questionnaires.Any())
         @foreach (QuestionnaireEntity questionnaire in Questionnaires)
         {
             <li>
-                <a href="/studio/questionnaires/@questionnaire.Id.ToString("N")/edit">
+                <a href="/studio/questionnaires/@questionnaire.Id.NoHyphens()/edit">
                     @questionnaire.Title
                 </a>
             </li>
@@ -38,13 +39,19 @@ else
 }
 
 @code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
     private List<QuestionnaireEntity>? Questionnaires { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        Questionnaires = await dbContext.Questionnaires.ToListAsync();
+        Questionnaires = await dbContext.Questionnaires
+            .Where(q => q.CreatorId == CreatorId)
+            .ToListAsync();
     }
 
 }

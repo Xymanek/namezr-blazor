@@ -1,4 +1,4 @@
-﻿@page "/studio/questionnaires/{id:guid}/edit"
+﻿@page "/studio/{creatorId:guid}/questionnaires/{id:guid}/edit"
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
@@ -17,6 +17,7 @@
 @if (InitialModel is not null)
 {
     <QuestionnaireEditor
+        CreatorId="CreatorId"
         QuestionnaireId="QuestionnaireId"
         InitialModel="InitialModel"
     />
@@ -28,6 +29,9 @@ else
 }
 
 @code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
 
     [Parameter]
     public Guid Id { get; set; }
@@ -42,13 +46,13 @@ else
     protected override async Task OnInitializedAsync()
     {
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
-        
+
         QuestionnaireVersionEntity? entity = await dbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id);
+            .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);
 
         // TODO: Handle not found
 

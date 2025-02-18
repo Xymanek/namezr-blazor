@@ -12,21 +12,20 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnairesNew)]
-internal static partial class SaveQuestionnaireRequest
+internal static partial class NewQuestionnaireRequest
 {
     private static async ValueTask<Guid> HandleAsync(
-        // TODO: convert description to null if empty
-        QuestionnaireEditModel model,
+        CreateQuestionnaireCommand command,
         ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        QuestionnaireEntity entity = new QuestionnaireFormToEntityMapper()
-            .MapToEntity(model);
+        // TODO: validate against current user access
 
-        entity.Creator = await dbContext.Creators
-            .AsTracking()
-            .FirstAsync(ct);
+        QuestionnaireEntity entity = new QuestionnaireFormToEntityMapper()
+            .MapToEntity(command.Model);
+
+        entity.CreatorId = command.CreatorId;
 
         dbContext.Questionnaires.Add(entity);
         await dbContext.SaveChangesAsync(ct);

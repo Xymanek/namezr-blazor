@@ -20,6 +20,8 @@ internal static partial class UpdateQuestionnaireRequest
         CancellationToken ct
     )
     {
+        // TODO: validate against current user access
+
         QuestionnaireEntity? questionnaireEntity = await dbContext.Questionnaires
             .Include(x => x.Versions)
             .Include(x => x.Fields)

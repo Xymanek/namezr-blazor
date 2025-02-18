@@ -1,4 +1,4 @@
-﻿@page "/studio/questionnaires/new"
+﻿@page "/studio/{creatorId:guid}/questionnaires/new"
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Client.Studio.Questionnaires.Edit
@@ -10,9 +10,14 @@
 <h3>QuestionnaireEditPage</h3>
 
 <QuestionnaireEditor
+    CreatorId="CreatorId"
     InitialModel="InitialModel"
 />
 
 @code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
     private QuestionnaireEditModel InitialModel { get; } = new();
 }

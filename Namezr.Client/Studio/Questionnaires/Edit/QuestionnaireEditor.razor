@@ -69,6 +69,9 @@
 @code {
 
     [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
     public Guid? QuestionnaireId { get; set; }
 
     [Parameter]
@@ -112,7 +115,16 @@
             HttpResponseMessage response;
             if (!QuestionnaireId.HasValue)
             {
-                response = await http.PostAsJsonAsync(ApiEndpointPaths.QuestionnairesNew, Model);
+                response = await http.PostAsJsonAsync(
+                    ApiEndpointPaths.QuestionnairesNew,
+                    new CreateQuestionnaireCommand
+                    {
+                        CreatorId = CreatorId,
+                        Model = Model.Clone(),
+                    }
+                );
+                
+                // TODO: redirect to studio questionnaire details page
             }
             else
             {

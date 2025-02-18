@@ -17,37 +17,37 @@
         />
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}") Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio/questionnaires">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}/questionnaires")>
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Questionnaires
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio/polls">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}/polls")>
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Polls
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio/raffles">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}/raffles")>
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Raffles
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio/supporters">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}/supporters")>
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Supporters
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="studio/configuration">
+            <NavLink class="nav-link" href=@($"studio/{CurrentCreatorId?.NoHyphens()}/configuration")>
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Configuration
             </NavLink>
         </div>
@@ -55,9 +55,7 @@
 </div>
 
 @code {
-    private CreatorSelectorOption[] _creators;
-
-    private CreatorEntity? _selectedCreator;
+    private CreatorSelectorOption[] _creators = null!;
 
     [CascadingParameter]
     public required HttpContext HttpContext { get; set; }
