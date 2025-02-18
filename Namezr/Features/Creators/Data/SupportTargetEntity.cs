@@ -51,6 +51,7 @@ internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<Suppo
         
         builder.HasOne(x => x.StaffEntry)
             .WithMany(x => x.OwnedSupportTargets)
+            // TODO: still generates duplicate columns
             .HasForeignKey(x => new { x.CreatorId, x.OwningStaffMemberId })
             .OnDelete(DeleteBehavior.Restrict);
     }
