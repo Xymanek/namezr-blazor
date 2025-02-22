@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Serialization;
+using Riok.Mapperly.Abstractions;
 
 namespace Namezr.Client.Types;
 
@@ -75,22 +76,37 @@ public record EligibilityDescriptorData
     }
 }
 
+// TODO: better name
 public readonly record struct EligibilityId
 {
-    public IReadOnlyList<string> Chain { get; }
+    public IReadOnlyList<string>? Chain { get; }
 
+    [MapperConstructor]
     public EligibilityId(IEnumerable<string> chain)
+    {
+        Chain = chain.ToArray();
+    }
+
+    [JsonConstructor]
+    public EligibilityId(IReadOnlyList<string> chain)
     {
         Chain = chain.ToArray();
     }
 
     public bool Equals(EligibilityId other)
     {
+        if (Chain is null || other.Chain is null)
+        {
+            return Chain is null == other.Chain is null;
+        }
+        
         return Chain.SequenceEqual(other.Chain);
     }
 
     public override int GetHashCode()
     {
+        if (Chain is null) return 0;
+        
         HashCode hashCode = new();
 
         foreach (string part in Chain)

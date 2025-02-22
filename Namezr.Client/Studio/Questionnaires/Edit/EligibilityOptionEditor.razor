@@ -1,0 +1,66 @@
+﻿@using System.Diagnostics
+@using Namezr.Client.Types
+
+@inherits Editor<EligibilityOptionEditModel>
+
+<div class="row">
+    <div class="col-5">
+        <HxSelect
+            Data="EligibilityDescriptors"
+            Nullable="false"
+            Label="Support plan"
+            @bind-Value="Value.Id"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="GetEligibilityDescriptorDisplayName"
+        />
+    </div>
+    <div class="col-4">
+        <HxInputText
+            Label="Priority group"
+            Placeholder="None"
+            @bind-Value="Value.PriorityGroup"
+        />
+    </div>
+    <div class="col-2">
+        <HxInputNumber
+            Label="Priority modifier"
+            @bind-Value="Value.PriorityModifier"
+        />
+    </div>
+
+    <div class="col-1">
+        <HxButtonGroup>
+            <HxButton
+                Icon="@BootstrapIcon.Trash"
+                Color="ThemeColor.Danger"
+                Tooltip="Remove"
+                Enabled="CanRemove"
+                OnClick="OnRemove"
+            />
+        </HxButtonGroup>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public required List<EligibilityDescriptor> EligibilityDescriptors { get; set; }
+
+    [Parameter]
+    public bool CanRemove { get; set; }
+
+    [Parameter]
+    public EventCallback OnRemove { get; set; }
+
+    private string GetEligibilityDescriptorDisplayName(EligibilityDescriptor arg)
+    {
+        return arg.Data.Type switch
+        {
+            EligibilityType.SupportPlan => $"{arg.Data.SupportPlan!.ServiceType} - {arg.Data.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + arg.Data.VirtualEligibilityType,
+
+            _ => throw new UnreachableException(),
+        };
+    }
+
+}

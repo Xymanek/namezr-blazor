@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Namezr.Client.Types;
 
 namespace Namezr.Client.Studio.Questionnaires.Edit;
 
@@ -8,7 +9,8 @@ public class QuestionnaireEditModel
     public string Description { get; set; } = string.Empty;
 
     public QuestionnaireApprovalMode ApprovalMode { get; set; }
-    
+
+    public List<EligibilityOptionEditModel> EligibilityOptions { get; set; } = new();
     public List<QuestionnaireFieldEditModel> Fields { get; set; } = new();
 
     public void AddBlankField()
@@ -23,7 +25,8 @@ public class QuestionnaireEditModel
     internal sealed class Validator : AbstractValidator<QuestionnaireEditModel>
     {
         public Validator(
-            IValidator<QuestionnaireFieldEditModel> fieldValidator
+            IValidator<QuestionnaireFieldEditModel> fieldValidator,
+            IValidator<EligibilityOptionEditModel> eligibilityOptionValidator
         )
         {
             RuleFor(x => x.Title)
@@ -38,11 +41,39 @@ public class QuestionnaireEditModel
 
             RuleForEach(x => x.Fields)
                 .SetValidator(fieldValidator);
+
+            RuleFor(x => x.EligibilityOptions)
+                .Must(options => options.Select(x => x.Id).Distinct().Count() == options.Count)
+                .WithMessage("Cannot select the same support plan multiple times");
+
+            RuleForEach(x => x.EligibilityOptions)
+                .SetValidator(eligibilityOptionValidator);
         }
     }
 
     public const int TitleMaxLength = 50;
     public const int DescriptionMaxLength = 1000;
+}
+
+public class EligibilityOptionEditModel
+{
+    public EligibilityId? Id { get; set; }
+
+    public string PriorityGroup { get; set; } = string.Empty;
+    public decimal PriorityModifier { get; set; } = 1;
+    
+    [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
+    internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Id)
+                .NotNull();
+
+            RuleFor(x => x.PriorityModifier)
+                .GreaterThan(0);
+        }
+    }
 }
 
 public class QuestionnaireFieldEditModel

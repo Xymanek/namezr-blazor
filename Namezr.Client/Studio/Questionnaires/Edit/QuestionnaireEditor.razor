@@ -31,34 +31,28 @@
                 Icon="@BootstrapIcon.Plus"
                 Color="ThemeColor.Success"
                 Tooltip="Add"
+                OnClick="() => Model.EligibilityOptions.Add(new())"
             />
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-4">
-            <HxSelect
-                Data="EligibilityDescriptors"
-                Label="Support plan"
-                @bind-Value="EligibilityId"
-                ValueSelector="@(x => x.Id)"
-                TextSelector="GetEligibilityDescriptorDisplayName"
-            />
-        </div>
-        <div class="col-3">
-            <HxInputText
-                Label="Priority group"
-                Placeholder="None"
-                @bind-Value="PriorityGroup"
-            />
-        </div>
-        <div class="col-3">
-            <HxInputNumber
-                Label="Priority modifier"
-                @bind-Value="PriorityModifier"
-            />
-        </div>
+    <div>
+        <HxValidationMessage
+            For="@(() => Model.EligibilityOptions)"
+        />
     </div>
+
+    @for (int i = 0; i < Model.EligibilityOptions.Count; i++)
+    {
+        int optionIndex = i;
+
+        <EligibilityOptionEditor
+            EligibilityDescriptors="EligibilityDescriptors"
+            @bind-Value="Model.EligibilityOptions[optionIndex]"
+            CanRemove="Model.EligibilityOptions.Count > 1"
+            OnRemove="() => Model.EligibilityOptions.RemoveAt(optionIndex)"
+        />
+    }
 
     <div class="row">
         <div class="col-11">
@@ -106,11 +100,6 @@
 
 @code {
 
-    private EligibilityId? EligibilityId { get; set; }
-    private string? PriorityGroup { get; set; }
-    private decimal PriorityModifier { get; set; } = 1;
-
-
     [Parameter]
     public Guid CreatorId { get; set; }
 
@@ -143,6 +132,11 @@
         if (Model.Fields.Count == 0)
         {
             Model.AddBlankField();
+        }
+
+        if (Model.EligibilityOptions.Count == 0)
+        {
+            Model.EligibilityOptions.Add(new());
         }
     }
 
@@ -219,17 +213,6 @@
                 field.FileUploadOptions = new QuestionnaireFileUploadFieldOptionsModel();
                 break;
         }
-    }
-
-    private string GetEligibilityDescriptorDisplayName(EligibilityDescriptor arg)
-    {
-        return arg.Data.Type switch
-        {
-            EligibilityType.SupportPlan => $"{arg.Data.SupportPlan!.ServiceType} - {arg.Data.SupportPlan!.DisplayName}",
-            EligibilityType.Virtual => "Virtual - " + arg.Data.VirtualEligibilityType,
-
-            _ => throw new UnreachableException(),
-        };
     }
 
 }
