@@ -13,9 +13,9 @@
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
 
-<h3>QuestionnaireEditPage</h3>
+<h3>New questionnaire</h3>
 
-@if (SupportPlans is not null && EligibilityDescriptors is not null)
+@if (EligibilityDescriptors is not null)
 {
     <QuestionnaireEditor
         CreatorId="CreatorId"
@@ -34,7 +34,6 @@
 
     private QuestionnaireEditModel InitialModel { get; } = new();
 
-    private List<SupportPlan>? SupportPlans { get; set; }
     private List<EligibilityDescriptor>? EligibilityDescriptors { get; set; }
 
     protected override async Task OnInitializedAsync()
