@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Namezr.Features.Identity.Data;
+using Namezr.Infrastructure.Data;
 
 namespace Namezr.Components.Account;
 
 internal sealed class IdentityUserAccessor(
     UserManager<ApplicationUser> userManager,
-    IdentityRedirectManager redirectManager)
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IdentityRedirectManager redirectManager
+)
 {
     public async Task<ApplicationUser> GetRequiredUserAsync(HttpContext context)
     {
@@ -20,8 +24,17 @@ internal sealed class IdentityUserAccessor(
         return user;
     }
 
-    public Task<ApplicationUser?> GetUserAsync(HttpContext context)
+    public async Task<ApplicationUser?> GetUserAsync(HttpContext context)
     {
-        return userManager.GetUserAsync(context.User);
+        string? userIdString = userManager.GetUserId(context.User);
+        if (userIdString == null) return null;
+
+        Guid userId = Guid.Parse(userIdString);
+
+        // UserManager (-> UserStore) injects the scoped DbContext, but this is called from
+        // the OnInitializedAsync of various components, which are executed in parallel 
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        return await dbContext.Users.SingleOrDefaultAsync(x => x.Id == userId);
     }
 }

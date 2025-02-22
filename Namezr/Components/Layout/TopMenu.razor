@@ -1,6 +1,14 @@
-﻿@implements IDisposable
+﻿@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Account
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Data
+
+@implements IDisposable
 
 @inject NavigationManager NavigationManager
+@inject IdentityUserAccessor UserAccessor
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <header class="p-3 border-bottom">
     <div class="container">
@@ -14,16 +22,25 @@
 
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
                 <li><a href="PublicCreatorsList" class="nav-link px-2 link-body-emphasis">Creators list</a></li>
-                <AuthorizeView>
-                    <Authorized>
-                        @* TODO: check if user is creator *@
-                        <li><a href="studio" class="nav-link px-2 link-body-emphasis">Studio</a></li>
-                        <li><a href="studio/onboarding" class="nav-link px-2 link-body-emphasis">Creator onboarding</a></li>
-                    </Authorized>
-                    <NotAuthorized>
-                        <li><a href="#" class="nav-link px-2 link-body-emphasis">For creators</a></li>
-                    </NotAuthorized>
-                </AuthorizeView>
+
+                @if (_firstCreatorId is not null)
+                {
+                    <li>
+                        <a href="studio/@_firstCreatorId.Value.NoHyphens()" class="nav-link px-2 link-body-emphasis">
+                            Studio
+                        </a>
+                    </li>
+                }
+                else if (_isAuthenticated)
+                {
+                    <li>
+                        <a href="studio/onboarding" class="nav-link px-2 link-body-emphasis">Creator onboarding</a>
+                    </li>
+                }
+                else
+                {
+                    <li><a href="#" class="nav-link px-2 link-body-emphasis">For creators</a></li>
+                }
             </ul>
 
             @* At some point, we will want a site-wide search bar, e.g. creators *@
@@ -69,12 +86,33 @@
 </header>
 
 @code {
-    private string? _currentUrl;
 
-    protected override void OnInitialized()
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; } = null!;
+
+    private string? _currentUrl;
+    private bool _isAuthenticated;
+    private Guid? _firstCreatorId;
+
+    protected override async Task OnInitializedAsync()
     {
         _currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
+
+        if (user is not null)
+        {
+            _isAuthenticated = true;
+
+            await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            CreatorStaffEntity? staffEntity = await dbContext.CreatorStaff
+                .Where(x => x.UserId == user.Id)
+                .FirstOrDefaultAsync();
+
+            _firstCreatorId = staffEntity?.CreatorId;
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -87,4 +125,5 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
+
 }
