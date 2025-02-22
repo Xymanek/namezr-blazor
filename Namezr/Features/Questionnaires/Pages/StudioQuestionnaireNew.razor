@@ -5,20 +5,22 @@
 @using Namezr.Client.Types
 @using Namezr.Components.Layout
 @using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Services
 
 @attribute [Authorize]
 @layout StudioLayout
 
 @inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
 
 <h3>QuestionnaireEditPage</h3>
 
-@if (SupportPlans is not null)
+@if (SupportPlans is not null && EligibilityDescriptors is not null)
 {
     <QuestionnaireEditor
         CreatorId="CreatorId"
         InitialModel="InitialModel"
-        SupportPlans="SupportPlans"
+        EligibilityDescriptors="EligibilityDescriptors"
     />
 }
 
@@ -33,12 +35,18 @@
     private QuestionnaireEditModel InitialModel { get; } = new();
 
     private List<SupportPlan>? SupportPlans { get; set; }
+    private List<EligibilityDescriptor>? EligibilityDescriptors { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         StudioLayout.CurrentCreatorId = CreatorId;
-        
-        SupportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToList();
+
+        EligibilityDescriptors = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                // TODO: in parallel
+                await SupportPlansService.GetSupportPlans(CreatorId)
+            )
+            .ToList();
     }
 
 }

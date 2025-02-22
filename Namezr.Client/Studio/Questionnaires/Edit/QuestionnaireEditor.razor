@@ -13,7 +13,7 @@
     Support plans:
 </div>
 <pre>
-@JsonSerializer.Serialize(SupportPlans, new JsonSerializerOptions { WriteIndented = true })
+@JsonSerializer.Serialize(EligibilityDescriptors, new JsonSerializerOptions { WriteIndented = true })
 </pre>
 
 <EditForm
@@ -87,7 +87,10 @@
     public required QuestionnaireEditModel InitialModel { get; set; }
 
     [Parameter]
-    public required List<SupportPlan> SupportPlans { get; set; }
+    public required List<EligibilityDescriptor> EligibilityDescriptors { get; set; }
+
+    [Parameter]
+    public required EligibilityDescriptorData OneEligibilityDescriptorData { get; set; }
 
     private IReadOnlySet<Guid> ForbidTypeChangeFields { get; set; } = null!;
     private QuestionnaireEditModel Model { get; set; } = null!;
