@@ -5,47 +5,124 @@
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Data
+@using Namezr.Features.Eligibility.Services
 
 @inject ApplicationDbContext DbContext
+@inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
 
-<h3>QuestionnaireHome</h3>
+@if (_versionEntity is not null)
+{
+    <HxBreadcrumb>
+        <HxBreadcrumbItem Text="Home" Href="/"/>
+        <HxBreadcrumbItem Text="@_versionEntity.Questionnaire.Creator.DisplayName" Href="/"/>
+        <HxBreadcrumbItem Text="Questionnaires" Href="/"/>
+    </HxBreadcrumb>
 
-@* TODO: display the form, but disabled *@
-<AuthorizeView>
-    <Authorized>
-        @if (ConfigModel is not null)
-        {
-            <SubmissionEditor
-                Config="ConfigModel"
-                QuestionnaireVersionId="QuestionnaireVersionId!.Value"
-            />
-        }        
-    </Authorized>
-    
-    <NotAuthorized>
-        <p>You must be logged in to submit a response.</p>
-    </NotAuthorized>
-</AuthorizeView>
+    <h3>@_versionEntity?.Questionnaire.Title</h3>
+
+    <div>
+        Ways to be eligible:
+    </div>
+
+    IEnumerable<IGrouping<(EligibilityType Type, SupportPlanFullId? SupportPlanId), EligibilityOptionEntity>>
+        groupedOptions = _versionEntity!
+            .Questionnaire!
+            .EligibilityConfiguration!
+            .Options!
+            .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId));
+
+    foreach (var grouping in groupedOptions)
+    {
+        <h4>
+            @if (grouping.Key.Type == EligibilityType.SupportPlan)
+            {
+                EligibilityPlan matchingEligibilityPlan = _eligibilityPlans!.Values
+                    .First(x => x.SupportPlan?.Id == grouping.Key.SupportPlanId);
+
+                <span>
+                    @matchingEligibilityPlan.SupportPlan!.ServiceType
+                </span>
+            }
+            else
+            {
+                <span>Other</span>
+            }
+        </h4>
+
+        <ul>
+            @foreach (EligibilityOptionEntity option in grouping)
+            {
+                <li>
+                    @if (option.PlanId.Type == EligibilityType.SupportPlan)
+                    {
+                        EligibilityPlan plan = _eligibilityPlans![option.PlanId];
+
+                        <span>
+                            @plan.SupportPlan!.DisplayName
+                        </span>
+                    }
+                    else
+                    {
+                        <span>@option.PlanId.VirtualEligibilityType</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+
+    @* TODO: display the form, but disabled *@
+    <AuthorizeView>
+        <Authorized>
+            @if (ConfigModel is not null)
+            {
+                <SubmissionEditor
+                    Config="ConfigModel"
+                    QuestionnaireVersionId="QuestionnaireVersionId!.Value"
+                />
+            }
+        </Authorized>
+
+        <NotAuthorized>
+            <p>You must be logged in to submit a response.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+}
 
 @code {
+    private QuestionnaireVersionEntity? _versionEntity;
 
     [Parameter]
     public Guid QuestionnaireId { get; set; }
-    
+
     private QuestionnaireConfigModel? ConfigModel { get; set; }
     private Guid? QuestionnaireVersionId { get; set; }
 
+    private IReadOnlyDictionary<EligibilityPlanId, EligibilityPlan>? _eligibilityPlans;
+
     protected override async Task OnInitializedAsync()
     {
-        QuestionnaireVersionEntity? versionEntity = await DbContext.QuestionnaireVersions
+        _versionEntity = await DbContext.QuestionnaireVersions
             .AsNoTracking()
-            .Include(x => x.Questionnaire)
+            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
+            .Include(x => x.Questionnaire.Creator)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
-        
-        ConfigModel = versionEntity?.MapToConfigModel();
-        QuestionnaireVersionId = versionEntity?.Id;
+
+        ConfigModel = _versionEntity?.MapToConfigModel();
+        QuestionnaireVersionId = _versionEntity?.Id;
+
+        _eligibilityPlans = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                // TODO: in parallel
+                await SupportPlansService.GetSupportPlans(_versionEntity!.Questionnaire.CreatorId)
+            )
+            .ToDictionary(plan => plan.Id);
     }
 
 }
