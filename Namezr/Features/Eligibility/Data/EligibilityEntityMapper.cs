@@ -15,18 +15,18 @@ public static partial class EligibilityEntityMapper
     {
         entities ??= new HashSet<EligibilityOptionEntity>(models.Count);
 
-        Dictionary<EligibilityId, EligibilityOptionEntity> entitiesById = entities
-            .ToDictionary(entity => new EligibilityId(entity.IdChain));
+        Dictionary<EligibilityPlanId, EligibilityOptionEntity> entitiesById = entities
+            .ToDictionary(entity => entity.PlanId);
 
         entitiesById.Keys
-            .Except(models.Select(x => x.Id!.Value))
-            .ForEach(x => entities.Remove(entitiesById[x]));
+            .Except(models.Select(x => x.PlanId))
+            .ForEach(planId => entities.Remove(entitiesById[planId!]));
 
         for (int index = 0; index < models.Count; index++)
         {
             EligibilityOptionEditModel model = models[index];
 
-            if (entitiesById.TryGetValue(model.Id!.Value, out EligibilityOptionEntity? entity))
+            if (entitiesById.TryGetValue(model.PlanId!, out EligibilityOptionEntity? entity))
             {
                 Map(model, entity);
                 entity.Order = index;

@@ -1,8 +1,8 @@
-﻿using System.Collections.Immutable;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Client.Types;
 
 namespace Namezr.Features.Eligibility.Data;
 
@@ -10,11 +10,11 @@ namespace Namezr.Features.Eligibility.Data;
 public class EligibilityOptionEntity
 {
     public long Id { get; set; }
-    
+
     public EligibilityConfigurationEntity Configuration { get; set; } = null!;
     public long ConfigurationId { get; set; }
 
-    public required ImmutableList<string> IdChain { get; set; }
+    public required EligibilityPlanId PlanId { get; set; }
 
     public required int Order { get; set; }
 
@@ -28,6 +28,20 @@ internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<E
 {
     public void Configure(EntityTypeBuilder<EligibilityOptionEntity> builder)
     {
-        builder.HasAlternateKey(x => new { x.ConfigurationId, x.IdChain });
+        builder.ComplexProperty(x => x.PlanId)
+            .ComplexProperty(planId => planId.SupportPlanId);
+
+        // TODO: index
+        // TODO: support plan id max string length
+        // TODO: questionnaire id field on config
+        
+        // builder
+        //     .HasIndex(x => new
+        //     {
+        //         x.ConfigurationId,
+        //         x.PlanId.SupportPlanId,
+        //         x.PlanId.VirtualEligibilityType,
+        //     })
+        //     .IsUnique();
     }
 }

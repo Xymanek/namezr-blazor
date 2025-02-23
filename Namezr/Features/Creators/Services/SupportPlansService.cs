@@ -36,30 +36,42 @@ public partial class SupportPlansService : ISupportPlansService
             case SupportServiceType.Twitch:
                 yield return new SupportPlan
                 {
+                    Id = new SupportPlanFullId
+                    {
+                        SupportTargetId = supportTarget.Id,
+                        SupportPlanId = TwitchSupportTargetIds.Tier1,
+                    },
                     ServiceType = SupportServiceType.Twitch,
-                    SupportTargetId = supportTarget.Id,
-                    SupportPlanId = TwitchSupportTargetIds.Tier1,
                     DisplayName = "Tier 1",
                 };
                 yield return new SupportPlan
                 {
+                    Id = new SupportPlanFullId
+                    {
+                        SupportTargetId = supportTarget.Id,
+                        SupportPlanId = TwitchSupportTargetIds.Tier2,
+                    },
                     ServiceType = SupportServiceType.Twitch,
-                    SupportTargetId = supportTarget.Id,
-                    SupportPlanId = TwitchSupportTargetIds.Tier2,
                     DisplayName = "Tier 2",
                 };
                 yield return new SupportPlan
                 {
+                    Id = new SupportPlanFullId
+                    {
+                        SupportTargetId = supportTarget.Id,
+                        SupportPlanId = TwitchSupportTargetIds.Tier3,
+                    },
                     ServiceType = SupportServiceType.Twitch,
-                    SupportTargetId = supportTarget.Id,
-                    SupportPlanId = TwitchSupportTargetIds.Tier3,
                     DisplayName = "Tier 3",
                 };
                 yield return new SupportPlan
                 {
+                    Id = new SupportPlanFullId
+                    {
+                        SupportTargetId = supportTarget.Id,
+                        SupportPlanId = TwitchSupportTargetIds.Follower,
+                    },
                     ServiceType = SupportServiceType.Twitch,
-                    SupportTargetId = supportTarget.Id,
-                    SupportPlanId = TwitchSupportTargetIds.Follower,
                     DisplayName = "Follower",
                 };
 
@@ -71,9 +83,12 @@ public partial class SupportPlansService : ISupportPlansService
                 {
                     yield return new SupportPlan
                     {
+                        Id = new SupportPlanFullId
+                        {
+                            SupportTargetId = supportTarget.Id,
+                            SupportPlanId = supportPlansInfo.SupportPlanId,
+                        },
                         ServiceType = SupportServiceType.Patreon,
-                        SupportTargetId = supportTarget.Id,
-                        SupportPlanId = supportPlansInfo.SupportPlanId,
                         DisplayName =
                             supportPlansInfo.DisplayName ??
                             throw new Exception("Patreon tier support plan has no display name"),

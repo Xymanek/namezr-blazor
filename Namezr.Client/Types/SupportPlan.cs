@@ -2,9 +2,8 @@
 
 public record SupportPlan
 {
-    public required SupportServiceType ServiceType { get; init; }
-    public required Guid SupportTargetId { get; set; }
+    public required SupportPlanFullId Id { get; init; }
 
-    public required string SupportPlanId { get; set; }
+    public required SupportServiceType ServiceType { get; init; }
     public required string DisplayName { get; set; }
 }

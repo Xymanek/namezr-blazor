@@ -43,7 +43,7 @@ public class QuestionnaireEditModel
                 .SetValidator(fieldValidator);
 
             RuleFor(x => x.EligibilityOptions)
-                .Must(options => options.Select(x => x.Id).Distinct().Count() == options.Count)
+                .Must(options => options.Select(x => x.PlanId).Distinct().Count() == options.Count)
                 .WithMessage("Cannot select the same support plan multiple times");
 
             RuleForEach(x => x.EligibilityOptions)
@@ -57,7 +57,7 @@ public class QuestionnaireEditModel
 
 public class EligibilityOptionEditModel
 {
-    public EligibilityId? Id { get; set; }
+    public EligibilityPlanId? PlanId { get; set; }
 
     public string PriorityGroup { get; set; } = string.Empty;
     public decimal PriorityModifier { get; set; } = 1;
@@ -67,7 +67,7 @@ public class EligibilityOptionEditModel
     {
         public Validator()
         {
-            RuleFor(x => x.Id)
+            RuleFor(x => x.PlanId)
                 .NotNull();
             
             RuleFor(x => x.PriorityGroup)

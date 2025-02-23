@@ -110,10 +110,7 @@
     public required QuestionnaireEditModel InitialModel { get; set; }
 
     [Parameter]
-    public required List<EligibilityDescriptor> EligibilityDescriptors { get; set; }
-
-    [Parameter]
-    public required EligibilityDescriptorData OneEligibilityDescriptorData { get; set; }
+    public required List<EligibilityPlan> EligibilityDescriptors { get; set; }
 
     private IReadOnlySet<Guid> ForbidTypeChangeFields { get; set; } = null!;
     private QuestionnaireEditModel Model { get; set; } = null!;

@@ -9,7 +9,7 @@
             Data="EligibilityDescriptors"
             Nullable="false"
             Label="Support plan"
-            @bind-Value="Value.Id"
+            @bind-Value="Value.PlanId"
             ValueSelector="@(x => x.Id)"
             TextSelector="GetEligibilityDescriptorDisplayName"
         />
@@ -44,7 +44,7 @@
 @code {
 
     [Parameter]
-    public required List<EligibilityDescriptor> EligibilityDescriptors { get; set; }
+    public required List<EligibilityPlan> EligibilityDescriptors { get; set; }
 
     [Parameter]
     public bool CanRemove { get; set; }
@@ -52,12 +52,12 @@
     [Parameter]
     public EventCallback OnRemove { get; set; }
 
-    private string GetEligibilityDescriptorDisplayName(EligibilityDescriptor arg)
+    private string GetEligibilityDescriptorDisplayName(EligibilityPlan plan)
     {
-        return arg.Data.Type switch
+        return plan.Type switch
         {
-            EligibilityType.SupportPlan => $"{arg.Data.SupportPlan!.ServiceType} - {arg.Data.SupportPlan!.DisplayName}",
-            EligibilityType.Virtual => "Virtual - " + arg.Data.VirtualEligibilityType,
+            EligibilityType.SupportPlan => $"{plan.SupportPlan!.ServiceType} - {plan.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + plan.VirtualEligibilityType,
 
             _ => throw new UnreachableException(),
         };
