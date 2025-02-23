@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Client.Types;
+using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Eligibility.Data;
 
@@ -29,11 +30,11 @@ internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<E
     public void Configure(EntityTypeBuilder<EligibilityOptionEntity> builder)
     {
         builder.ComplexProperty(x => x.PlanId)
-            .ComplexProperty(planId => planId.SupportPlanId);
+            .ComplexProperty(planId => planId.SupportPlanId)
+            .Property(supportPlanFullId => supportPlanFullId.SupportPlanId)
+            .HasMaxLength(SupportPlanInfoEntity.SupportPlanIdMaxLength);
 
         // TODO: index
-        // TODO: support plan id max string length
-        // TODO: questionnaire id field on config
         
         // builder
         //     .HasIndex(x => new

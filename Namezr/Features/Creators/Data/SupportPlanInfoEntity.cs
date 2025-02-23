@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Namezr.Features.Creators.Data;
@@ -12,9 +13,14 @@ public class SupportPlanInfoEntity
     public SupportTargetEntity SupportTarget { get; set; } = null!;
     public Guid SupportTargetId { get; set; }
 
+    [MaxLength(SupportPlanIdMaxLength)]
     public required string SupportPlanId { get; set; }
 
+    [MaxLength(DisplayNameMaxLength)]
     public string? DisplayName { get; set; }
+    
+    public const int SupportPlanIdMaxLength = 100;
+    public const int DisplayNameMaxLength = 100;
 }
 
 internal class SupportPlanInfoEntityConfiguration : IEntityTypeConfiguration<SupportPlanInfoEntity>

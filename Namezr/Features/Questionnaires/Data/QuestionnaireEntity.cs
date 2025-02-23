@@ -1,13 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Eligibility.Data;
 
 namespace Namezr.Features.Questionnaires.Data;
 
-[EntityTypeConfiguration(typeof(QuestionnaireEntityConfiguration))]
 public class QuestionnaireEntity
 {
     public Guid Id { get; set; }
@@ -28,15 +25,4 @@ public class QuestionnaireEntity
     
     public ICollection<QuestionnaireFieldEntity>? Fields { get; set; }
     public ICollection<QuestionnaireVersionEntity>? Versions { get; set; }
-}
-
-internal class QuestionnaireEntityConfiguration : IEntityTypeConfiguration<QuestionnaireEntity>
-{
-    public void Configure(EntityTypeBuilder<QuestionnaireEntity> builder)
-    {
-        builder.HasOne(x => x.EligibilityConfiguration)
-            .WithOne(x => x.Questionnaire)
-            .HasForeignKey<QuestionnaireEntity>(x => x.EligibilityConfigurationId)
-            .OnDelete(DeleteBehavior.Restrict);
-    }
 }
