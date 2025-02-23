@@ -69,11 +69,16 @@ public class EligibilityOptionEditModel
         {
             RuleFor(x => x.Id)
                 .NotNull();
+            
+            RuleFor(x => x.PriorityGroup)
+                .MaximumLength(PriorityGroupMaxLength);
 
             RuleFor(x => x.PriorityModifier)
                 .GreaterThan(0);
         }
     }
+    
+    public const int PriorityGroupMaxLength = 50;
 }
 
 public class QuestionnaireFieldEditModel

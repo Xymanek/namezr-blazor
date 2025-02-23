@@ -1,4 +1,5 @@
 ﻿using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Features.Eligibility.Data;
 using Riok.Mapperly.Abstractions;
 
 namespace Namezr.Features.Questionnaires.Data;
@@ -65,6 +66,12 @@ public partial class QuestionnaireFormToEntityMapper
         };
         UpdateFields(entity);
 
+        entity.EligibilityConfiguration = new EligibilityConfigurationEntity
+        {
+            OwnershipType = EligibilityConfigurationOwnershipType.Questionnaire,
+            Options = EligibilityEntityMapper.Map(source.EligibilityOptions),
+        };
+
         return entity;
     }
 
@@ -86,7 +93,8 @@ public partial class QuestionnaireFormToEntityMapper
         }
     }
 
-    [MapperIgnoreSource(nameof(QuestionnaireEntity.Fields))]
+    [MapperIgnoreSource(nameof(QuestionnaireEditModel.Fields))]
+    [MapperIgnoreSource(nameof(QuestionnaireEditModel.EligibilityOptions))]
     private partial QuestionnaireEntity NewEntityFrom(QuestionnaireEditModel source);
 
     public void UpdateEntityWithNewVersion(QuestionnaireEditModel source, QuestionnaireEntity target)
