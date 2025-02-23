@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Client.Types;
-using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Eligibility.Data;
 
@@ -29,12 +28,17 @@ internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<E
 {
     public void Configure(EntityTypeBuilder<EligibilityOptionEntity> builder)
     {
-        builder.ComplexProperty(x => x.PlanId)
-            .ComplexProperty(planId => planId.SupportPlanId)
-            .Property(supportPlanFullId => supportPlanFullId.SupportPlanId)
-            .HasMaxLength(SupportPlanInfoEntity.SupportPlanIdMaxLength);
+        builder.OwnsOne(x => x.PlanId, eligibilityBuilder =>
+        {
+            eligibilityBuilder.ToJson();
 
+            eligibilityBuilder.OwnsOne(x => x.SupportPlanId);
+        });
+        
         // TODO: index
+        
+        // builder.HasIndex(x => new { x.ConfigurationId, x.PlanId })
+        //     .IsUnique();
         
         // builder
         //     .HasIndex(x => new

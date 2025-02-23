@@ -57,8 +57,8 @@ public record EligibilityPlan
 public record EligibilityPlanId
 {
     public required EligibilityType Type { get; init; }
-    public SupportPlanFullId SupportPlanId { get; init; }
-    public VirtualEligibilityType VirtualEligibilityType { get; init; }
+    public SupportPlanFullId? SupportPlanId { get; init; }
+    public VirtualEligibilityType? VirtualEligibilityType { get; init; }
 
     public EligibilityPlanId()
     {

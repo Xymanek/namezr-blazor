@@ -61,7 +61,7 @@ else
 
         QuestionnaireVersionEntity? entity = await dbContext.QuestionnaireVersions
             .AsNoTracking()
-            .Include(x => x.Questionnaire)
+            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);

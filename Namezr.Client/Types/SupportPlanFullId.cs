@@ -3,9 +3,8 @@
 namespace Namezr.Client.Types;
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
-public record struct SupportPlanFullId
+public record SupportPlanFullId
 {
-    // TODO: figure out how to make these work with blazor SSR -> WASM deserialization
-    public /*required*/ Guid SupportTargetId { get; set; }
-    public /*required*/ string? SupportPlanId { get; set; }
+    public required Guid SupportTargetId { get; init; }
+    public required string SupportPlanId { get; init; }
 }

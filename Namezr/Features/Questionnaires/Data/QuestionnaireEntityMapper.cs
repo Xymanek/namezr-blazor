@@ -11,7 +11,24 @@ public static partial class QuestionnaireEntityToFormMapper
     [MapperIgnoreSource(nameof(QuestionnaireVersionEntity.QuestionnaireId))]
     [MapperIgnoreSource(nameof(QuestionnaireVersionEntity.CreatedAt))]
     [MapNestedProperties(nameof(QuestionnaireVersionEntity.Questionnaire))]
+    [MapPropertyFromSource(
+        nameof(QuestionnaireEditModel.EligibilityOptions),
+        Use = nameof(MapEligibilityToEditModel)
+    )]
     public static partial QuestionnaireEditModel MapToEditModel(this QuestionnaireVersionEntity source);
+
+    private static List<EligibilityOptionEditModel> MapEligibilityToEditModel(
+        QuestionnaireVersionEntity questionnaireVersion
+    )
+    {
+        ICollection<EligibilityOptionEntity> options =
+            questionnaireVersion.Questionnaire.EligibilityConfiguration.Options
+            ?? throw new InvalidOperationException();
+
+        return MapToEditModel(options);
+    }
+
+    private static partial List<EligibilityOptionEditModel> MapToEditModel(ICollection<EligibilityOptionEntity> o);
 
     [UserMapping(Default = true)]
     private static List<QuestionnaireFieldEditModel> MapToEditModel(
@@ -101,10 +118,12 @@ public partial class QuestionnaireFormToEntityMapper
     {
         UpdateEntityProperties(source, target);
         target.Versions!.Add(MapToVersionEntity(source));
+        EligibilityEntityMapper.Map(source.EligibilityOptions, target.EligibilityConfiguration.Options);
         UpdateFields(target);
     }
 
-    [MapperIgnoreSource(nameof(QuestionnaireEntity.Fields))]
+    [MapperIgnoreSource(nameof(QuestionnaireEditModel.Fields))]
+    [MapperIgnoreSource(nameof(QuestionnaireEditModel.EligibilityOptions))]
     private partial void UpdateEntityProperties(QuestionnaireEditModel source, QuestionnaireEntity target);
 
     private QuestionnaireVersionEntity MapToVersionEntity(QuestionnaireEditModel source) => new()

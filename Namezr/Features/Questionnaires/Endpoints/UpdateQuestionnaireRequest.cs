@@ -25,6 +25,7 @@ internal static partial class UpdateQuestionnaireRequest
         QuestionnaireEntity? questionnaireEntity = await dbContext.Questionnaires
             .Include(x => x.Versions)
             .Include(x => x.Fields)
+            .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
             .AsSplitQuery()
             .AsTracking()
             .FirstOrDefaultAsync(x => x.Id == request.Id, ct);
