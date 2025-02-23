@@ -25,4 +25,7 @@ public class EligibilityService : IEligibilityService
         yield return new EligibilityPlan(VirtualEligibilityType.NoSupportPlanFromListed);
         yield return new EligibilityPlan(VirtualEligibilityType.NotListedSupportPlan);
     }
+    
+    // TODO: check how a specific user fits a specific eligibility configuration
+    // Prereq: check how a specific user status with a specific support target
 }
