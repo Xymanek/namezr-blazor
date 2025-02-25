@@ -57,7 +57,7 @@ if (twitchOptions.MockServerUrl is not null && builder.Environment.IsProduction(
 if (twitchOptions.MockServerUrl is not null && !builder.Environment.IsProduction())
 {
     // TODO: the whole mock server integration is an extremely shoddy implementation
-    
+
     builder.Services.AddAuthentication()
         .AddOAuth<TwitchAuthenticationOptions, MockServerAuthenticationHandler>(
             TwitchAuthenticationDefaults.AuthenticationScheme,
@@ -66,11 +66,14 @@ if (twitchOptions.MockServerUrl is not null && !builder.Environment.IsProduction
             {
                 options.ClientId = twitchOptions.OAuth.ClientId;
                 options.ClientSecret = twitchOptions.OAuth.ClientSecret;
-    
+
                 options.SaveTokens = true;
-    
+
                 options.Scope.Add("user:read:subscriptions");
                 options.Scope.Add("user:read:follows");
+
+                options.Scope.Add("channel:read:subscriptions");
+                options.Scope.Add("moderator:read:followers");
             }
         );
 }
@@ -80,12 +83,15 @@ else
     {
         options.ClientId = twitchOptions.OAuth.ClientId;
         options.ClientSecret = twitchOptions.OAuth.ClientSecret;
-    
+
         options.SaveTokens = true;
-    
+
         options.Scope.Add("user:read:subscriptions");
         options.Scope.Add("user:read:follows");
-    });    
+
+        options.Scope.Add("channel:read:subscriptions");
+        options.Scope.Add("moderator:read:followers");
+    });
 }
 
 builder.Services.AddAuthentication().AddPatreon(options =>

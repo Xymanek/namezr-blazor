@@ -3,10 +3,8 @@ using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
 using Namezr.Features.Creators;
 using Namezr.Infrastructure.Twitch;
-using NodaTime;
-using NodaTime.Extensions;
+using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
-using TwitchLib.Api.Helix.Models.Users.GetUserFollows;
 using TwitchLib.Api.Interfaces;
 
 namespace Namezr.Features.Consumers.Services;
@@ -28,22 +26,25 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
 
         // Query the API in parallel
 
-        Task<CheckUserSubscriptionResponse> subscriptionTask = twitchApi.Helix
+        Task<GetUserSubscriptionsResponse> subscriptionTask = twitchApi.Helix
             .Subscriptions
-            .CheckUserSubscriptionAsync(
+            .GetUserSubscriptionsAsync(
                 targetConsumer.SupportTarget.ServiceId,
-                targetConsumer.ServiceId
+                [targetConsumer.ServiceId]
             );
 
-        Task<GetUsersFollowsResponse> followsTask = twitchApi.Helix
-            .Users
-            .GetUsersFollowsAsync(
-                fromId: targetConsumer.ServiceId,
-                toId: targetConsumer.SupportTarget.ServiceId
+        Task<GetChannelFollowersResponse> followsTask = twitchApi.Helix
+            .Channels
+            .GetChannelFollowersAsync(
+                broadcasterId: targetConsumer.SupportTarget.ServiceId,
+                userId: targetConsumer.ServiceId
             );
 
-        CheckUserSubscriptionResponse subscriptions = await subscriptionTask;
-        Instant? followedAt = (await followsTask).Follows.SingleOrDefault()?.FollowedAt.ToInstant();
+        GetUserSubscriptionsResponse subscriptions = await subscriptionTask;
+
+        // TODO
+        // Instant? followedAt = (await followsTask).Data.SingleOrDefault()?.FollowedAt.ToInstant();
+        bool following = (await followsTask).Data.SingleOrDefault() != null;
 
         Dictionary<string, SupportStatusData> result = new();
 
@@ -63,8 +64,8 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
 
         result.Add(TwitchSupportPlansIds.Follower, new SupportStatusData
         {
-            IsActive = followedAt != null,
-            EnrolledAt = followedAt,
+            IsActive = following,
+            EnrolledAt = null,
 
             // Following never expires
             ExpiresAt = null,
