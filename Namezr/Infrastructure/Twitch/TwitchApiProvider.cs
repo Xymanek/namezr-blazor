@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using AspNet.Security.OAuth.Twitch;
+using CommunityToolkit.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
@@ -17,6 +18,7 @@ namespace Namezr.Infrastructure.Twitch;
 public interface ITwitchApiProvider
 {
     Task<ITwitchAPI> GetTwitchApiForUser(Guid userId);
+    Task<ITwitchAPI> GetTwitchApi(ThirdPartyToken token);
 }
 
 [AutoConstructor]
@@ -41,10 +43,17 @@ public partial class TwitchApiProvider : ITwitchApiProvider
             .Where(x => x.UserId == userId && x.LoginProvider == TwitchAuthenticationDefaults.AuthenticationScheme)
             .SingleAsync();
 
-        return await GetTwitchApi(userLogin.ThirdPartyToken!);
+        return await DoGetTwitchApi(userLogin.ThirdPartyToken!);
     }
 
-    private async ValueTask<ITwitchAPI> GetTwitchApi(ThirdPartyToken token)
+    public async Task<ITwitchAPI> GetTwitchApi(ThirdPartyToken token)
+    {
+        Guard.IsTrue(token.ServiceType == TwitchConstants.ServiceType);
+
+        return await DoGetTwitchApi(token);
+    }
+
+    private async ValueTask<ITwitchAPI> DoGetTwitchApi(ThirdPartyToken token)
     {
         TwitchAuthenticationOptions twitchOptions = _twitchOptions
             .Get(TwitchAuthenticationDefaults.AuthenticationScheme);

@@ -23,6 +23,8 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="AutoRegisterInject" />
+        <PackageReference Include="CommunityToolkit.Diagnostics" />
+        <PackageReference Include="EntityFrameworkCore.Exceptions.PostgreSQL" />
         <PackageReference Include="FluentValidation" />
         <PackageReference Include="Immediate.Apis" />
         <PackageReference Include="JetBrains.Annotations" />

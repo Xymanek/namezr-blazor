@@ -12,6 +12,8 @@ public class TargetConsumerEntity
     public Guid SupportTargetId { get; set; }
 
     public required string ServiceId { get; set; }
+
+    public ICollection<ConsumerSupportStatusEntity>? SupportStatuses { get; set; }
 }
 
 internal class ConsumerEntityConfiguration : IEntityTypeConfiguration<TargetConsumerEntity>

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.DataProtection;
+﻿using EntityFramework.Exceptions.PostgreSQL;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,8 @@ public partial class ApplicationDbContext : IdentityUserContext<
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution);
 
         optionsBuilder.UseNpgsql(postgres => postgres.UseNodaTime());
+
+        optionsBuilder.UseExceptionProcessor();
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
