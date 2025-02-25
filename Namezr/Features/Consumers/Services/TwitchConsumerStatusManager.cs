@@ -48,6 +48,7 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
 
         Dictionary<string, SupportStatusData> result = new();
 
+        // TODO: this approach currently does not create entities for non-current tiers - but do we need them?
         foreach (Subscription subscription in subscriptions.Data)
         {
             Guard.IsTrue(TwitchSubscriptionTiers.Contains(subscription.Tier));
