@@ -39,7 +39,7 @@ public partial class SupportPlansService : ISupportPlansService
                     Id = new SupportPlanFullId
                     {
                         SupportTargetId = supportTarget.Id,
-                        SupportPlanId = TwitchSupportTargetIds.Tier1,
+                        SupportPlanId = TwitchSupportPlansIds.Tier1,
                     },
                     ServiceType = SupportServiceType.Twitch,
                     DisplayName = "Tier 1",
@@ -49,7 +49,7 @@ public partial class SupportPlansService : ISupportPlansService
                     Id = new SupportPlanFullId
                     {
                         SupportTargetId = supportTarget.Id,
-                        SupportPlanId = TwitchSupportTargetIds.Tier2,
+                        SupportPlanId = TwitchSupportPlansIds.Tier2,
                     },
                     ServiceType = SupportServiceType.Twitch,
                     DisplayName = "Tier 2",
@@ -59,7 +59,7 @@ public partial class SupportPlansService : ISupportPlansService
                     Id = new SupportPlanFullId
                     {
                         SupportTargetId = supportTarget.Id,
-                        SupportPlanId = TwitchSupportTargetIds.Tier3,
+                        SupportPlanId = TwitchSupportPlansIds.Tier3,
                     },
                     ServiceType = SupportServiceType.Twitch,
                     DisplayName = "Tier 3",
@@ -69,7 +69,7 @@ public partial class SupportPlansService : ISupportPlansService
                     Id = new SupportPlanFullId
                     {
                         SupportTargetId = supportTarget.Id,
-                        SupportPlanId = TwitchSupportTargetIds.Follower,
+                        SupportPlanId = TwitchSupportPlansIds.Follower,
                     },
                     ServiceType = SupportServiceType.Twitch,
                     DisplayName = "Follower",

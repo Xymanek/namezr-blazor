@@ -1,6 +1,6 @@
 ﻿namespace Namezr.Features.Creators;
 
-public static class TwitchSupportTargetIds
+public static class TwitchSupportPlansIds
 {
     // Matching constants from https://dev.twitch.tv/docs/api/reference/#check-user-subscription
     public const string Tier1 = "1000";
