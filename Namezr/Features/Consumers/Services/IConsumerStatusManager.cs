@@ -10,7 +10,7 @@ namespace Namezr.Features.Consumers.Services;
 public interface IConsumerStatusManager
 {
     SupportServiceType ServiceType { get; }
-    
+
     // TODO: some services do not support on demand status querying
     Task SyncConsumerStatus(Guid consumerId);
 }
@@ -22,6 +22,78 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
     private readonly IClock _clock;
 
     public abstract SupportServiceType ServiceType { get; }
+
+    public async Task<ICollection<UserSupportStatusEntry>> GetUserSupportStatuses(
+        Guid consumerId, UserStatusSyncEagerness eagerness
+    )
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        // Keep in sync with QueryStatuses XML doc
+        TargetConsumerEntity targetConsumer = await dbContext.TargetConsumers
+            .AsSplitQuery()
+            .AsTracking()
+            .Include(x => x.SupportTarget.ServiceToken)
+            .Include(x => x.SupportStatuses)
+            .SingleAsync(x => x.Id == consumerId);
+
+        Guard.IsTrue(targetConsumer.SupportTarget.ServiceType == ServiceType);
+
+        bool syncNeeded = false;
+
+        if (eagerness == UserStatusSyncEagerness.Force)
+        {
+            syncNeeded = true;
+        }
+        else if (eagerness > UserStatusSyncEagerness.NoSync)
+        {
+            if (targetConsumer.SupportStatuses!.Count < 1)
+            {
+                syncNeeded = true;
+            }
+            else
+            {
+                syncNeeded = targetConsumer.SupportStatuses.Any(supportStatus =>
+                    supportStatus.LastSyncedAt < _clock.GetCurrentInstant() - DefaultOutdatedExpiration
+                );
+            }
+        }
+
+        if (syncNeeded)
+        {
+            // TODO
+            
+            // + refetch the targetConsumer.SupportStatuses or return from the sync?
+        }
+        
+        List<UserSupportStatusEntry> result = new();
+        foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
+        {
+            result.Add(new UserSupportStatusEntry
+            {
+                CreatorId = targetConsumer.SupportTarget.CreatorId,
+                SupportTargetId = targetConsumer.SupportTarget.Id,
+                SupportServiceType = targetConsumer.SupportTarget.ServiceType,
+                SupportTargetServiceId = targetConsumer.SupportTarget.ServiceId,
+                SupportPlanId = supportStatus.SupportPlanId,
+                UserId = default, // TODO: oblivious here (user may not exist)
+                ConsumerId = consumerId,
+                ConsumerServiceId = targetConsumer.ServiceId,
+                Data = new SupportStatusData
+                {
+                    IsActive = supportStatus.IsActive,
+                    ExpiresAt = supportStatus.ExpiresAt,
+                    EnrolledAt = supportStatus.EnrolledAt,
+                },
+                LastSyncedAt = supportStatus.LastSyncedAt,
+            });
+        }
+
+        return result;
+    }
+
+    // TODO: think EXTREMELY hard about this, probably needs to be driven by subclasses
+    private static readonly Duration DefaultOutdatedExpiration = Duration.FromHours(1);
 
     public async Task SyncConsumerStatus(Guid consumerId)
     {
@@ -110,11 +182,4 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
     protected abstract ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
         TargetConsumerEntity targetConsumer
     );
-
-    protected record struct SupportStatusData
-    {
-        public required bool IsActive { get; init; }
-        public required Instant? ExpiresAt { get; init; }
-        public required Instant? EnrolledAt { get; init; }
-    }
 }
