@@ -36,7 +36,6 @@
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
         <PackageReference Include="Patreon.Net" />
-        <PackageReference Include="Singulink.Collections" />
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>

@@ -6,10 +6,10 @@ namespace Namezr.Features.Consumers.Services;
 public record UserSupportStatusEntry
 {
     public required Guid CreatorId { get; init; }
-    public required Guid SupportTargetId { get; init; }
+    public required SupportPlanFullId SupportPlanFullId { get; init; }
+
     public required SupportServiceType SupportServiceType { get; init; }
     public required string SupportTargetServiceId { get; init; }
-    public required string SupportPlanId { get; init; }
 
     public required Guid UserId { get; init; }
     public required Guid ConsumerId { get; init; }

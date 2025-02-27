@@ -13,6 +13,10 @@ public interface IConsumerStatusManager
 
     // TODO: some services do not support on demand status querying
     Task SyncConsumerStatus(Guid consumerId);
+
+    Task<ICollection<UserSupportStatusEntry>> GetUserSupportStatuses(
+        Guid consumerId, UserStatusSyncEagerness eagerness
+    );
 }
 
 [AutoConstructor]
@@ -62,20 +66,23 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         if (syncNeeded)
         {
             // TODO
-            
+
             // + refetch the targetConsumer.SupportStatuses or return from the sync?
         }
-        
+
         List<UserSupportStatusEntry> result = new();
         foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
         {
             result.Add(new UserSupportStatusEntry
             {
                 CreatorId = targetConsumer.SupportTarget.CreatorId,
-                SupportTargetId = targetConsumer.SupportTarget.Id,
+                SupportPlanFullId = new SupportPlanFullId
+                {
+                    SupportTargetId = targetConsumer.SupportTarget.Id,
+                    SupportPlanId = supportStatus.SupportPlanId,
+                },
                 SupportServiceType = targetConsumer.SupportTarget.ServiceType,
                 SupportTargetServiceId = targetConsumer.SupportTarget.ServiceId,
-                SupportPlanId = supportStatus.SupportPlanId,
                 UserId = default, // TODO: oblivious here (user may not exist)
                 ConsumerId = consumerId,
                 ConsumerServiceId = targetConsumer.ServiceId,
