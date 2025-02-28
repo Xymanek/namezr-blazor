@@ -14,6 +14,16 @@ public interface IEligibilityService
     IEnumerable<EligibilityPlan> GetEligibilityDescriptorsFromAllSupportPlans(
         IEnumerable<SupportPlan> supportPlans
     );
+
+    /// <param name="userId"></param>
+    /// <param name="configuration">
+    ///     <see cref="EligibilityConfigurationEntity.Options"/> must be loaded and non-empty.
+    /// </param>
+    /// <param name="syncEagerness"></param>
+    Task<EligibilityResult> ClassifyEligibility(
+        Guid userId, EligibilityConfigurationEntity configuration,
+        UserStatusSyncEagerness syncEagerness
+    );
 }
 
 [AutoConstructor]
