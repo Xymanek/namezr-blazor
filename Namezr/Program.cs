@@ -150,6 +150,10 @@ if (builder.Environment.IsDevelopment())
     });
 
     builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing =>
+        {
+            tracing.AddSource(Diagnostics.ActivitySourceName);
+        })
         // TODO: figure out a way to unhardcode this (or switch to full aspire?)
         .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri("http://localhost:4317"));
 }

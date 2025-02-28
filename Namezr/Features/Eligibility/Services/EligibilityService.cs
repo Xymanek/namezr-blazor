@@ -57,6 +57,10 @@ public partial class EligibilityService : IEligibilityService
         UserStatusSyncEagerness syncEagerness
     )
     {
+        using Activity? activity = Diagnostics.ActivitySource.StartActivity();
+        activity?.SetTag("UserId", userId);
+        activity?.SetTag("EligibilityConfigurationId", configuration.Id);
+
         Guard.IsTrue(configuration.Options?.Count > 0);
 
         HashSet<SupportPlanFullId> relevantSupportPlanIds = configuration.Options
