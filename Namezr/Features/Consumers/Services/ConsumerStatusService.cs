@@ -104,11 +104,14 @@ public partial class ConsumerStatusService : IConsumerStatusService
         foreach (SupportTargetEntity supportTarget in supportTargets)
         {
             // TODO: NoSyncSkipConsumerIfMissing
-            foreach (TargetConsumerEntity consumer in await _consumerService.GetOrCreateConsumers(userId, creatorId))
+            ICollection<TargetConsumerEntity> consumers =
+                await _consumerService.GetOrCreateConsumers(userId, supportTarget.Id);
+
+            foreach (TargetConsumerEntity consumer in consumers)
             {
                 ICollection<UserSupportStatusEntry> status = await managersPerService[supportTarget.ServiceType]
                     .GetUserSupportStatuses(consumer.Id, eagerness);
-            
+
                 result.UnionWith(status.Where(x => x.Data.IsActive).Select(x => x.SupportPlanFullId));
             }
         }
