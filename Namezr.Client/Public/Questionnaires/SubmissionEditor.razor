@@ -130,7 +130,7 @@
         try
         {
             await HttpClientProvider.HttpClient.PostAsJsonAsync(
-                ApiEndpointPaths.QuestionnaireSubmissionCreate,
+                ApiEndpointPaths.QuestionnaireSubmissionSave,
                 new SubmissionCreateModel
                 {
                     QuestionnaireVersionId = QuestionnaireVersionId,

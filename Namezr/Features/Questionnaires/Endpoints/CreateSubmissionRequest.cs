@@ -18,7 +18,7 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [Authorize]
-[MapPost(ApiEndpointPaths.QuestionnaireSubmissionCreate)]
+[MapPost(ApiEndpointPaths.QuestionnaireSubmissionSave)]
 internal partial class SubmissionCreateRequest
 {
     private static async ValueTask<Guid> HandleAsync(
@@ -55,31 +55,53 @@ internal partial class SubmissionCreateRequest
             ThrowFailedValuesValidation();
         }
 
+        // TODO: validate eligibility
+
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
         ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
-        
-        QuestionnaireSubmissionEntity entity = new()
+
+        QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
+            .AsTracking()
+            .Include(x => x.FieldValues)
+            .FirstOrDefaultAsync(
+                s =>
+                    s.UserId == currentUser.Id &&
+                    s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId,
+                cancellationToken: ct
+            );
+
+        if (submissionEntity != null)
         {
-            VersionId = model.QuestionnaireVersionId,
-            UserId = currentUser.Id,
-            
-            SubmittedAt = clock.GetCurrentInstant(),
+            submissionEntity.VersionId = model.QuestionnaireVersionId;
+            submissionEntity.SubmittedAt = clock.GetCurrentInstant();
+        }
+        else
+        {
+            submissionEntity = new()
+            {
+                VersionId = model.QuestionnaireVersionId,
+                UserId = currentUser.Id,
 
-            FieldValues = model.Values
-                .Select(pair => new QuestionnaireFieldValueEntity
-                {
-                    FieldId = pair.Key,
-                    ValueSerialized = fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
-                })
-                .ToHashSet(),
-        };
+                SubmittedAt = clock.GetCurrentInstant(),
+            };
 
-        dbContext.QuestionnaireSubmissions.Add(entity);
+            dbContext.QuestionnaireSubmissions.Add(submissionEntity);
+        }
+
+        // EVen if we loaded an existing entity, outright replace old value entities/rows
+        submissionEntity.FieldValues = model.Values
+            .Select(pair => new QuestionnaireFieldValueEntity
+            {
+                FieldId = pair.Key,
+                ValueSerialized = fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
+            })
+            .ToHashSet();
+
         await dbContext.SaveChangesAsync(ct);
 
-        return entity.Id;
+        return submissionEntity.Id;
 
         void ThrowFailedValuesValidation()
         {
