@@ -10,7 +10,7 @@
 @using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
-@using Havit.Blazor.Components.Web.Bootstrap
+@using Namezr.Client
 
 @attribute [Authorize]
 @layout StudioLayout
@@ -23,7 +23,11 @@
 {
     <div class="d-flex gap-3 align-items-center justify-content-between">
         <h3>@_questionnaireVersion.Questionnaire.Title</h3>
-        <a href="/studio/@CreatorId/questionnaires/@Id/edit" class="btn btn-primary">Edit</a>
+        <a
+            href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/edit"
+            class="btn btn-primary">
+            Edit
+        </a>
     </div>
 
     <div>
@@ -115,42 +119,37 @@
 
     <h4>Submissions</h4>
 
-    /* TODO: pagination */
-    /* TODO: not only from the current version */
-    @foreach (QuestionnaireSubmissionEntity submission in _questionnaireVersion.Submissions!)
-    {
-        <HxCard>
-            <BodyTemplate>
-                <table class="table table-striped">
-                    <tr>
-                        <th>User</th>
-                        <td>@submission.User.UserName</td>
-                    </tr>
 
-                    <tr>
-                        <th>Submitted at</th>
-                        <td>@submission.SubmittedAt</td>
-                    </tr>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>User</th>
+            <th>Submitted at</th>
+            <th>Questionnaire version</th>
+            <th></th>
+        </tr>
+        </thead>
 
-                    <tr>
-                        <th>Questionnaire version</th>
-                        <td>@submission.VersionId</td>
-                    </tr>
+        <tbody>
+        @foreach (QuestionnaireSubmissionEntity submission in _questionnaireVersion.Submissions!)
+        {
+            /* TODO: pagination */
+            /* TODO: not only from the current version */
 
-                    @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _questionnaireVersion.Fields)
-                    {
-                        <tr>
-                            <th>@fieldConfiguration.Title</th>
-                            <td>
-                                @* TODO: deserialize *@
-                                @submission.FieldValues!.SingleOrDefault(x => x.FieldId == fieldConfiguration.FieldId)?.ValueSerialized
-                            </td>
-                        </tr>
-                    }
-                </table>
-            </BodyTemplate>
-        </HxCard>
-    }
+            <tr>
+                <td>@submission.User.UserName</td>
+                <td>@submission.SubmittedAt</td>
+                <td>@submission.VersionId</td>
+                <td>
+                    <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions/@submission.Id.NoHyphens()"
+                       class="btn btn-primary">
+                        View
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
 }
 
 @code {
@@ -179,7 +178,6 @@
             .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .Include(x => x.Submissions!).ThenInclude(x => x.User)
-            .Include(x => x.Submissions!).ThenInclude(x => x.FieldValues)
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);
 

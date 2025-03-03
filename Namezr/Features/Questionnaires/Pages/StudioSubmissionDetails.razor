@@ -1,0 +1,97 @@
+﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/{submissionId:guid}"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Layout
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@attribute [Authorize]
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@if (_submission is not null)
+{
+    <div class="d-flex gap-3 align-items-center justify-content-between">
+        <h3>@_submission.Version.Questionnaire.Title</h3>
+        <a 
+            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()" 
+            class="btn btn-secondary">
+            Questionnaire
+        </a>
+    </div>
+
+    <div>
+        <pre>@_submission.Version.Questionnaire.Description</pre>
+    </div>
+
+    <hr class="my-4"/>
+
+    /* TODO: user info, eligibility breakdown, etc. */
+
+    <table class="table table-striped">
+        <tr>
+            <th>User</th>
+            <td>@_submission.User.UserName</td>
+        </tr>
+
+        <tr>
+            <th>Submitted at</th>
+            <td>@_submission.SubmittedAt</td>
+        </tr>
+
+        <tr>
+            <th>Questionnaire version</th>
+            <td>@_submission.VersionId</td>
+        </tr>
+    </table>
+
+    <table class="table table-striped mt-4">
+        @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _submission.Version.Fields!)
+        {
+            <tr>
+                <th>@fieldConfiguration.Title</th>
+                <td>
+                    @* TODO: deserialize *@
+                    @_submission.FieldValues!.SingleOrDefault(x => x.FieldId == fieldConfiguration.FieldId)?.ValueSerialized
+                </td>
+            </tr>
+        }
+    </table>
+}
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public Guid SubmissionId { get; set; }
+
+    private QuestionnaireSubmissionEntity? _submission;
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _submission = await dbContext.QuestionnaireSubmissions
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Version.Questionnaire)
+            .Include(x => x.Version.Fields!).ThenInclude(x => x.Field)
+            .Include(x => x.FieldValues)
+            .Include(x => x.User)
+            .SingleOrDefaultAsync(x => x.Id == SubmissionId);
+    }
+
+}
