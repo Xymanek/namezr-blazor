@@ -10,6 +10,7 @@
             Nullable="false"
             Label="Support plan"
             @bind-Value="Value.PlanId"
+            @bind-Value:after="AfterPlanChanged"
             ValueSelector="@(x => x.Id)"
             TextSelector="GetEligibilityDescriptorDisplayName"
         />
@@ -61,6 +62,16 @@
 
             _ => throw new UnreachableException(),
         };
+    }
+
+    private void AfterPlanChanged()
+    {
+        if (string.IsNullOrWhiteSpace(Value.PriorityGroup) && Value.PlanId != null)
+        {
+            Value.PriorityGroup =
+                EligibilityDescriptors.FirstOrDefault(x => x.Id == Value.PlanId)?.DefaultPriorityGroup
+                ?? string.Empty;
+        }
     }
 
 }

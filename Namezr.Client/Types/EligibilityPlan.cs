@@ -13,6 +13,8 @@ public record EligibilityPlan
     public SupportPlan? SupportPlan { get; }
     public VirtualEligibilityType? VirtualEligibilityType { get; }
 
+    public string? DefaultPriorityGroup { get; init; }
+
     public EligibilityPlan(SupportPlan supportPlan)
     {
         Type = EligibilityType.SupportPlan;
@@ -27,6 +29,8 @@ public record EligibilityPlan
         VirtualEligibilityType = virtualEligibilityType;
 
         Id = new EligibilityPlanId(virtualEligibilityType);
+
+        DefaultPriorityGroup = "Other";
     }
 
     [JsonConstructor]

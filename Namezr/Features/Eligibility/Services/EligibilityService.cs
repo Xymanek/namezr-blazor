@@ -39,7 +39,10 @@ public partial class EligibilityService : IEligibilityService
     {
         foreach (SupportPlan supportPlan in supportPlans)
         {
-            yield return new EligibilityPlan(supportPlan);
+            yield return new EligibilityPlan(supportPlan)
+            {
+                DefaultPriorityGroup = supportPlan.ServiceType.ToString(),
+            };
         }
 
         yield return new EligibilityPlan(VirtualEligibilityType.NoSupportPlanAtAll);

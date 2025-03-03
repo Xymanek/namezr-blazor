@@ -176,7 +176,7 @@ internal partial class MockServerAuthenticationHandler : TwitchAuthenticationHan
                  <form method="post">
                      <div style='margin-bottom: 1em;'>
                          <label for="user_id">User ID</label>
-                         <input type="text" id="user_id" name="user_id" />
+                        <input type="text" id="user_id" name="user_id" autofocus />
                      </div>
                      
                      <button type="submit">Submit</button>
