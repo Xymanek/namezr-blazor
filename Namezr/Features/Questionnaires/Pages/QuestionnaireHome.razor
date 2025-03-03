@@ -7,6 +7,7 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 @using Havit.Blazor.Components.Web.Bootstrap
+@using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
 @using Namezr.Components.Account
 @using Namezr.Features.Consumers.Services
@@ -14,11 +15,13 @@
 @using Namezr.Features.Eligibility.Data
 @using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Identity.Data
+@using Namezr.Features.Questionnaires.Services
 
 @inject ApplicationDbContext DbContext
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
 @inject IdentityUserAccessor UserAccessor
+@inject IFieldValueSerializer FieldValueSerializer
 
 @if (_versionEntity is not null)
 {
@@ -101,6 +104,7 @@
             {
                 <SubmissionEditor
                     Config="ConfigModel"
+                    InitialValues="_initialValues"
                     QuestionnaireVersionId="QuestionnaireVersionId!.Value"
                 />
             }
@@ -126,6 +130,8 @@
 
     private IReadOnlyDictionary<EligibilityPlanId, EligibilityPlan>? _eligibilityPlans;
     private ImmutableHashSet<EligibilityPlanId> _eligiblePlanIds = ImmutableHashSet<EligibilityPlanId>.Empty;
+
+    private Dictionary<string, SubmissionValueModel>? _initialValues;
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,6 +164,29 @@
             );
 
             _eligiblePlanIds = eligibilityResult.EligiblePlanIds;
+
+            QuestionnaireSubmissionEntity? submission = await DbContext.QuestionnaireSubmissions
+                .Include(x => x.FieldValues)
+                .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
+
+            if (submission is not null)
+            {
+                _initialValues = new Dictionary<string, SubmissionValueModel>();
+
+                foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
+                {
+                    QuestionnaireFieldType? fieldType = _versionEntity.Fields!
+                        .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
+                        ?.Field.Type;
+
+                    if (fieldType is null) continue;
+
+                    _initialValues.Add(
+                        fieldValue.FieldId.ToString(),
+                        FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
+                    );
+                }
+            }
         }
     }
 

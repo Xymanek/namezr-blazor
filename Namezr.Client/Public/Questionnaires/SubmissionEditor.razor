@@ -1,5 +1,6 @@
 ﻿@using Namezr.Client.Infra
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using SuperLinq
 @using vNext.BlazorComponents.FluentValidation
 
 @rendermode InteractiveWebAssembly
@@ -72,6 +73,9 @@
     [Parameter]
     public required QuestionnaireConfigModel Config { get; init; }
 
+    [Parameter]
+    public Dictionary<string, SubmissionValueModel>? InitialValues { get; set; }
+
     private Dictionary<string, SubmissionValueModel> Values { get; } = new();
 
     /// <summary>
@@ -95,6 +99,15 @@
     {
         base.OnParametersSet();
 
+        InitialValues?.DeepCloneInto(Values);
+
+        // Delete values for fields which were removed from the questionnaire
+        Values.Keys
+            .Except(Config.Fields.Select(field => field.Id.ToString()))
+            .ToArray()
+            .ForEach(x => Values.Remove(x));
+
+        // Ensure all values have an entry
         foreach (QuestionnaireConfigFieldModel field in Config.Fields)
         {
             Values.TryAdd(field.Id.ToString(), new SubmissionValueModel());
