@@ -23,11 +23,18 @@
 {
     <div class="d-flex gap-3 align-items-center justify-content-between">
         <h3>@_questionnaireVersion.Questionnaire.Title</h3>
-        <a
-            href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/edit"
-            class="btn btn-primary">
-            Edit
-        </a>
+        <div>
+            <a
+                href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/selection"
+                class="btn btn-secondary">
+                Selection
+            </a>
+            <a
+                href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/edit"
+                class="btn btn-primary">
+                Edit
+            </a>
+        </div>
     </div>
 
     <div>

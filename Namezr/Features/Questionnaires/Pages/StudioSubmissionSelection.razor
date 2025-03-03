@@ -1,0 +1,147 @@
+﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/selection"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Layout
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+
+@attribute [Authorize]
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@if (_questionnaire is not null)
+{
+    <div class="d-flex gap-3 align-items-center justify-content-between">
+        <h3>@_questionnaire.Title</h3>
+        <a
+            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
+            class="btn btn-secondary">
+            Questionnaire
+        </a>
+    </div>
+}
+
+<HxCard>
+    <BodyTemplate>
+        <HxCardTitle>
+            Configuration
+        </HxCardTitle>
+
+        <div class="d-flex justify-content-stretch gap-3">
+            <HxCheckbox
+                CssClass="flex-grow-1"
+                Label="Allow restarting"
+                @bind-Value="_allowRestarts"
+            />
+            <HxInputNumber
+                CssClass="flex-grow-1"
+                Label="Number of entries to select"
+                @bind-Value="_numberOfEntriesToSelect"
+            />
+            <HxButton
+                Color="ThemeColor.Success"
+                Text="Roll"
+            />
+        </div>
+    </BodyTemplate>
+</HxCard>
+
+<h4>Results</h4>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>User</th>
+        <th>Submission ID</th>
+        <th></th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr>
+        <td colspan="3" class="text-center">
+            <em>Rolling...</em>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3" class="text-center">
+            <strong>Rolled on 25 February 2023 at 11:00 AM</strong>
+        </td>
+    </tr>
+    <tr>
+        <td>john@example.com</td>
+        <td>@Guid.NewGuid()</td>
+        <td>
+            <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/1"
+               class="btn btn-primary">
+                View
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td>jane@example.com</td>
+        <td>@Guid.NewGuid()</td>
+        <td>
+            <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/1"
+               class="btn btn-primary">
+                View
+            </a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<h4>User statistics</h4>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>User</th>
+        <th>Modifier</th>
+        <th>Has been select in current iteration</th>
+        <th>Total times selected</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr>
+        <td>john@example.com</td>
+        <td>1.5</td>
+        <td>No</td>
+        <td>3</td>
+    </tr>
+    </tbody>
+</table>
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    private QuestionnaireEntity? _questionnaire;
+
+    private bool _allowRestarts;
+    private int _numberOfEntriesToSelect;
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _questionnaire = await dbContext.Questionnaires
+            .AsNoTracking()
+            .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
+    }
+
+}
