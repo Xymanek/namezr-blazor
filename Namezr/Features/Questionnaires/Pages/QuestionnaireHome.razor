@@ -31,58 +31,68 @@
     <h3>@_versionEntity?.Questionnaire.Title</h3>
 
     <div>
-        Ways to be eligible:
+        <pre>@_versionEntity?.Questionnaire.Description</pre>
     </div>
 
-    IEnumerable<IGrouping<(EligibilityType Type, Guid SupportTargetId), EligibilityOptionEntity>> groupedOptions = _versionEntity!
-            .Questionnaire
-            .EligibilityConfiguration
-            .Options!
-            .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId!.SupportTargetId));
+    <HxCard>
+        <BodyTemplate>
+            <HxCardTitle>
+                Ways to be eligible:
+            </HxCardTitle>
 
-    foreach (var grouping in groupedOptions)
-    {
-        <h4>
-            @if (grouping.Key.Type == EligibilityType.SupportPlan)
-            {
-                EligibilityPlan matchingEligibilityPlan = _eligibilityPlans!.Values
-                    .First(x => x.SupportPlan?.Id.SupportTargetId == grouping.Key.SupportTargetId);
-
-                <span>
-                    @matchingEligibilityPlan.SupportPlan!.ServiceType
-                </span>
+            @{
+                IEnumerable<IGrouping<(EligibilityType Type, Guid SupportTargetId), EligibilityOptionEntity>> groupedOptions = _versionEntity!
+                    .Questionnaire
+                    .EligibilityConfiguration
+                    .Options!
+                    .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId!.SupportTargetId));
             }
-            else
-            {
-                <span>Other</span>
-            }
-        </h4>
 
-        <ul>
-            @foreach (EligibilityOptionEntity option in grouping)
+            @foreach (var grouping in groupedOptions)
             {
-                <li>
-                    @if (option.PlanId.Type == EligibilityType.SupportPlan)
+                <strong>
+                    @if (grouping.Key.Type == EligibilityType.SupportPlan)
                     {
-                        EligibilityPlan plan = _eligibilityPlans![option.PlanId];
+                        EligibilityPlan matchingEligibilityPlan = _eligibilityPlans!.Values
+                            .First(x => x.SupportPlan?.Id.SupportTargetId == grouping.Key.SupportTargetId);
 
                         <span>
-                            @plan.SupportPlan!.DisplayName
+                            @matchingEligibilityPlan.SupportPlan!.ServiceType
                         </span>
                     }
                     else
                     {
-                        <span>@option.PlanId.VirtualEligibilityType</span>
+                        <span>Other</span>
                     }
-                    
-                    @if(_eligiblePlanIds.Contains(option.PlanId))
+                </strong>
+
+                <ul>
+                    @foreach (EligibilityOptionEntity option in grouping)
                     {
-                        <span class="ml-2 badge bg-success">Eligible</span>
+                        <li>
+                            @if (option.PlanId.Type == EligibilityType.SupportPlan)
+                            {
+                                EligibilityPlan plan = _eligibilityPlans![option.PlanId];
+
+                                <span>
+                                    @plan.SupportPlan!.DisplayName
+                                </span>
+                            }
+                            else
+                            {
+                                <span>@option.PlanId.VirtualEligibilityType</span>
+                            }
+
+                            @if (_eligiblePlanIds.Contains(option.PlanId))
+                            {
+                                <span class="ml-2 badge bg-success">Eligible</span>
+                            }
+                        </li>
                     }
-                </li>
+                </ul>
             }
-        </ul>
-    }
+        </BodyTemplate>
+    </HxCard>
 
     @* TODO: display the form, but disabled *@
     <AuthorizeView>

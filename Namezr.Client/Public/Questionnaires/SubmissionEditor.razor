@@ -1,5 +1,4 @@
-﻿@using FluentValidation
-@using Namezr.Client.Infra
+﻿@using Namezr.Client.Infra
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using vNext.BlazorComponents.FluentValidation
 
@@ -7,59 +6,55 @@
 
 @inject ISpaHttpClientProvider HttpClientProvider
 
-<h3>SubmissionEditor</h3>
-
 <EditForm Model="Values" OnValidSubmit="HandleValidSubmit">
     <FluentValidationValidator Validator="Validator"/>
 
-    <h1>@Config.Title</h1>
-
-    @if (Config.Description is not null)
+    @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
     {
-        <p>@Config.Description</p>
-    }
+        string fieldIdStr = field.Id.ToString();
 
-    <ul>
-        @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
+        if (FieldValidatorProviders.TryGetValue(fieldIdStr, out FieldValidatorProvider? validatorProvider))
         {
-            string fieldIdStr = field.Id.ToString();
+            <FluentValidationValidator ValidatorFactory="validatorProvider"/>
+        }
 
-            if (FieldValidatorProviders.TryGetValue(fieldIdStr, out FieldValidatorProvider? validatorProvider))
+        <div class="my-3">
+            @switch (field.Type)
             {
-                <FluentValidationValidator ValidatorFactory="validatorProvider"/>
+                case QuestionnaireFieldType.Text:
+                    <HxInputText
+                        LabelType="LabelType.Floating"
+                        Label="@field.Title"
+                        Placeholder=""
+                        @bind-Value="Values[fieldIdStr].StringValue"
+                    />
+                    break;
+
+                case QuestionnaireFieldType.Number:
+                    <HxInputNumber
+                        LabelType="LabelType.Floating"
+                        Label="@field.Title"
+                        @bind-Value="Values[fieldIdStr].NumberValue"
+                    />
+                    break;
+
+                case QuestionnaireFieldType.FileUpload:
+                    @*<HxInputFile/>*@
+                    /* TODO: file upload */
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
-            <li>
-                <strong>@field.Title</strong>
-                <br/>
-                @field.Description
-                <br/>
-
-                @switch (field.Type)
-                {
-                    case QuestionnaireFieldType.Text:
-                        <HxInputText
-                            @bind-Value="Values[fieldIdStr].StringValue"
-                        />
-                        break;
-
-                    case QuestionnaireFieldType.Number:
-                        <HxInputNumber
-                            @bind-Value="Values[fieldIdStr].NumberValue"
-                        />
-                        break;
-
-                    case QuestionnaireFieldType.FileUpload:
-                        @*<HxInputFile/>*@
-                        /* TODO: file upload */
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            </li>
-        }
-    </ul>
+            @if (!string.IsNullOrWhiteSpace(field.Description))
+            {
+                <div>
+                    <pre>@field.Description</pre>
+                </div>
+            }
+        </div>
+    }
 
     <HxSubmit
         Text="Submit"
@@ -73,7 +68,7 @@
 
     [Parameter]
     public required Guid QuestionnaireVersionId { get; init; }
-    
+
     [Parameter]
     public required QuestionnaireConfigModel Config { get; init; }
 
@@ -115,7 +110,7 @@
     }
 
     private bool? IsSending { get; set; }
-    
+
     private async Task HandleValidSubmit()
     {
         IsSending = true;

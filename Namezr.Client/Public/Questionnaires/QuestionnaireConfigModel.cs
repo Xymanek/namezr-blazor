@@ -4,9 +4,6 @@ namespace Namezr.Client.Public.Questionnaires;
 
 public class QuestionnaireConfigModel
 {
-    public required string Title { get; init; }
-    public required string? Description { get; init; }
-
     public List<QuestionnaireConfigFieldModel> Fields { get; init; } = new();
 }
 
