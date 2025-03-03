@@ -131,10 +131,9 @@
         </thead>
 
         <tbody>
-        @foreach (QuestionnaireSubmissionEntity submission in _questionnaireVersion.Submissions!)
+        @foreach (QuestionnaireSubmissionEntity submission in _submissions)
         {
             /* TODO: pagination */
-            /* TODO: not only from the current version */
 
             <tr>
                 <td>@submission.User.UserName</td>
@@ -164,6 +163,7 @@
     public Guid Id { get; set; }
 
     private QuestionnaireVersionEntity? _questionnaireVersion;
+    private QuestionnaireSubmissionEntity[] _submissions = [];
     private Dictionary<EligibilityPlanId, EligibilityPlan>? EligibilityDescriptors { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -177,9 +177,13 @@
             .AsSplitQuery()
             .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .Include(x => x.Submissions!).ThenInclude(x => x.User)
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);
+
+        _submissions = await dbContext.QuestionnaireSubmissions
+            .Include(s => s.User)
+            .Where(s => s.Version.QuestionnaireId == Id)
+            .ToArrayAsync();
 
         EligibilityDescriptors = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
