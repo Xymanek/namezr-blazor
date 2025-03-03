@@ -1,0 +1,185 @@
+﻿@page "/studio/{creatorId:guid}/questionnaires/{id:guid}"
+
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Types
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Data
+@using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+
+@attribute [Authorize]
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
+
+@if (_questionnaireVersion is not null)
+{
+    <h3>@_questionnaireVersion.Questionnaire.Title</h3>
+
+    <div>
+        <pre>@_questionnaireVersion.Questionnaire.Description</pre>
+    </div>
+
+    <hr class="my-4"/>
+
+    <h4>Eligibility</h4>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Support plan</th>
+            <th>Priority group</th>
+            <th>Priority modifier</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @foreach (EligibilityOptionEntity option in _questionnaireVersion.Questionnaire.EligibilityConfiguration.Options!)
+        {
+            <tr>
+                <td>
+                    @if (EligibilityDescriptors is not null)
+                    {
+                        EligibilityPlan? eligibilityPlan = EligibilityDescriptors.GetValueOrDefault(option.PlanId);
+
+                        @switch (eligibilityPlan?.Type)
+                        {
+                            case null:
+                                <i>Unknown</i>
+                                break;
+
+                            case EligibilityType.SupportPlan:
+                                <span>@eligibilityPlan.SupportPlan?.DisplayName</span>
+                                break;
+
+                            case EligibilityType.Virtual:
+                                <span>@eligibilityPlan.VirtualEligibilityType</span>
+                                break;
+
+                            default:
+                                throw new UnreachableException();
+                        }
+                    }
+                </td>
+                <td>@option.PriorityGroup</td>
+                <td>@option.PriorityModifier</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <hr class="my-4"/>
+
+    /* TODO: version selector */
+    <h4>Fields</h4>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Type</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @foreach (QuestionnaireFieldConfigurationEntity field in _questionnaireVersion.Fields!)
+        {
+            <tr>
+                <td>@field.Title</td>
+                <td>@field.Field.Type</td>
+            </tr>
+
+            @if (!string.IsNullOrWhiteSpace(field.Description))
+            {
+                <tr>
+                    <td colspan="2">
+                        <pre>@field.Description</pre>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+
+    <hr class="my-4"/>
+
+    <h4>Submissions</h4>
+
+    /* TODO: pagination */
+    @foreach (QuestionnaireSubmissionEntity submission in _questionnaireVersion.Submissions!)
+    {
+        <HxCard>
+            <BodyTemplate>
+                <table class="table table-striped">
+                    <tr>
+                        <th>User</th>
+                        <td>@submission.User.Email</td>
+                    </tr>
+
+                    <tr>
+                        <th>Submitted at</th>
+                        <td>@submission.SubmittedAt</td>
+                    </tr>
+
+                    @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _questionnaireVersion.Fields)
+                    {
+                        <tr>
+                            <th>@fieldConfiguration.Title</th>
+                            <td>
+                                @* TODO: deserialize *@
+                                @submission.FieldValues!.SingleOrDefault(x => x.FieldId == fieldConfiguration.FieldId)?.ValueSerialized
+                            </td>
+                        </tr>
+                    }
+                </table>
+            </BodyTemplate>
+        </HxCard>
+    }
+}
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private QuestionnaireVersionEntity? _questionnaireVersion;
+    private Dictionary<EligibilityPlanId, EligibilityPlan>? EligibilityDescriptors { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _questionnaireVersion = await dbContext.QuestionnaireVersions
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
+            .Include(x => x.Fields!).ThenInclude(x => x.Field)
+            .Include(x => x.Submissions!).ThenInclude(x => x.User)
+            .Include(x => x.Submissions!).ThenInclude(x => x.FieldValues)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);
+
+        EligibilityDescriptors = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                // TODO: in parallel
+                await SupportPlansService.GetSupportPlans(CreatorId)
+            )
+            .ToDictionary(plan => plan.Id);
+    }
+
+}

@@ -15,6 +15,7 @@ public class QuestionnaireVersionEntity
     public Instant CreatedAt { get; set; }
 
     public ICollection<QuestionnaireFieldConfigurationEntity>? Fields { get; set; }
+    public ICollection<QuestionnaireSubmissionEntity>? Submissions { get; set; }
 }
 
 internal class QuestionnaireVersionEntityConfiguration : IEntityTypeConfiguration<QuestionnaireVersionEntity>
