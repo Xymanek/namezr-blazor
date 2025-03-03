@@ -55,7 +55,8 @@ internal partial class SubmissionCreateRequest
             ThrowFailedValuesValidation();
         }
 
-        // TODO: validate eligibility
+        // TODO: validate eligibility + generally replicate the same checks as
+        // Namezr.Features.Questionnaires.Pages.QuestionnaireHome.DisabledReason
 
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);

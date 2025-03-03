@@ -24,15 +24,16 @@
             {
                 case QuestionnaireFieldType.Text:
                     <HxInputText
+                        Enabled="!AllDisabled"
                         LabelType="LabelType.Floating"
                         Label="@field.Title"
-                        Placeholder=""
                         @bind-Value="Values[fieldIdStr].StringValue"
                     />
                     break;
 
                 case QuestionnaireFieldType.Number:
                     <HxInputNumber
+                        Enabled="!AllDisabled"
                         LabelType="LabelType.Floating"
                         Label="@field.Title"
                         @bind-Value="Values[fieldIdStr].NumberValue"
@@ -58,15 +59,18 @@
     }
 
     <HxSubmit
+        Enabled="!AllDisabled && RendererInfo.IsInteractive"
         Text="Submit"
         Color="@ThemeColor.Primary"
-        Enabled="RendererInfo.IsInteractive"
         Spinner="IsSending"
     />
 </EditForm>
 
 @code {
 
+    [Parameter]
+    public bool AllDisabled { get; set; }
+    
     [Parameter]
     public required Guid QuestionnaireVersionId { get; init; }
 

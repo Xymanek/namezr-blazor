@@ -97,23 +97,31 @@
         </BodyTemplate>
     </HxCard>
 
-    @* TODO: display the form, but disabled *@
-    <AuthorizeView>
-        <Authorized>
-            @if (ConfigModel is not null)
-            {
-                <SubmissionEditor
-                    Config="ConfigModel"
-                    InitialValues="_initialValues"
-                    QuestionnaireVersionId="QuestionnaireVersionId!.Value"
-                />
-            }
-        </Authorized>
+    @switch (_disabledReason)
+    {
+        case DisabledReason.NotLoggedIn:
+            <HxAlert Color="ThemeColor.Warning">
+                Please log in to submit a response.
+            </HxAlert>
+            break;
 
-        <NotAuthorized>
-            <p>You must be logged in to submit a response.</p>
-        </NotAuthorized>
-    </AuthorizeView>
+        case DisabledReason.NotEligible:
+            /* TODO: links to auth with eligibility options */
+            <HxAlert Color="ThemeColor.Warning">
+                You are currently not eligible.
+            </HxAlert>
+            break;
+    }
+    
+    @if (ConfigModel is not null)
+    {
+        <SubmissionEditor
+            Config="ConfigModel"
+            InitialValues="_initialValues"
+            AllDisabled="_disabledReason.HasValue"
+            QuestionnaireVersionId="QuestionnaireVersionId!.Value"
+        />
+    }
 }
 
 @code {
@@ -132,6 +140,8 @@
     private ImmutableHashSet<EligibilityPlanId> _eligiblePlanIds = ImmutableHashSet<EligibilityPlanId>.Empty;
 
     private Dictionary<string, SubmissionValueModel>? _initialValues;
+
+    private DisabledReason? _disabledReason;
 
     protected override async Task OnInitializedAsync()
     {
@@ -155,13 +165,22 @@
 
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
 
-        if (user is not null)
+        if (user is null)
+        {
+            _disabledReason = DisabledReason.NotLoggedIn;
+        }
+        else
         {
             EligibilityResult eligibilityResult = await EligibilityService.ClassifyEligibility(
                 user.Id,
                 _versionEntity.Questionnaire.EligibilityConfiguration,
                 UserStatusSyncEagerness.Default
             );
+
+            if (!eligibilityResult.Any)
+            {
+                _disabledReason = DisabledReason.NotEligible;
+            }
 
             _eligiblePlanIds = eligibilityResult.EligiblePlanIds;
 
@@ -188,6 +207,12 @@
                 }
             }
         }
+    }
+
+    private enum DisabledReason
+    {
+        NotLoggedIn,
+        NotEligible,
     }
 
 }
