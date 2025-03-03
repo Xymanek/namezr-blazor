@@ -116,6 +116,7 @@
     <h4>Submissions</h4>
 
     /* TODO: pagination */
+    /* TODO: not only from the current version */
     @foreach (QuestionnaireSubmissionEntity submission in _questionnaireVersion.Submissions!)
     {
         <HxCard>
@@ -123,12 +124,17 @@
                 <table class="table table-striped">
                     <tr>
                         <th>User</th>
-                        <td>@submission.User.Email</td>
+                        <td>@submission.User.UserName</td>
                     </tr>
 
                     <tr>
                         <th>Submitted at</th>
                         <td>@submission.SubmittedAt</td>
+                    </tr>
+
+                    <tr>
+                        <th>Questionnaire version</th>
+                        <td>@submission.VersionId</td>
                     </tr>
 
                     @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _questionnaireVersion.Fields)
