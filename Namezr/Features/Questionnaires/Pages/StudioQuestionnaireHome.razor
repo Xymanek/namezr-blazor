@@ -26,7 +26,7 @@ else if (Questionnaires.Any())
         @foreach (QuestionnaireEntity questionnaire in Questionnaires)
         {
             <li>
-                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@questionnaire.Id.NoHyphens()/edit">
+                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@questionnaire.Id.NoHyphens()">
                     @questionnaire.Title
                 </a>
             </li>

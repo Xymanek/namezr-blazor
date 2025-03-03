@@ -21,7 +21,10 @@
 
 @if (_questionnaireVersion is not null)
 {
-    <h3>@_questionnaireVersion.Questionnaire.Title</h3>
+    <div class="d-flex gap-3 align-items-center justify-content-between">
+        <h3>@_questionnaireVersion.Questionnaire.Title</h3>
+        <a href="/studio/@CreatorId/questionnaires/@Id/edit" class="btn btn-primary">Edit</a>
+    </div>
 
     <div>
         <pre>@_questionnaireVersion.Questionnaire.Description</pre>
