@@ -34,12 +34,11 @@
         Ways to be eligible:
     </div>
 
-    IEnumerable<IGrouping<(EligibilityType Type, SupportPlanFullId? SupportPlanId), EligibilityOptionEntity>>
-        groupedOptions = _versionEntity!
-            .Questionnaire!
-            .EligibilityConfiguration!
+    IEnumerable<IGrouping<(EligibilityType Type, Guid SupportTargetId), EligibilityOptionEntity>> groupedOptions = _versionEntity!
+            .Questionnaire
+            .EligibilityConfiguration
             .Options!
-            .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId));
+            .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId!.SupportTargetId));
 
     foreach (var grouping in groupedOptions)
     {
@@ -47,7 +46,7 @@
             @if (grouping.Key.Type == EligibilityType.SupportPlan)
             {
                 EligibilityPlan matchingEligibilityPlan = _eligibilityPlans!.Values
-                    .First(x => x.SupportPlan?.Id == grouping.Key.SupportPlanId);
+                    .First(x => x.SupportPlan?.Id.SupportTargetId == grouping.Key.SupportTargetId);
 
                 <span>
                     @matchingEligibilityPlan.SupportPlan!.ServiceType
