@@ -1,15 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Features.Identity.Data;
+using Namezr.Features.SelectionSeries.Data;
 using NodaTime;
 
 namespace Namezr.Features.Questionnaires.Data;
 
 [EntityTypeConfiguration(typeof(QuestionnaireSubmissionEntityConfiguration))]
-public class QuestionnaireSubmissionEntity
+public class QuestionnaireSubmissionEntity : SelectionCandidateEntity
 {
-    public Guid Id { get; set; }
-
     public QuestionnaireVersionEntity Version { get; set; } = null!;
     public Guid VersionId { get; set; }
 
