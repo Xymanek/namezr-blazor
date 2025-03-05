@@ -13,4 +13,6 @@ public partial class ApplicationDbContext
     public DbSet<SelectionEventEntity> SelectionEvents { get; set; } = null!;
 
     public DbSet<SelectionUserDataEntity> SelectionUserData { get; set; } = null!;
+    
+    public DbSet<SelectionCandidateEntity> SelectionCandidates { get; set; } = null!;
 }

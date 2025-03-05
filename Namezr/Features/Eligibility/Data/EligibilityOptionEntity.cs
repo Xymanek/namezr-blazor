@@ -22,6 +22,8 @@ public class EligibilityOptionEntity
     public required string PriorityGroup { get; set; }
 
     public required decimal PriorityModifier { get; set; }
+    
+    // TODO: add SelectionWave, e.g. all "1"s must be selected before "2"s are considered
 }
 
 internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<EligibilityOptionEntity>

@@ -9,6 +9,7 @@ public class EligibilityConfigurationEntity
     public required EligibilityConfigurationOwnershipType OwnershipType { get; init; }
 
     public QuestionnaireEntity? Questionnaire { get; set; }
+    public Guid? QuestionnaireId { get; set; }
 
     public ICollection<EligibilityOptionEntity>? Options { get; set; }
 }
