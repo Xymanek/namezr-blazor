@@ -3,4 +3,5 @@
 public enum SelectionEventKind
 {
     NewCycle,
+    NoMoreCandidates,
 }

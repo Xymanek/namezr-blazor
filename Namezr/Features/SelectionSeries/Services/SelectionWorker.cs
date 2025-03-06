@@ -78,7 +78,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         // Prep for saving
         List<SelectionEntryEntity> batchEntities = new(numberOfEntriesToSelect);
-        
+
         // 2) Get user eligibility, obeying forceRecalculateEligibility
         // do this only if the user is a candidate but store the result in case of multiple cycles
 
@@ -95,12 +95,13 @@ public partial class SelectionWorker : ISelectionWorker
             .ToHashSet();
 
         // 4) Biased random selection
-        int selectedCount = 0;
+        int selectedCount = 0; // TODO: remove
 
         while (selectedCount < numberOfEntriesToSelect) // TODO: handle no candidates for the current cycle
         {
             (SelectionCandidateEntity Candidate, double Modifier)[] candidateModifiers = candidates
-                .Where(x => !usersSelectedInCurrentCycle.Contains(x.UserId)) // TODO: this must account for the just selected ones
+                .Where(x => !usersSelectedInCurrentCycle
+                    .Contains(x.UserId)) // TODO: this must account for the just selected ones
                 .Select(x => (x.Candidate, (double)userEligibilities[x.UserId].Modifier))
                 .ToArray();
 
@@ -117,7 +118,7 @@ public partial class SelectionWorker : ISelectionWorker
                     batchEntities.Add(new SelectionEntryPickedEntity
                     {
                         BatchPosition = 0, // Will be set later
-                        
+
                         Candidate = candidate,
                         Cycle = seriesEntity.CompleteCyclesCount,
                     });
@@ -145,7 +146,7 @@ public partial class SelectionWorker : ISelectionWorker
         {
             batchEntities[i].BatchPosition = i;
         }
-        
+
         seriesEntity.CompletedSelectionMarker = Guid.NewGuid();
         dbContext.SelectionBatches.Add(new SelectionBatchEntity
         {
@@ -176,6 +177,54 @@ public partial class SelectionWorker : ISelectionWorker
             userEligibilities[userId] = result;
 
             return result;
+        }
+
+        void PickOneForCurrentCycle()
+        {
+            // TODO
+        }
+
+        void PickCurrentCycleMostPossible()
+        {
+            // TODO
+        }
+
+        // TODO: this should NOT be a local function
+        void PickWithRestarts()
+        {
+            while (true)
+            {
+                PickCurrentCycleMostPossible();
+
+                // We are done if we fulfilled the request
+                if (numberOfEntriesToSelect <= CountPicksSoFar()) break;
+
+                if (!allowRestarts)
+                {
+                    batchEntities.Add(new SelectionEntryEventEntity
+                    {
+                        BatchPosition = 0, // Will be set later
+                        Kind = SelectionEventKind.NoMoreCandidates,
+                    });
+                    break;
+                }
+
+                batchEntities.Add(new SelectionEntryEventEntity
+                {
+                    BatchPosition = 0, // Will be set later
+                    Kind = SelectionEventKind.NewCycle,
+                });
+
+                currentCycle++;
+                usersSelectedInCurrentCycle.Clear();
+            }
+        }
+
+        int CountPicksSoFar()
+        {
+            return batchEntities
+                .OfType<SelectionEntryPickedEntity>()
+                .Count();
         }
     }
 
