@@ -34,7 +34,7 @@ public partial class SelectionWorker : ISelectionWorker
         long seriesId,
         bool allowRestarts,
         bool forceRecalculateEligibility,
-        int numberOfEntriesToSelect,
+        int numberOfEntriesToSelect, // TODO: slightly better name to indicate that only picks count
         CancellationToken ct = default
     )
     {
@@ -48,14 +48,6 @@ public partial class SelectionWorker : ISelectionWorker
             .AsTracking()
             .Include(s => s.UserData)
             .SingleAsync(s => s.Id == seriesId, cancellationToken: ct);
-
-        // TODO
-        // SelectionBatchEntity batch = new()
-        // {
-        //     RollCompletedAt = startTime,
-        //     RollStartedAt = startTime,
-        //     Series = seriesEntity,
-        // };
 
         EligibilityConfigurationEntity eligibilityConfiguration = await GetEligibilityConfiguration(seriesEntity, ct);
 
@@ -84,13 +76,17 @@ public partial class SelectionWorker : ISelectionWorker
         Dictionary<Guid, Guid> userIdPerCandidateId = candidates
             .ToDictionary(x => x.UserId, x => x.Candidate.Id);
 
+        // Prep for saving
+        List<SelectionEntryEntity> batchEntities = new(numberOfEntriesToSelect);
+        
         // 2) Get user eligibility, obeying forceRecalculateEligibility
         // do this only if the user is a candidate but store the result in case of multiple cycles
 
         // 3) Get users which were not selected in the current cycle
         int currentCycle = seriesEntity.CompleteCyclesCount;
 
-        SelectionEntryEntity[] existingSelections = await dbContext.SelectionEntries
+        SelectionEntryPickedEntity[] existingSelections = await dbContext.SelectionEntries
+            .OfType<SelectionEntryPickedEntity>()
             .Where(e => e.Batch.SeriesId == seriesEntity.Id && e.Cycle == currentCycle)
             .ToArrayAsync(ct);
 
@@ -98,10 +94,7 @@ public partial class SelectionWorker : ISelectionWorker
             .Select(e => userIdPerCandidateId[e.CandidateId])
             .ToHashSet();
 
-        // TODO: some kind of Dictionary<int, List<Guid>> users selected per cycle
-        
         // 4) Biased random selection
-        int nextBatchPosition = 0;
         int selectedCount = 0;
 
         while (selectedCount < numberOfEntriesToSelect) // TODO: handle no candidates for the current cycle
@@ -121,15 +114,14 @@ public partial class SelectionWorker : ISelectionWorker
                 runningModifierTally += modifier;
                 if (runningModifierTally >= selectedPoint)
                 {
-                    dbContext.SelectionEntries.Add(new SelectionEntryEntity
+                    batchEntities.Add(new SelectionEntryPickedEntity
                     {
-                        Batch = null!, // TODO
+                        BatchPosition = 0, // Will be set later
+                        
                         Candidate = candidate,
                         Cycle = seriesEntity.CompleteCyclesCount,
-                        BatchPosition = nextBatchPosition,
                     });
 
-                    nextBatchPosition++;
                     selectedCount++;
 
                     found = true;
@@ -149,7 +141,22 @@ public partial class SelectionWorker : ISelectionWorker
 
         // 7) Save to DB
 
+        for (var i = 0; i < batchEntities.Count; i++)
+        {
+            batchEntities[i].BatchPosition = i;
+        }
+        
         seriesEntity.CompletedSelectionMarker = Guid.NewGuid();
+        dbContext.SelectionBatches.Add(new SelectionBatchEntity
+        {
+            Series = seriesEntity,
+
+            RollStartedAt = startTime,
+            RollCompletedAt = _clock.GetCurrentInstant(),
+
+            Entries = batchEntities,
+        });
+
         await dbContext.SaveChangesAsync(ct);
 
         return;

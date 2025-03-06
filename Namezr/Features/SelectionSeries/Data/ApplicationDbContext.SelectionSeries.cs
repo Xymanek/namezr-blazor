@@ -10,7 +10,6 @@ public partial class ApplicationDbContext
 
     public DbSet<SelectionBatchEntity> SelectionBatches { get; set; } = null!;
     public DbSet<SelectionEntryEntity> SelectionEntries { get; set; } = null!;
-    public DbSet<SelectionEventEntity> SelectionEvents { get; set; } = null!;
 
     public DbSet<SelectionUserDataEntity> SelectionUserData { get; set; } = null!;
     
