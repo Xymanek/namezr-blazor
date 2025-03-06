@@ -7,6 +7,7 @@ using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.SelectionSeries.Data;
 using Namezr.Infrastructure.Data;
 using NodaTime;
+using SuperLinq;
 
 namespace Namezr.Features.SelectionSeries.Services;
 
@@ -28,7 +29,6 @@ public partial class SelectionWorker : ISelectionWorker
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IEligibilityService _eligibilityService;
     private readonly IClock _clock;
-    // TODO
 
     public async Task Roll(
         long seriesId,
@@ -38,8 +38,6 @@ public partial class SelectionWorker : ISelectionWorker
         CancellationToken ct = default
     )
     {
-        Instant startTime = _clock.GetCurrentInstant();
-
         using var _ = Diagnostics.ActivitySource.StartActivity($"{nameof(SelectionWorker)}.{nameof(Roll)}");
 
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
@@ -51,8 +49,6 @@ public partial class SelectionWorker : ISelectionWorker
 
         EligibilityConfigurationEntity eligibilityConfiguration = await GetEligibilityConfiguration(seriesEntity, ct);
 
-        // TODO
-
         Dictionary<Guid, EligibilityResult> userEligibilities = new();
 
         // 1) Fetch all candidates
@@ -63,8 +59,7 @@ public partial class SelectionWorker : ISelectionWorker
         HashSet<Guid> ineligibleUserIds = new(candidates.Count);
         foreach ((var _, Guid userId) in candidates)
         {
-            // GetUserEligibility caches the result internally
-            if (!(await GetUserEligibility(userId)).Any)
+            if (!(await GetAndCacheUserEligibility(userId)).Any)
             {
                 ineligibleUserIds.Add(userId);
             }
@@ -90,55 +85,81 @@ public partial class SelectionWorker : ISelectionWorker
             .Where(e => e.Batch.SeriesId == seriesEntity.Id && e.Cycle == currentCycle)
             .ToArrayAsync(ct);
 
+        // Will be updated below and by PickCurrentCycleMostPossible as we go,
+        // but start with old values from DB 
         HashSet<Guid> usersSelectedInCurrentCycle = existingSelections
             .Select(e => userIdPerCandidateId[e.CandidateId])
             .ToHashSet();
 
         // 4) Biased random selection
-        int selectedCount = 0; // TODO: remove
 
-        while (selectedCount < numberOfEntriesToSelect) // TODO: handle no candidates for the current cycle
+        Instant rollStartTime = _clock.GetCurrentInstant();
+
+        while (true)
         {
-            (SelectionCandidateEntity Candidate, double Modifier)[] candidateModifiers = candidates
-                .Where(x => !usersSelectedInCurrentCycle
-                    .Contains(x.UserId)) // TODO: this must account for the just selected ones
-                .Select(x => (x.Candidate, (double)userEligibilities[x.UserId].Modifier))
-                .ToArray();
+            PickCurrentCycleMostPossible();
 
-            double totalModifier = candidateModifiers.Sum(x => x.Modifier);
-            double selectedPoint = Random.Shared.NextDouble() * totalModifier;
+            // We are done if we fulfilled the request
+            if (numberOfEntriesToSelect <= CountPicksSoFar()) break;
 
-            double runningModifierTally = 0;
-            bool found = false;
-            foreach ((SelectionCandidateEntity candidate, double modifier) in candidateModifiers)
+            if (!allowRestarts)
             {
-                runningModifierTally += modifier;
-                if (runningModifierTally >= selectedPoint)
+                batchEntities.Add(new SelectionEntryEventEntity
                 {
-                    batchEntities.Add(new SelectionEntryPickedEntity
-                    {
-                        BatchPosition = 0, // Will be set later
-
-                        Candidate = candidate,
-                        Cycle = seriesEntity.CompleteCyclesCount,
-                    });
-
-                    selectedCount++;
-
-                    found = true;
-                    break;
-                }
+                    BatchPosition = 0, // Will be set later
+                    Kind = SelectionEventKind.NoMoreCandidates,
+                });
+                break;
             }
 
-            if (!found)
+            batchEntities.Add(new SelectionEntryEventEntity
             {
-                throw new UnreachableException();
-            }
+                BatchPosition = 0, // Will be set later
+                Kind = SelectionEventKind.NewCycle,
+            });
+
+            currentCycle++;
+            usersSelectedInCurrentCycle.Clear();
         }
 
-        // 5) If not enough and allowRestarts, start a new cycle and repeat from 3 until complete
+        Instant rollCompletedAt = _clock.GetCurrentInstant();
 
         // 6) Store used eligibility into user data entries
+
+        // Clear ineligible users
+        seriesEntity.UserData!
+            .ToArray()
+            .Where(userData =>
+                !userEligibilities.TryGetValue(userData.UserId, out EligibilityResult? userEligibility)
+                || !userEligibility.Any
+            )
+            .ForEach(userData => seriesEntity.UserData!.Remove(userData));
+
+        Dictionary<Guid, SelectionUserDataEntity> userDataPerUserId = seriesEntity.UserData!
+            .ToDictionary(userData => userData.UserId);
+
+        foreach ((Guid userId, EligibilityResult? eligibility) in userEligibilities)
+        {
+            if (userDataPerUserId.TryGetValue(userId, out SelectionUserDataEntity? userData))
+            {
+                userData.LatestModifier = eligibility.Modifier;
+
+                // TODO: selected counts
+
+                return;
+            }
+
+            seriesEntity.UserData!.Add(new SelectionUserDataEntity
+            {
+                UserId = userId,
+
+                LatestModifier = eligibility.Modifier,
+
+                // TODO
+                SelectedCount = 0,
+                TotalSelectedCount = 0,
+            });
+        }
 
         // 7) Save to DB
 
@@ -152,8 +173,8 @@ public partial class SelectionWorker : ISelectionWorker
         {
             Series = seriesEntity,
 
-            RollStartedAt = startTime,
-            RollCompletedAt = _clock.GetCurrentInstant(),
+            RollStartedAt = rollStartTime,
+            RollCompletedAt = rollCompletedAt,
 
             Entries = batchEntities,
         });
@@ -162,7 +183,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         return;
 
-        async ValueTask<EligibilityResult> GetUserEligibility(Guid userId)
+        async ValueTask<EligibilityResult> GetAndCacheUserEligibility(Guid userId)
         {
             if (userEligibilities.TryGetValue(userId, out EligibilityResult? result))
             {
@@ -179,44 +200,53 @@ public partial class SelectionWorker : ISelectionWorker
             return result;
         }
 
-        void PickOneForCurrentCycle()
+        SelectionCandidateEntity? PickOneForCurrentCycle()
         {
-            // TODO
+            (SelectionCandidateEntity Candidate, double Modifier)[] candidateModifiers = candidates
+                .Where(x => !usersSelectedInCurrentCycle.Contains(x.UserId))
+                .Select(x => (x.Candidate, (double)userEligibilities[x.UserId].Modifier))
+                .ToArray();
+
+            if (candidateModifiers.Length == 0)
+            {
+                return null;
+            }
+
+            double totalModifier = candidateModifiers.Sum(x => x.Modifier);
+            double selectedPoint = Random.Shared.NextDouble() * totalModifier;
+
+            double runningModifierTally = 0;
+            foreach ((SelectionCandidateEntity candidate, double modifier) in candidateModifiers)
+            {
+                runningModifierTally += modifier;
+                if (runningModifierTally >= selectedPoint)
+                {
+                    return candidate;
+                }
+            }
+
+            throw new UnreachableException();
         }
 
         void PickCurrentCycleMostPossible()
         {
-            // TODO
-        }
-
-        // TODO: this should NOT be a local function
-        void PickWithRestarts()
-        {
             while (true)
             {
-                PickCurrentCycleMostPossible();
+                SelectionCandidateEntity? candidate = PickOneForCurrentCycle();
 
-                // We are done if we fulfilled the request
-                if (numberOfEntriesToSelect <= CountPicksSoFar()) break;
-
-                if (!allowRestarts)
+                if (candidate == null)
                 {
-                    batchEntities.Add(new SelectionEntryEventEntity
-                    {
-                        BatchPosition = 0, // Will be set later
-                        Kind = SelectionEventKind.NoMoreCandidates,
-                    });
-                    break;
+                    return;
                 }
 
-                batchEntities.Add(new SelectionEntryEventEntity
+                usersSelectedInCurrentCycle.Add(userIdPerCandidateId[candidate.Id]);
+                batchEntities.Add(new SelectionEntryPickedEntity
                 {
                     BatchPosition = 0, // Will be set later
-                    Kind = SelectionEventKind.NewCycle,
-                });
 
-                currentCycle++;
-                usersSelectedInCurrentCycle.Clear();
+                    Candidate = candidate,
+                    Cycle = currentCycle,
+                });
             }
         }
 
