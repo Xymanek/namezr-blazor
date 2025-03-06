@@ -126,7 +126,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         // 6) Store used eligibility into user data entries
 
-        // Clear ineligible users
+        // Clear ineligible users. TODO: this is wrong
         seriesEntity.UserData!
             .ToArray()
             .Where(userData =>
@@ -297,7 +297,7 @@ public partial class SelectionWorker : ISelectionWorker
             .SingleAsync(
                 e =>
                     e.OwnershipType == series.OwnershipType &&
-                    e.QuestionnaireId == series.QuestionnaireId,
+                    e.Questionnaire!.Id == series.QuestionnaireId,
                 ct
             );
     }

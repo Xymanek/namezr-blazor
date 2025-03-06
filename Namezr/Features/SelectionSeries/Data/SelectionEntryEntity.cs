@@ -27,10 +27,32 @@ public class SelectionEntryEventEntity : SelectionEntryEntity
     public SelectionEventKind Kind { get; set; }
 }
 
-internal class SelectionEntryEntityConfiguration : IEntityTypeConfiguration<SelectionEntryEntity>
+internal class SelectionEntryEntityConfiguration :
+    IEntityTypeConfiguration<SelectionEntryEntity>,
+    IEntityTypeConfiguration<SelectionEntryPickedEntity>,
+    IEntityTypeConfiguration<SelectionEntryEventEntity>
 {
     public void Configure(EntityTypeBuilder<SelectionEntryEntity> builder)
     {
         builder.UseTphMappingStrategy();
+
+        builder.HasDiscriminator<string>("Type")
+            .HasValue<SelectionEntryPickedEntity>("Pick")
+            .HasValue<SelectionEntryEventEntity>("Event");
+
+        builder.Property("Type")
+            .HasMaxLength(30);
+    }
+    
+    // The entity type configuration of type 'SelectionEntryEntityConfiguration' is invalid. The configuration specified using EntityTypeConfigurationAttribute has to implement 'IEntityTypeConfiguration<SelectionEntryEventEntity>'.
+
+    public void Configure(EntityTypeBuilder<SelectionEntryPickedEntity> builder)
+    {
+        // Do nothing?
+    }
+
+    public void Configure(EntityTypeBuilder<SelectionEntryEventEntity> builder)
+    {
+        // Do nothing?
     }
 }

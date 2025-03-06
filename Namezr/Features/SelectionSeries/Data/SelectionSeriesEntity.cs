@@ -7,7 +7,10 @@ namespace Namezr.Features.SelectionSeries.Data;
 public class SelectionSeriesEntity
 {
     public long Id { get; set; }
-    
+
+    [MaxLength(100)]
+    public required string Name { get; init; }
+
     public required EligibilityConfigurationOwnershipType OwnershipType { get; init; }
 
     public QuestionnaireEntity? Questionnaire { get; set; }
