@@ -295,6 +295,7 @@ public partial class SelectionWorker : ISelectionWorker
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         return await dbContext.EligibilityConfigurations
+            .AsNoTracking()
             .Include(e => e.Options)
             .SingleAsync(
                 e =>
