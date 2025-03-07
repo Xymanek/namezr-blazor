@@ -87,6 +87,41 @@
     </thead>
 
     <tbody>
+    @if (_selectionSeries != null)
+    {
+        @foreach (SelectionBatchEntity batch in _selectionSeries.Batches!)
+        {
+            <tr>
+                <td colspan="3" class="text-center">
+                    <strong>Rolled on @batch.RollCompletedAt</strong>
+                </td>
+            </tr>
+            
+            @foreach (SelectionEntryEntity entry in batch.Entries!)
+            {
+                <tr>
+                    @if(entry is SelectionEntryPickedEntity picked)
+                    {
+                        /* TODO */
+                        @* <td>@picked.Candidate.User.Email</td> *@
+                    }
+                    else if(entry is SelectionEntryEventEntity eventEntity)
+                    {
+                        <td colspan="3" class="text-center">
+                            <em>@eventEntity.Kind</em>
+                        </td>
+                    }
+                </tr>
+            }
+        }
+    }
+    
+    <tr>
+        <td colspan="3" class="text-center">
+            <strong>Template below</strong>
+        </td>
+    </tr>
+
     <tr>
         <td colspan="3" class="text-center">
             <em>Rolling...</em>
@@ -174,11 +209,7 @@
             .AsNoTracking()
             .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
 
-        _selectionSeries = await dbContext.SelectionSeries
-            .Include(x => x.UserData)
-            .Include(x => x.Batches!).ThenInclude(x => x.Entries)
-            .AsSplitQuery()
-            .SingleOrDefaultAsync(x => x.Id == SelectionId);
+        await LoadSelectionSeries();
     }
 
     private async Task HandleNewSelectionBatchValidSubmit()
@@ -190,7 +221,19 @@
             NewSelectionBatchOptions!.NumberOfEntriesToSelect
         );
 
-        throw new NotImplementedException();
+        // Refresh displayed data
+        await LoadSelectionSeries();
+    }
+
+    private async Task LoadSelectionSeries()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _selectionSeries = await dbContext.SelectionSeries
+            .Include(x => x.UserData)
+            .Include(x => x.Batches!).ThenInclude(x => x.Entries)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(x => x.Id == SelectionId);
     }
 
 }
