@@ -53,6 +53,7 @@
                     CssClass="flex-grow-1"
                     Label="Allow restarting"
                     @bind-Value="NewSelectionBatchOptions!.AllowRestarts"
+
                 />
                 <HxCheckbox
                     CssClass="flex-grow-1"
@@ -69,8 +70,6 @@
                     Text="Roll"
                 />
             </div>
-
-            <ValidationSummary/>
         </EditForm>
     </BodyTemplate>
 </HxCard>
@@ -96,26 +95,38 @@
                     <strong>Rolled on @batch.RollCompletedAt</strong>
                 </td>
             </tr>
-            
+
             @foreach (SelectionEntryEntity entry in batch.Entries!)
             {
                 <tr>
-                    @if(entry is SelectionEntryPickedEntity picked)
+                    @switch (entry)
                     {
-                        /* TODO */
-                        @* <td>@picked.Candidate.User.Email</td> *@
-                    }
-                    else if(entry is SelectionEntryEventEntity eventEntity)
-                    {
-                        <td colspan="3" class="text-center">
-                            <em>@eventEntity.Kind</em>
-                        </td>
+                        case SelectionEntryPickedEntity picked:
+                        {
+                            QuestionnaireSubmissionEntity submission = (QuestionnaireSubmissionEntity)picked.Candidate;
+
+                            <td>@submission.User.Email</td>
+                            <td>@submission.Id</td>
+                            <td>
+                                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@submission.Id.NoHyphens()"
+                                   class="btn btn-primary">
+                                    View
+                                </a>
+                            </td>
+                            break;
+                        }
+
+                        case SelectionEntryEventEntity eventEntity:
+                            <td colspan="3" class="text-center">
+                                <em>@eventEntity.Kind</em>
+                            </td>
+                            break;
                     }
                 </tr>
             }
         }
     }
-    
+
     <tr>
         <td colspan="3" class="text-center">
             <strong>Template below</strong>
@@ -231,7 +242,10 @@
 
         _selectionSeries = await dbContext.SelectionSeries
             .Include(x => x.UserData)
-            .Include(x => x.Batches!).ThenInclude(x => x.Entries)
+            .Include(x => x.Batches!)
+            .ThenInclude(x => x.Entries)
+            .ThenInclude(entry => (entry as SelectionEntryPickedEntity)!.Candidate)
+            .ThenInclude(candidate => (candidate as QuestionnaireSubmissionEntity)!.User)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == SelectionId);
     }

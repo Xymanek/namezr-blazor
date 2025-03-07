@@ -69,7 +69,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         // A bit more cache
         Dictionary<Guid, Guid> userIdPerCandidateId = candidates
-            .ToDictionary(x => x.UserId, x => x.Candidate.Id);
+            .ToDictionary(x => x.Candidate.Id, x => x.UserId);
 
         // Prep for saving
         List<SelectionEntryEntity> batchEntities = new(numberOfEntriesToSelect);
@@ -102,6 +102,9 @@ public partial class SelectionWorker : ISelectionWorker
             // We are done if we fulfilled the request
             if (numberOfEntriesToSelect <= CountPicksSoFar()) break;
 
+            // TODO: do not permit restart if we just went a full cycle with 0 picks
+            // Otherwise this will just endlessly loop.
+            
             if (!allowRestarts)
             {
                 batchEntities.Add(new SelectionEntryEventEntity
@@ -146,7 +149,7 @@ public partial class SelectionWorker : ISelectionWorker
 
                 // TODO: selected counts
 
-                return;
+                break;
             }
 
             seriesEntity.UserData!.Add(new SelectionUserDataEntity
@@ -246,7 +249,7 @@ public partial class SelectionWorker : ISelectionWorker
                 {
                     BatchPosition = 0, // Will be set later
 
-                    Candidate = candidate,
+                    CandidateId = candidate.Id,
                     Cycle = currentCycle,
                 });
             }
