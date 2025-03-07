@@ -14,7 +14,7 @@ namespace Namezr.Features.SelectionSeries.Services;
 public interface ISelectionWorker
 {
     Task Roll(
-        long seriesId,
+        Guid seriesId,
         bool allowRestarts,
         bool forceRecalculateEligibility,
         int numberOfEntriesToSelect,
@@ -31,7 +31,7 @@ public partial class SelectionWorker : ISelectionWorker
     private readonly IClock _clock;
 
     public async Task Roll(
-        long seriesId,
+        Guid seriesId,
         bool allowRestarts,
         bool forceRecalculateEligibility,
         int numberOfEntriesToSelect, // TODO: slightly better name to indicate that only picks count

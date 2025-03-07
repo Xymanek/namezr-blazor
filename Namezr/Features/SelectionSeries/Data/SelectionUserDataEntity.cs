@@ -8,7 +8,7 @@ namespace Namezr.Features.SelectionSeries.Data;
 public class SelectionUserDataEntity
 {
     public SelectionSeriesEntity Series { get; set; } = null!;
-    public long SeriesId { get; set; }
+    public Guid SeriesId { get; set; }
 
     public ApplicationUser User { get; set; } = null!;
     public Guid UserId { get; set; }

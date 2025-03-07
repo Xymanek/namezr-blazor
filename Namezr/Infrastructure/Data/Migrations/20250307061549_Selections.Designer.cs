@@ -15,7 +15,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Namezr.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250306154635_Selections")]
+    [Migration("20250307061549_Selections")]
     partial class Selections
     {
         /// <inheritdoc />
@@ -479,8 +479,8 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.Property<Instant>("RollStartedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("SeriesId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -534,11 +534,9 @@ namespace Namezr.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Namezr.Features.SelectionSeries.Data.SelectionSeriesEntity", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<int>("CompleteCyclesCount")
                         .HasColumnType("integer");
@@ -567,8 +565,8 @@ namespace Namezr.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Namezr.Features.SelectionSeries.Data.SelectionUserDataEntity", b =>
                 {
-                    b.Property<long>("SeriesId")
-                        .HasColumnType("bigint");
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");

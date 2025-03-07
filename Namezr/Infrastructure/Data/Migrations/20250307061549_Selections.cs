@@ -17,8 +17,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                 name: "SelectionSeries",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     OwnershipType = table.Column<int>(type: "integer", nullable: false),
                     QuestionnaireId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -42,7 +41,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    SeriesId = table.Column<long>(type: "bigint", nullable: false),
+                    SeriesId = table.Column<Guid>(type: "uuid", nullable: false),
                     RollStartedAt = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
                     RollCompletedAt = table.Column<Instant>(type: "timestamp with time zone", nullable: false)
                 },
@@ -61,7 +60,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                 name: "SelectionUserData",
                 columns: table => new
                 {
-                    SeriesId = table.Column<long>(type: "bigint", nullable: false),
+                    SeriesId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     LatestModifier = table.Column<decimal>(type: "numeric", nullable: false),
                     SelectedCount = table.Column<int>(type: "integer", nullable: false),

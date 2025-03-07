@@ -1,0 +1,94 @@
+﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/selection"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Layout
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Namezr.Features.SelectionSeries.Data
+
+@attribute [Authorize]
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@if (_questionnaire is not null)
+{
+    <div class="d-flex gap-3 align-items-center justify-content-between">
+        <h3>@_questionnaire.Title</h3>
+        <a
+            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
+            class="btn btn-secondary">
+            Questionnaire
+        </a>
+    </div>
+}
+
+<h4>New selection series</h4>
+
+@* TODO: enable the form *@
+<form>
+    <div class="grid">
+        <HxInputText
+            CssClass="col-9"
+            Label="Name"
+            @bind-Value="_newSeriesName"
+        />
+        <HxSubmit
+            CssClass="col-3"
+            Text="Create"
+            Color="ThemeColor.Success"
+        />
+    </div>
+</form>
+
+<h4>Existing selection series</h4>
+
+<ul>
+    @if (_series is not null)
+    {
+        @foreach (SelectionSeriesEntity series in _series)
+        {
+            <li>
+                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/selection/@series.Id.NoHyphens()">
+                    @series.Name
+                </a>
+            </li>
+        }
+    }
+</ul>
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    private SelectionSeriesEntity[]? _series;
+    private QuestionnaireEntity? _questionnaire;
+
+    private string _newSeriesName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _questionnaire = await dbContext.Questionnaires
+            .AsNoTracking()
+            .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
+
+        _series = await dbContext.SelectionSeries
+            .Where(x => x.QuestionnaireId == QuestionnaireId)
+            .ToArrayAsync();
+    }
+
+}
