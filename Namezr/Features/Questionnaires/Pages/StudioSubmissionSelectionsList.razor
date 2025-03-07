@@ -8,11 +8,15 @@
 @using Namezr.Infrastructure.Data
 @using Havit.Blazor.Components.Web.Bootstrap
 @using Namezr.Features.SelectionSeries.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using Namezr.Features.Eligibility.Data
+@using vNext.BlazorComponents.FluentValidation
 
 @attribute [Authorize]
 @layout StudioLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
 
 @if (_questionnaire is not null)
 {
@@ -28,21 +32,27 @@
 
 <h4>New selection series</h4>
 
-@* TODO: enable the form *@
-<form>
+<EditForm
+    Model="NewSeries"
+    FormName="new-series"
+    OnValidSubmit="HandleNewSeriesValidSubmit"
+>
+    <FluentValidationValidator/>
+    
     <div class="grid">
         <HxInputText
             CssClass="col-9"
             Label="Name"
-            @bind-Value="_newSeriesName"
-        />
+            Placeholder="@_newSeriesNamePlaceholder"
+            @bind-Value="NewSeries!.Name"/>
         <HxSubmit
             CssClass="col-3"
             Text="Create"
-            Color="ThemeColor.Success"
-        />
+            Color="ThemeColor.Success"/>
     </div>
-</form>
+    
+    <ValidationSummary/>
+</EditForm>
 
 <h4>Existing selection series</h4>
 
@@ -74,10 +84,15 @@
     private SelectionSeriesEntity[]? _series;
     private QuestionnaireEntity? _questionnaire;
 
-    private string _newSeriesName = string.Empty;
+    private string _newSeriesNamePlaceholder = "Default";
+
+    [SupplyParameterFromForm]
+    public NewSeriesModel? NewSeries { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        NewSeries ??= new NewSeriesModel();
+
         StudioLayout.CurrentCreatorId = CreatorId;
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -89,6 +104,35 @@
         _series = await dbContext.SelectionSeries
             .Where(x => x.QuestionnaireId == QuestionnaireId)
             .ToArrayAsync();
+
+        if (_series.Length > 0)
+        {
+            _newSeriesNamePlaceholder = $"Series {_series.Length + 1}";
+        }
+    }
+
+    private async Task HandleNewSeriesValidSubmit()
+    {
+        // TODO: validate name uniqueness
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        SelectionSeriesEntity newEntity = new SelectionSeriesEntity
+        {
+            Name = NewSeries!.Name,
+
+            OwnershipType = EligibilityConfigurationOwnershipType.Questionnaire,
+            QuestionnaireId = QuestionnaireId,
+
+            CompleteCyclesCount = 0,
+        };
+        dbContext.SelectionSeries.Add(newEntity);
+
+        await dbContext.SaveChangesAsync();
+
+        NavigationManager.NavigateTo(
+            $"/studio/{CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/selection/{newEntity.Id.NoHyphens()}"
+        );
     }
 
 }

@@ -11,12 +11,15 @@ public class SelectionSeriesEntity
     [MaxLength(100)]
     public required string Name { get; init; }
 
+    // Note: until eligibility config, every selection owner (e.g. questionnaire)
+    // can own multiple selection series. This is exposed in this UI.
+    
     public required EligibilityConfigurationOwnershipType OwnershipType { get; init; }
 
     public QuestionnaireEntity? Questionnaire { get; set; }
     public Guid QuestionnaireId { get; set; }
 
-    public required int CompleteCyclesCount { get; init; }
+    public required int CompleteCyclesCount { get; set; }
 
     [ConcurrencyCheck]
     public Guid CompletedSelectionMarker { get; set; }

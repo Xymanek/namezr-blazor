@@ -169,6 +169,8 @@ public partial class SelectionWorker : ISelectionWorker
         }
 
         seriesEntity.CompletedSelectionMarker = Guid.NewGuid();
+        seriesEntity.CompleteCyclesCount = currentCycle;
+
         dbContext.SelectionBatches.Add(new SelectionBatchEntity
         {
             Series = seriesEntity,

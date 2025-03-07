@@ -133,6 +133,9 @@
     [Parameter]
     public Guid QuestionnaireId { get; set; }
 
+    [Parameter]
+    public Guid SelectionId { get; set; }
+
     private QuestionnaireEntity? _questionnaire;
 
     private bool _allowRestarts;
