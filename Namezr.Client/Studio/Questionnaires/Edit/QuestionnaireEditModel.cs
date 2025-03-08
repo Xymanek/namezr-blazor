@@ -61,7 +61,7 @@ public class EligibilityOptionEditModel
 
     public string PriorityGroup { get; set; } = string.Empty;
     public decimal PriorityModifier { get; set; } = 1;
-    
+
     [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
     internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>
     {
@@ -69,7 +69,7 @@ public class EligibilityOptionEditModel
         {
             RuleFor(x => x.PlanId)
                 .NotNull();
-            
+
             RuleFor(x => x.PriorityGroup)
                 .MaximumLength(PriorityGroupMaxLength);
 
@@ -77,7 +77,7 @@ public class EligibilityOptionEditModel
                 .GreaterThan(0);
         }
     }
-    
+
     public const int PriorityGroupMaxLength = 50;
 }
 
@@ -177,19 +177,30 @@ public class QuestionnaireFileUploadFieldOptionsModel
     /// </summary>
     public List<string> AllowedExtensions { get; set; } = new();
 
-    public decimal? MaxItemSize { get; set; }
+    public int MinItemCount { get; set; } = 0;
     public int MaxItemCount { get; set; } = 1;
+
+    public decimal? MinItemSize { get; set; }
+    public decimal? MaxItemSize { get; set; }
 
     [RegisterSingleton(typeof(IValidator<QuestionnaireFileUploadFieldOptionsModel>))]
     internal sealed class Validator : AbstractValidator<QuestionnaireFileUploadFieldOptionsModel>
     {
         public Validator()
         {
+            RuleFor(x => x.MinItemSize)
+                .GreaterThanOrEqualTo(0);
+
             RuleFor(x => x.MaxItemSize)
-                .GreaterThan(0);
+                .GreaterThan(0)
+                .GreaterThanOrEqualTo(x => x.MinItemSize);
+
+            RuleFor(x => x.MinItemCount)
+                .GreaterThanOrEqualTo(0);
 
             RuleFor(x => x.MaxItemCount)
-                .GreaterThan(0);
+                .GreaterThan(0)
+                .GreaterThanOrEqualTo(x => x.MinItemCount);
         }
     }
 }

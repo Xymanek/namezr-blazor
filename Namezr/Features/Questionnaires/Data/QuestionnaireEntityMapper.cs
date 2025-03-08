@@ -104,7 +104,7 @@ public partial class QuestionnaireFormToEntityMapper
             return;
         }
 
-        foreach (QuestionnaireFieldEntity fieldEntity in _fields.Values.Except(_fields.Values))
+        foreach (QuestionnaireFieldEntity fieldEntity in _fields.Values.Except(entity.Fields))
         {
             entity.Fields.Add(fieldEntity);
         }

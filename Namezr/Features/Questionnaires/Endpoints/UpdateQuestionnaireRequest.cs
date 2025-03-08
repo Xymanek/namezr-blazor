@@ -36,7 +36,8 @@ internal static partial class UpdateQuestionnaireRequest
             throw new Exception("Questionnaire not found");
         }
 
-        // TODO: broken when load existing -> add new field -> move new to 1st
+        // TODO: updates the eligibility plan IDs to the same value since instances are not the same
+        // since owned types are used
         new QuestionnaireFormToEntityMapper(questionnaireEntity.Fields!)
             .UpdateEntityWithNewVersion(request.Model, questionnaireEntity);
 

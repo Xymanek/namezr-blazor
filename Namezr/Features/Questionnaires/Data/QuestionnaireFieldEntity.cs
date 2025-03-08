@@ -1,9 +1,11 @@
-﻿using Namezr.Client.Studio.Questionnaires.Edit;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using Namezr.Client.Studio.Questionnaires.Edit;
 
 namespace Namezr.Features.Questionnaires.Data;
 
 public class QuestionnaireFieldEntity
 {
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid Id { get; set; }
 
     public Guid QuestionnaireId { get; set; }

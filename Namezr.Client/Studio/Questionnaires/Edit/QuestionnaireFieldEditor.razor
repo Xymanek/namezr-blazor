@@ -96,27 +96,42 @@
     @if (Value.FileUploadOptions is not null)
     {
         <div class="row">
-            <div class="col-2">
+            <div class="col-3">
+                <HxInputNumber
+                    @bind-Value="Value.FileUploadOptions.MinItemCount"
+                    Label="Minimum number of files"
+                    Placeholder="No minimum"
+                />
+            </div>
+            <div class="col-3">
                 <HxInputNumber
                     @bind-Value="Value.FileUploadOptions.MaxItemCount"
                     Label="Maximum number of files"
                     Placeholder="No limit"
                 />
             </div>
-            <div class="col-2">
+            <div class="col-3">
+                <HxInputNumber
+                    @bind-Value="Value.FileUploadOptions.MinItemSize"
+                    Label="@(Value.FileUploadOptions.MaxItemCount > 1 ? "Minimum file size per file" : "Minimum file size")"
+                    Placeholder="None"
+                />
+            </div>
+            <div class="col-3">
                 <HxInputNumber
                     @bind-Value="Value.FileUploadOptions.MaxItemSize"
                     Label="@(Value.FileUploadOptions.MaxItemCount > 1 ? "Maximum file size per file" : "Maximum file size")"
                     Placeholder="None"
                 />
             </div>
-            <div class="col-8">
-                <HxInputTags
-                    @bind-Value="Value.FileUploadOptions.AllowedExtensions"
-                    Label="Allowed file extensions"
-                    Placeholder="Any"
-                />
-            </div>
+        </div>
+        
+        <div>
+            <HxInputTags
+                @bind-Value="Value.FileUploadOptions.AllowedExtensions"
+                Label="Allowed file extensions (use comma to separate)"
+                Placeholder="Any"
+            />
         </div>
     }
 </div>
