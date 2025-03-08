@@ -1,0 +1,73 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Infra
+@using vNext.BlazorComponents.FluentValidation
+
+@inject ISpaHttpClientProvider HttpClientProvider
+@inject NavigationManager NavigationManager
+
+<HxCard>
+    <BodyTemplate>
+        <HxCardTitle>
+            New batch
+        </HxCardTitle>
+
+        <EditForm
+            Model="Model"
+            FormName="new-selection-batch"
+            OnValidSubmit="HandleNewSelectionBatchValidSubmit"
+        >
+            <FluentValidationValidator/>
+
+            <div class="d-flex justify-content-stretch gap-3">
+                <HxCheckbox
+                    CssClass="flex-grow-1"
+                    Label="Allow restarting"
+                    @bind-Value="Model!.AllowRestarts"
+
+                />
+                <HxCheckbox
+                    CssClass="flex-grow-1"
+                    Label="Force recalculate eligibility"
+                    @bind-Value="Model!.ForceRecalculateEligibility"
+                />
+                <HxInputNumber
+                    CssClass="flex-grow-1"
+                    Label="Number of entries to select"
+                    @bind-Value="Model!.NumberOfEntriesToSelect"
+                />
+                <HxSubmit
+                    Enabled="RendererInfo.IsInteractive"
+                    Color="ThemeColor.Success"
+                    Text="Roll"
+                />
+            </div>
+        </EditForm>
+    </BodyTemplate>
+</HxCard>
+
+@code {
+
+    [Parameter]
+    public Guid SelectionSeriesId { get; set; }
+    
+    private NewSelectionBatchOptionsModel Model { get; } = new();
+
+    private async Task HandleNewSelectionBatchValidSubmit()
+    {
+        HttpResponseMessage response = await HttpClientProvider.HttpClient.PostAsJsonAsync(
+            ApiEndpointPaths.SelectionNewBatch,
+            new NewSelectionBatchRequest
+            {
+                SeriesId = SelectionSeriesId,
+                BatchOptions = Model,
+            }
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        // Display the new results
+        NavigationManager.Refresh();
+    }
+
+}

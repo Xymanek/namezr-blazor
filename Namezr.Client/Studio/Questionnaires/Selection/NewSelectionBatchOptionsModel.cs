@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Namezr.Features.Questionnaires.Pages;
+namespace Namezr.Client.Studio.Questionnaires.Selection;
 
 public class NewSelectionBatchOptionsModel
 {
