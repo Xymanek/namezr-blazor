@@ -16,6 +16,7 @@ using Namezr.Infrastructure.Twitch.MockServer;
 using NodaTime;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Trace;
 using SystemClock = NodaTime.SystemClock;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -153,6 +154,7 @@ if (builder.Environment.IsDevelopment())
         .WithTracing(tracing =>
         {
             tracing.AddSource(Diagnostics.ActivitySourceName);
+            tracing.AddHttpClientInstrumentation();
         })
         // TODO: figure out a way to unhardcode this (or switch to full aspire?)
         .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri("http://localhost:4317"));

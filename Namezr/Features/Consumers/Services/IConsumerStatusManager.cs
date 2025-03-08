@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Diagnostics;
+﻿using System.Diagnostics;
+using CommunityToolkit.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
@@ -31,6 +32,9 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         Guid consumerId, UserStatusSyncEagerness eagerness
     )
     {
+        using Activity? activity = Diagnostics.ActivitySource.StartActivity()
+            ?.AddTag("ConsumerId", consumerId);
+
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
 
         // Keep in sync with QueryStatuses XML doc
@@ -66,6 +70,8 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         if (syncNeeded)
         {
             // TODO
+
+            activity?.AddEvent(new ActivityEvent("SyncNeeded"));
 
             // + refetch the targetConsumer.SupportStatuses or return from the sync?
         }
