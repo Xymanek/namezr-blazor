@@ -406,7 +406,6 @@ namespace Namezr.Infrastructure.Data.Migrations
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.QuestionnaireFieldEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("QuestionnaireId")
@@ -893,8 +892,14 @@ namespace Namezr.Infrastructure.Data.Migrations
                             b1.Property<int>("MaxItemCount")
                                 .HasColumnType("integer");
 
-                            b1.Property<decimal?>("MaxItemSize")
-                                .HasColumnType("numeric");
+                            b1.Property<long?>("MaxItemSizeBytes")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("MinItemCount")
+                                .HasColumnType("integer");
+
+                            b1.Property<long?>("MinItemSizeBytes")
+                                .HasColumnType("bigint");
 
                             b1.HasKey("QuestionnaireFieldConfigurationEntityFieldId", "QuestionnaireFieldConfigurationEntityVersionId");
 
