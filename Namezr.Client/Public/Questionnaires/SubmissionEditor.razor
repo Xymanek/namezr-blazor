@@ -79,6 +79,9 @@
 
     [Parameter]
     public Dictionary<string, SubmissionValueModel>? InitialValues { get; set; }
+    
+    [Parameter]
+    public required Dictionary<Guid, string> FileUploadTickets { get; set; }
 
     private Dictionary<string, SubmissionValueModel> Values { get; } = new();
 

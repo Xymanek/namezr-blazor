@@ -14,6 +14,8 @@
 @using Namezr.Features.Creators.Services
 @using Namezr.Features.Eligibility.Data
 @using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Files
+@using Namezr.Features.Files.Services
 @using Namezr.Features.Identity.Data
 @using Namezr.Features.Questionnaires.Services
 
@@ -22,6 +24,7 @@
 @inject IEligibilityService EligibilityService
 @inject IdentityUserAccessor UserAccessor
 @inject IFieldValueSerializer FieldValueSerializer
+@inject IFileUploadTicketHelper FileUploadTicketHelper
 
 @if (_versionEntity is not null)
 {
@@ -44,11 +47,11 @@
             </HxCardTitle>
 
             @{
-                IEnumerable<IGrouping<(EligibilityType Type, Guid SupportTargetId), EligibilityOptionEntity>> groupedOptions = _versionEntity!
+                IEnumerable<IGrouping<(EligibilityType Type, Guid? SupportTargetId), EligibilityOptionEntity>> groupedOptions = _versionEntity!
                     .Questionnaire
                     .EligibilityConfiguration
                     .Options!
-                    .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId!.SupportTargetId));
+                    .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId?.SupportTargetId));
             }
 
             @foreach (var grouping in groupedOptions)
@@ -118,6 +121,7 @@
         <SubmissionEditor
             Config="ConfigModel"
             InitialValues="_initialValues"
+            FileUploadTickets="_fileUploadTickets"
             AllDisabled="_disabledReason.HasValue"
             QuestionnaireVersionId="QuestionnaireVersionId!.Value"
         />
@@ -140,6 +144,7 @@
     private ImmutableHashSet<EligibilityPlanId> _eligiblePlanIds = ImmutableHashSet<EligibilityPlanId>.Empty;
 
     private Dictionary<string, SubmissionValueModel>? _initialValues;
+    private Dictionary<Guid, string> _fileUploadTickets = new();
 
     private DisabledReason? _disabledReason;
 
@@ -156,6 +161,8 @@
         ConfigModel = _versionEntity?.MapToConfigModel();
         QuestionnaireVersionId = _versionEntity?.Id;
 
+        CreateFileUploadTickets();
+        
         _eligibilityPlans = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
                 // TODO: in parallel
@@ -207,6 +214,21 @@
                 }
             }
         }
+    }
+
+    private void CreateFileUploadTickets()
+    {
+        _fileUploadTickets = ConfigModel!.Fields
+            .Where(field => field.Type == QuestionnaireFieldType.FileUpload)
+            .ToDictionary(
+                field => field.Id,
+                field => FileUploadTicketHelper.CreateForCurrentUser(new NewFileRestrictions
+                {
+                    MinBytes = field.FileUploadOptions?.MinItemSizeBytes,
+                    MaxBytes = field.FileUploadOptions?.MaxItemSizeBytes,
+                    AllowedExtensions = field.FileUploadOptions?.AllowedExtensions.ToImmutableList(),
+                })
+            );
     }
 
     private enum DisabledReason

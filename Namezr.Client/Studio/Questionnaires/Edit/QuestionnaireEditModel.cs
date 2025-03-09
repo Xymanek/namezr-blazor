@@ -180,20 +180,20 @@ public class QuestionnaireFileUploadFieldOptionsModel
     public int MinItemCount { get; set; } = 0;
     public int MaxItemCount { get; set; } = 1;
 
-    public decimal? MinItemSize { get; set; }
-    public decimal? MaxItemSize { get; set; }
+    public long? MinItemSizeBytes { get; set; }
+    public long? MaxItemSizeBytes { get; set; }
 
     [RegisterSingleton(typeof(IValidator<QuestionnaireFileUploadFieldOptionsModel>))]
     internal sealed class Validator : AbstractValidator<QuestionnaireFileUploadFieldOptionsModel>
     {
         public Validator()
         {
-            RuleFor(x => x.MinItemSize)
+            RuleFor(x => x.MinItemSizeBytes)
                 .GreaterThanOrEqualTo(0);
 
-            RuleFor(x => x.MaxItemSize)
+            RuleFor(x => x.MaxItemSizeBytes)
                 .GreaterThan(0)
-                .GreaterThanOrEqualTo(x => x.MinItemSize);
+                .GreaterThanOrEqualTo(x => x.MinItemSizeBytes);
 
             RuleFor(x => x.MinItemCount)
                 .GreaterThanOrEqualTo(0);

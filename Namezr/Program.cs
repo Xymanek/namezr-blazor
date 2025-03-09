@@ -8,6 +8,7 @@ using Namezr;
 using Namezr.Client;
 using Namezr.Components;
 using Namezr.Components.Account;
+using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
@@ -141,6 +142,9 @@ builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
     )
 );
 #pragma warning restore EF1001
+
+builder.Services.AddOptions<FilesOptions>()
+    .BindConfiguration(FilesOptions.SectionPath);
 
 if (builder.Environment.IsDevelopment())
 {

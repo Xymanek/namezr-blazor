@@ -112,14 +112,14 @@
             </div>
             <div class="col-3">
                 <HxInputNumber
-                    @bind-Value="Value.FileUploadOptions.MinItemSize"
+                    @bind-Value="Value.FileUploadOptions.MinItemSizeBytes"
                     Label="@(Value.FileUploadOptions.MaxItemCount > 1 ? "Minimum file size per file" : "Minimum file size")"
                     Placeholder="None"
                 />
             </div>
             <div class="col-3">
                 <HxInputNumber
-                    @bind-Value="Value.FileUploadOptions.MaxItemSize"
+                    @bind-Value="Value.FileUploadOptions.MaxItemSizeBytes"
                     Label="@(Value.FileUploadOptions.MaxItemCount > 1 ? "Maximum file size per file" : "Maximum file size")"
                     Placeholder="None"
                 />

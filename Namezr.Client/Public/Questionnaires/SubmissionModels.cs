@@ -21,22 +21,18 @@ public class SubmissionValuesValidator<TKey> : AbstractValidator<Dictionary<TKey
 
         foreach (QuestionnaireConfigFieldModel fieldConfig in config.Fields)
         {
-            IValidator<SubmissionValueModel>? validator;
-            switch (fieldConfig.Type)
+            IValidator<SubmissionValueModel>? validator = fieldConfig.Type switch
             {
-                case QuestionnaireFieldType.Text:
-                    validator = new SubmissionValueStringValidator(fieldConfig.TextOptions!);
-                    break;
+                QuestionnaireFieldType.Text => new SubmissionValueStringValidator(fieldConfig.TextOptions!),
+                QuestionnaireFieldType.Number => new SubmissionValueNumberValidator(fieldConfig.NumberOptions!),
 
-                case QuestionnaireFieldType.Number:
-                    validator = new SubmissionValueNumberValidator(fieldConfig.NumberOptions!);
-                    break;
+                // TODO: File upload validation is handled separately in the UI and the API
+                QuestionnaireFieldType.FileUpload => null,
 
-                case QuestionnaireFieldType.FileUpload:
-                // break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                _ => throw new ArgumentOutOfRangeException(),
+            };
+
+            if (validator is null) continue;
 
             TKey key = keySelector(fieldConfig.Id);
 
