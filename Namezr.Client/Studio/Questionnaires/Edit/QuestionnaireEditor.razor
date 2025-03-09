@@ -5,6 +5,7 @@
 @rendermode InteractiveWebAssembly
 
 @inject ISpaHttpClientProvider HttpClientProvider
+@inject NavigationManager NavigationManager
 
 <EditForm
     Model="Model"
@@ -162,8 +163,6 @@
                         Model = Model.Clone(),
                     }
                 );
-
-                // TODO: redirect to studio questionnaire details page
             }
             else
             {
@@ -178,6 +177,8 @@
             }
 
             response.EnsureSuccessStatusCode();
+            
+            // TODO: redirect to studio questionnaire details page
         }
         finally
         {

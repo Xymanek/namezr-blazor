@@ -192,14 +192,14 @@ public class QuestionnaireFileUploadFieldOptionsModel
                 .GreaterThanOrEqualTo(0);
 
             RuleFor(x => x.MaxItemSizeBytes)
-                .GreaterThan(0)
+                .GreaterThan(1)
                 .GreaterThanOrEqualTo(x => x.MinItemSizeBytes);
 
             RuleFor(x => x.MinItemCount)
                 .GreaterThanOrEqualTo(0);
 
             RuleFor(x => x.MaxItemCount)
-                .GreaterThan(0)
+                .GreaterThan(1)
                 .GreaterThanOrEqualTo(x => x.MinItemCount);
         }
     }
