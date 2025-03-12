@@ -1,0 +1,127 @@
+﻿@using System.Net.Http.Headers
+@using Namezr.Client.Infra
+
+@inherits Editor<SubmissionValueModel>
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<h5>@FieldConfig.Title</h5>
+
+@if (CanAddMoreFiles)
+{
+    <HxInputFileDropZone
+        MaxFileSize=@(FieldConfig.FileUploadOptions!.MaxItemSizeBytes)
+        Multiple="FieldConfig.FileUploadOptions!.MaxItemCount > 1"
+        OnChange="OnFilesSelected"
+    />
+}
+
+@foreach (Guid fileId in Value.FileValue ?? [])
+{
+    <div class="d-flex align-items-center justify-content-between gap-3">
+        @* TODO: show other info, e.g. file name, size, etc. *@
+        <p>@fileId</p>
+
+        <HxButton
+            Icon="@BootstrapIcon.Trash"
+            Color="ThemeColor.Danger"
+            Tooltip="Remove"
+            OnClick="() => RemoveFile(fileId)"/>
+    </div>
+}
+
+@if (_uploadsInProgress.Count > 0)
+{
+    <p>Uploading...</p>
+}
+
+@code {
+
+    [Parameter]
+    public required QuestionnaireConfigFieldModel FieldConfig { get; set; }
+
+    [Parameter]
+    public required Dictionary<Guid, string> FileUploadTickets { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnNewFileTicket { get; set; }
+
+    private readonly HashSet<IBrowserFile> _uploadsInProgress = [];
+
+    private int MoreFilesAllowed
+    {
+        get
+        {
+            int speculativeCurrentCount = (Value.FileValue?.Count ?? 0) + _uploadsInProgress.Count;
+
+            return FieldConfig.FileUploadOptions!.MaxItemCount - speculativeCurrentCount;
+        }
+    }
+
+    private bool CanAddMoreFiles => MoreFilesAllowed > 0;
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        IEnumerable<Task> tasks = e.GetMultipleFiles(MoreFilesAllowed)
+            .Select(file =>
+            {
+                _uploadsInProgress.Add(file);
+
+                return Task.Run(async () =>
+                {
+                    try
+                    {
+                        using MultipartFormDataContent content = new();
+
+                        StreamContent fileContent = new(file.OpenReadStream(
+                            FieldConfig.FileUploadOptions!.MaxItemSizeBytes ??
+                            AbsoluteMaxFileSize
+                        ));
+
+                        fileContent.Headers.ContentType = new MediaTypeHeaderValue(/*file.ContentType*/ "application/octet-stream");
+
+                        content.Add(
+                            content: fileContent,
+                            name: "\"files\"",
+                            fileName: file.Name
+                        );
+
+                        // TODO: ticket query
+                        HttpRequestMessage request = new(HttpMethod.Post, ApiEndpointPaths.FilesUpload);
+                        // request.SetBrowserRequestStreamingEnabled(true);// TODO
+                        request.Content = content;
+
+                        HttpResponseMessage response = await HttpClientProvider.HttpClient.SendAsync(request);
+
+                        // TODO: gracefully handle errors
+                        response.EnsureSuccessStatusCode();
+
+                        string newFileTicket = await response.Content.ReadAsStringAsync();
+
+                        Value.FileValue ??= new();
+                        Value.FileValue.Add(Guid.Parse(newFileTicket)); // TODO: return and use GUID as well
+
+                        // TODO: synchronization?
+                        await OnNewFileTicket.InvokeAsync(newFileTicket);
+                    }
+                    finally
+                    {
+                        _uploadsInProgress.Remove(file);
+                    }
+                });
+            });
+
+        await Task.WhenAll(tasks);
+    }
+
+    // TODO: actual limit
+    // TODO: reference in UI, on server, etc.
+    private const long AbsoluteMaxFileSize = 5 * 1024 * 1024; // 5 MB
+
+    private void RemoveFile(Guid fileId)
+    {
+        Value.FileValue ??= new();
+        Value.FileValue.Remove(fileId);
+    }
+
+}

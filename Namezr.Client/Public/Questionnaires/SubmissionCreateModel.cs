@@ -9,6 +9,8 @@ public class SubmissionCreateModel
     
     public required Dictionary<Guid, SubmissionValueModel> Values { get; set; }
 
+    public required List<string> NewFileTickets { get; init; }
+
     [RegisterSingleton(typeof(IValidator<SubmissionCreateModel>))]
     public class Validator : AbstractValidator<SubmissionCreateModel>
     {

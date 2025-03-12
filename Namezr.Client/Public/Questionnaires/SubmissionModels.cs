@@ -7,6 +7,11 @@ public class SubmissionValueModel
 {
     public string StringValue { get; set; } = string.Empty;
     public decimal? NumberValue { get; set; }
+    
+    /// <summary>
+    /// File IDs that are selected
+    /// </summary>
+    public List<Guid>? FileValue { get; set; }
 }
 
 /// <typeparam name="TKey">

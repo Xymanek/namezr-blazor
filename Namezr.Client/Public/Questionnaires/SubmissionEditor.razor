@@ -41,8 +41,12 @@
                     break;
 
                 case QuestionnaireFieldType.FileUpload:
-                    @*<HxInputFile/>*@
-                    /* TODO: file upload */
+                    <FileUploadField
+                        FieldConfig="field"
+                        FileUploadTickets="FileUploadTickets"
+                        @bind-Value="Values[fieldIdStr]"
+                        OnNewFileTicket="_newFileTickets.Add"
+                    />
                     break;
 
                 default:
@@ -70,7 +74,7 @@
 
     [Parameter]
     public bool AllDisabled { get; set; }
-    
+
     [Parameter]
     public required Guid QuestionnaireVersionId { get; init; }
 
@@ -79,11 +83,12 @@
 
     [Parameter]
     public Dictionary<string, SubmissionValueModel>? InitialValues { get; set; }
-    
+
     [Parameter]
     public required Dictionary<Guid, string> FileUploadTickets { get; set; }
 
     private Dictionary<string, SubmissionValueModel> Values { get; } = new();
+    private List<string> _newFileTickets = [];
 
     /// <summary>
     /// <para>
@@ -142,6 +147,7 @@
                 {
                     QuestionnaireVersionId = QuestionnaireVersionId,
                     Values = Values.ToDictionary(x => Guid.Parse(x.Key), x => x.Value),
+                    NewFileTickets = [.._newFileTickets],
                 }
             );
         }
