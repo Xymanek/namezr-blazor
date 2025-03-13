@@ -46,7 +46,7 @@ public static partial class UploadFileEndpoint
             throw new Exception("File is too big");
         }
 
-        if (restrictions.AllowedExtensions != null)
+        if (restrictions.AllowedExtensions?.Count > 0)
         {
             bool foundMatch = false;
             foreach (string extension in restrictions.AllowedExtensions)
