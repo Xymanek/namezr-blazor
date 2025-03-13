@@ -11,6 +11,11 @@ namespace Namezr.Features.Files.Endpoints;
 [MapPost(ApiEndpointPaths.FilesUpload)]
 public static partial class UploadFileEndpoint
 {
+    internal static void CustomizeEndpoint(IEndpointConventionBuilder endpoint)
+    {
+        endpoint.DisableAntiforgery();
+    }
+
     public sealed record Payload
     {
         public required IFormFile File { get; init; }
@@ -20,7 +25,7 @@ public static partial class UploadFileEndpoint
     }
 
     private static async ValueTask<string> Handle(
-        Payload payload,
+        [AsParameters] Payload payload,
         IFileUploadTicketHelper ticketHelper,
         IFileStorageService storageService,
         CancellationToken ct

@@ -9,11 +9,15 @@
 
 @if (CanAddMoreFiles)
 {
-    <HxInputFileDropZone
+    <InputFile
+        Multiple="@(FieldConfig.FileUploadOptions!.MaxItemCount > 1)"
+        OnChange="OnFilesSelected"
+    />
+    @*<HxInputFileDropZone
         MaxFileSize=@(FieldConfig.FileUploadOptions!.MaxItemSizeBytes)
         Multiple="FieldConfig.FileUploadOptions!.MaxItemCount > 1"
         OnChange="OnFilesSelected"
-    />
+    />*@
 }
 
 @foreach (Guid fileId in Value.FileValue ?? [])
@@ -41,7 +45,7 @@
     public required QuestionnaireConfigFieldModel FieldConfig { get; set; }
 
     [Parameter]
-    public required Dictionary<Guid, string> FileUploadTickets { get; set; }
+    public required string FileUploadTicket { get; set; }
 
     [Parameter]
     public EventCallback<string> OnNewFileTicket { get; set; }
@@ -60,55 +64,59 @@
 
     private bool CanAddMoreFiles => MoreFilesAllowed > 0;
 
+    private string UploadUrl => $"{ApiEndpointPaths.FilesUpload}?ticket={FileUploadTicket}";
+
+    // private HxInputFileDropZone _dropZone;
+
     private async Task OnFilesSelected(InputFileChangeEventArgs e)
     {
+        // TODO: validate
+
+        // await _dropZone.UploadAsync();
+
         IEnumerable<Task> tasks = e.GetMultipleFiles(MoreFilesAllowed)
-            .Select(file =>
+            .Select(async file =>
             {
                 _uploadsInProgress.Add(file);
 
-                return Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        using MultipartFormDataContent content = new();
+                    using MultipartFormDataContent content = new();
 
-                        StreamContent fileContent = new(file.OpenReadStream(
-                            FieldConfig.FileUploadOptions!.MaxItemSizeBytes ??
-                            AbsoluteMaxFileSize
-                        ));
+                    StreamContent fileContent = new(file.OpenReadStream(
+                        FieldConfig.FileUploadOptions!.MaxItemSizeBytes ??
+                        AbsoluteMaxFileSize
+                    ));
 
-                        fileContent.Headers.ContentType = new MediaTypeHeaderValue(/*file.ContentType*/ "application/octet-stream");
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue( /*file.ContentType*/ "application/octet-stream");
 
-                        content.Add(
-                            content: fileContent,
-                            name: "\"files\"",
-                            fileName: file.Name
-                        );
+                    content.Add(
+                        content: fileContent,
+                        name: "\"file\"",
+                        fileName: file.Name
+                    );
 
-                        // TODO: ticket query
-                        HttpRequestMessage request = new(HttpMethod.Post, ApiEndpointPaths.FilesUpload);
-                        // request.SetBrowserRequestStreamingEnabled(true);// TODO
-                        request.Content = content;
+                    HttpRequestMessage request = new(HttpMethod.Post, UploadUrl);
+                    // request.SetBrowserRequestStreamingEnabled(true);// TODO
+                    request.Content = content;
 
-                        HttpResponseMessage response = await HttpClientProvider.HttpClient.SendAsync(request);
+                    HttpResponseMessage response = await HttpClientProvider.HttpClient.SendAsync(request);
 
-                        // TODO: gracefully handle errors
-                        response.EnsureSuccessStatusCode();
+                    // TODO: gracefully handle errors
+                    response.EnsureSuccessStatusCode();
 
-                        string newFileTicket = await response.Content.ReadAsStringAsync();
+                    string newFileTicket = await response.Content.ReadAsStringAsync();
 
-                        Value.FileValue ??= new();
-                        Value.FileValue.Add(Guid.Parse(newFileTicket)); // TODO: return and use GUID as well
+                    Value.FileValue ??= new();
+                    Value.FileValue.Add(Guid.Parse(newFileTicket)); // TODO: return and use GUID as well
 
-                        // TODO: synchronization?
-                        await OnNewFileTicket.InvokeAsync(newFileTicket);
-                    }
-                    finally
-                    {
-                        _uploadsInProgress.Remove(file);
-                    }
-                });
+                    // TODO: synchronization?
+                    await OnNewFileTicket.InvokeAsync(newFileTicket);
+                }
+                finally
+                {
+                    _uploadsInProgress.Remove(file);
+                }
             });
 
         await Task.WhenAll(tasks);

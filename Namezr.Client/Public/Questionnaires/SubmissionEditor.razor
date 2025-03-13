@@ -43,7 +43,7 @@
                 case QuestionnaireFieldType.FileUpload:
                     <FileUploadField
                         FieldConfig="field"
-                        FileUploadTickets="FileUploadTickets"
+                        FileUploadTicket="@(FileUploadTickets[field.Id])"
                         @bind-Value="Values[fieldIdStr]"
                         OnNewFileTicket="_newFileTickets.Add"
                     />
