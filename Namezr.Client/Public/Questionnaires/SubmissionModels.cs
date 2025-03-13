@@ -11,7 +11,14 @@ public class SubmissionValueModel
     /// <summary>
     /// File IDs that are selected
     /// </summary>
-    public List<Guid>? FileValue { get; set; }
+    public List<SubmissionFileData>? FileValue { get; set; }
+}
+
+public record SubmissionFileData
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public required long SizeBytes { get; init; }
 }
 
 /// <typeparam name="TKey">

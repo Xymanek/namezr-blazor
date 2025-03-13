@@ -22,7 +22,7 @@
 }
 
 <table class="table table-striped">
-    @if (_uploadedFiles.Count > 0)
+    @if (Value.FileValue?.Count > 0)
     {
         <thead>
         <tr>
@@ -33,7 +33,7 @@
         </thead>
     }
     <tbody>
-    @foreach (UploadedFileInfo file in _uploadedFiles)
+    @foreach (SubmissionFileData file in Value.FileValue ?? [])
     {
         <tr>
             <td>
@@ -74,17 +74,17 @@
     public EventCallback<string> OnNewFileTicket { get; set; }
 
     private readonly HashSet<IBrowserFile> _uploadsInProgress = [];
-    private readonly List<UploadedFileInfo> _uploadedFiles = [];
+    private readonly Dictionary<Guid, string> _newFileTokens = [];
 
-    private string GetDownloadUrl(UploadedFileInfo file)
+    private string GetDownloadUrl(SubmissionFileData file)
     {
-        if (file.NewFileTicket is null)
+        if (!_newFileTokens.TryGetValue(file.Id, out string? ticket))
         {
             // TODO
             return "#";
         }
 
-        return $"{ApiEndpointPaths.FilesDownloadNew}?ticket={file.NewFileTicket}";
+        return $"{ApiEndpointPaths.FilesDownloadNew}?ticket={ticket}";
     }
 
     private int MoreFilesAllowed
@@ -143,16 +143,14 @@
                     NewFileResult result = (await response.Content.ReadFromJsonAsync<NewFileResult>())!;
 
                     Value.FileValue ??= new();
-                    Value.FileValue.Add(result.FileId);
-
-                    _uploadedFiles.Add(new UploadedFileInfo
+                    Value.FileValue.Add(new SubmissionFileData
                     {
                         Id = result.FileId,
-                        NewFileTicket = result.Ticket,
-
                         Name = file.Name,
                         SizeBytes = file.Size,
                     });
+
+                    _newFileTokens.Add(result.FileId, result.Ticket);
 
                     await OnNewFileTicket.InvokeAsync(result.Ticket);
                 }
@@ -172,18 +170,9 @@
     private void RemoveFile(Guid fileId)
     {
         Value.FileValue ??= new();
-        Value.FileValue.Remove(fileId);
+        Value.FileValue.RemoveAll(file => file.Id == fileId);
 
-        _uploadedFiles.RemoveAll(x => x.Id == fileId);
-    }
-
-    private class UploadedFileInfo
-    {
-        public required Guid Id { get; init; }
-        public string? NewFileTicket { get; init; }
-
-        public required string Name { get; init; }
-        public required long SizeBytes { get; init; }
+        _newFileTokens.Remove(fileId);
     }
 
 }
