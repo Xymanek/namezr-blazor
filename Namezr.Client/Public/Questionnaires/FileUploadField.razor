@@ -1,5 +1,6 @@
 ﻿@using System.Net.Http.Headers
 @using Namezr.Client.Infra
+@using Namezr.Client.Types
 
 @inherits Editor<SubmissionValueModel>
 
@@ -88,7 +89,7 @@
                         AbsoluteMaxFileSize
                     ));
 
-                    fileContent.Headers.ContentType = new MediaTypeHeaderValue( /*file.ContentType*/ "application/octet-stream");
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType /*"application/octet-stream"*/);
 
                     content.Add(
                         content: fileContent,
@@ -105,13 +106,12 @@
                     // TODO: gracefully handle errors
                     response.EnsureSuccessStatusCode();
 
-                    string newFileTicket = await response.Content.ReadAsStringAsync();
+                    NewFileResult result = (await response.Content.ReadFromJsonAsync<NewFileResult>())!;
 
                     Value.FileValue ??= new();
-                    Value.FileValue.Add(Guid.Parse(newFileTicket)); // TODO: return and use GUID as well
+                    Value.FileValue.Add(result.FileId); // TODO: return and use GUID as well
 
-                    // TODO: synchronization?
-                    await OnNewFileTicket.InvokeAsync(newFileTicket);
+                    await OnNewFileTicket.InvokeAsync(result.Ticket);
                 }
                 finally
                 {

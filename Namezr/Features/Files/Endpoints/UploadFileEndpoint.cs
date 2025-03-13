@@ -2,6 +2,7 @@
 using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Namezr.Client;
+using Namezr.Client.Types;
 using Namezr.Features.Files.Services;
 
 namespace Namezr.Features.Files.Endpoints;
@@ -13,6 +14,7 @@ public static partial class UploadFileEndpoint
 {
     internal static void CustomizeEndpoint(IEndpointConventionBuilder endpoint)
     {
+        // TODO: is there a way?
         endpoint.DisableAntiforgery();
     }
 
@@ -24,7 +26,7 @@ public static partial class UploadFileEndpoint
         public required string Ticket { get; init; }
     }
 
-    private static async ValueTask<string> Handle(
+    private static async ValueTask<NewFileResult> Handle(
         [AsParameters] Payload payload,
         IFileUploadTicketHelper ticketHelper,
         IFileStorageService storageService,
@@ -66,11 +68,17 @@ public static partial class UploadFileEndpoint
         await using Stream readStream = payload.File.OpenReadStream();
         Guid fileId = await storageService.StoreFile(readStream, ct);
 
-        return ticketHelper.CreateForCurrentUser(new UploadedFileInfo
+        string ticket = ticketHelper.CreateForCurrentUser(new UploadedFileInfo
         {
             FileId = fileId,
             LengthBytes = payload.File.Length,
             OriginalFileName = payload.File.FileName,
         });
+        
+        return new NewFileResult
+        {
+            FileId = fileId,
+            Ticket = ticket,
+        };
     }
 }
