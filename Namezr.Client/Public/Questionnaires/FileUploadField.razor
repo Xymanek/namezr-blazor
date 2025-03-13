@@ -37,8 +37,9 @@
     {
         <tr>
             <td>
-                @* TODO: download *@
-                <a href="#">@file.Name</a>
+                <a href=@(GetDownloadUrl(file)) target="_blank">
+                    @file.Name
+                </a>
             </td>
             <td><i>@file.SizeBytes bytes</i></td>
 
@@ -74,6 +75,17 @@
 
     private readonly HashSet<IBrowserFile> _uploadsInProgress = [];
     private readonly List<UploadedFileInfo> _uploadedFiles = [];
+
+    private string GetDownloadUrl(UploadedFileInfo file)
+    {
+        if (file.NewFileTicket is null)
+        {
+            // TODO
+            return "#";
+        }
+
+        return $"{ApiEndpointPaths.FilesDownloadNew}?ticket={file.NewFileTicket}";
+    }
 
     private int MoreFilesAllowed
     {
@@ -136,6 +148,8 @@
                     _uploadedFiles.Add(new UploadedFileInfo
                     {
                         Id = result.FileId,
+                        NewFileTicket = result.Ticket,
+
                         Name = file.Name,
                         SizeBytes = file.Size,
                     });
@@ -166,6 +180,8 @@
     private class UploadedFileInfo
     {
         public required Guid Id { get; init; }
+        public string? NewFileTicket { get; init; }
+
         public required string Name { get; init; }
         public required long SizeBytes { get; init; }
     }

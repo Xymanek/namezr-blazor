@@ -6,6 +6,7 @@ namespace Namezr.Features.Files.Services;
 public interface IFileStorageService
 {
     ValueTask<Guid> StoreFile(Stream stream, CancellationToken ct = default);
+    string GetFilePath(Guid fileId);
 }
 
 [AutoConstructor]
@@ -26,7 +27,7 @@ public partial class FileStorageService : IFileStorageService
         return fileId;
     }
 
-    private string GetFilePath(Guid fileId)
+    public string GetFilePath(Guid fileId)
     {
         string storageDir = Path.Combine(Environment.CurrentDirectory, _options.CurrentValue.StoragePath);
 

@@ -9,4 +9,5 @@ public static class ApiEndpointPaths
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
     public const string FilesUpload = "/api/files/upload";
+    public const string FilesDownloadNew = "/api/files/download-new";
 }
