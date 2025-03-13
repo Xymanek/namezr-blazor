@@ -21,24 +21,45 @@
     />*@
 }
 
-@foreach (Guid fileId in Value.FileValue ?? [])
-{
-    <div class="d-flex align-items-center justify-content-between gap-3">
-        @* TODO: show other info, e.g. file name, size, etc. *@
-        <p>@fileId</p>
+<table class="table table-striped">
+    @if (_uploadedFiles.Count > 0)
+    {
+        <thead>
+        <tr>
+            <th>File name</th>
+            <th>Size</th>
+            <th></th>
+        </tr>
+        </thead>
+    }
+    <tbody>
+    @foreach (UploadedFileInfo file in _uploadedFiles)
+    {
+        <tr>
+            <td>
+                @* TODO: download *@
+                <a href="#">@file.Name</a>
+            </td>
+            <td><i>@file.SizeBytes bytes</i></td>
 
-        <HxButton
-            Icon="@BootstrapIcon.Trash"
-            Color="ThemeColor.Danger"
-            Tooltip="Remove"
-            OnClick="() => RemoveFile(fileId)"/>
-    </div>
-}
+            <td>
+                <HxButton
+                    Icon="@BootstrapIcon.Trash"
+                    Color="ThemeColor.Danger"
+                    Tooltip="Remove"
+                    OnClick="() => RemoveFile(file.Id)"/>
+            </td>
+        </tr>
+    }
 
-@if (_uploadsInProgress.Count > 0)
-{
-    <p>Uploading...</p>
-}
+    @if (_uploadsInProgress.Count > 0)
+    {
+        <tr>
+            <td colspan="3">Uploading...</td>
+        </tr>
+    }
+    </tbody>
+</table>
 
 @code {
 
@@ -52,6 +73,7 @@
     public EventCallback<string> OnNewFileTicket { get; set; }
 
     private readonly HashSet<IBrowserFile> _uploadsInProgress = [];
+    private readonly List<UploadedFileInfo> _uploadedFiles = [];
 
     private int MoreFilesAllowed
     {
@@ -89,7 +111,7 @@
                         AbsoluteMaxFileSize
                     ));
 
-                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType /*"application/octet-stream"*/);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
 
                     content.Add(
                         content: fileContent,
@@ -109,7 +131,14 @@
                     NewFileResult result = (await response.Content.ReadFromJsonAsync<NewFileResult>())!;
 
                     Value.FileValue ??= new();
-                    Value.FileValue.Add(result.FileId); // TODO: return and use GUID as well
+                    Value.FileValue.Add(result.FileId);
+
+                    _uploadedFiles.Add(new UploadedFileInfo
+                    {
+                        Id = result.FileId,
+                        Name = file.Name,
+                        SizeBytes = file.Size,
+                    });
 
                     await OnNewFileTicket.InvokeAsync(result.Ticket);
                 }
@@ -130,6 +159,15 @@
     {
         Value.FileValue ??= new();
         Value.FileValue.Remove(fileId);
+
+        _uploadedFiles.RemoveAll(x => x.Id == fileId);
+    }
+
+    private class UploadedFileInfo
+    {
+        public required Guid Id { get; init; }
+        public required string Name { get; init; }
+        public required long SizeBytes { get; init; }
     }
 
 }
