@@ -41,8 +41,10 @@
                     break;
 
                 case QuestionnaireFieldType.FileUpload:
+                    /* TODO: is disabled */
                     <FileUploadField
                         FieldConfig="field"
+                        SubmissionId="SubmissionId"
                         FileUploadTicket="@(FileUploadTickets[field.Id])"
                         @bind-Value="Values[fieldIdStr]"
                         OnNewFileTicket="_newFileTickets.Add"
@@ -74,6 +76,9 @@
 
     [Parameter]
     public bool AllDisabled { get; set; }
+
+    [Parameter]
+    public Guid? SubmissionId { get; set; }
 
     [Parameter]
     public required Guid QuestionnaireVersionId { get; init; }

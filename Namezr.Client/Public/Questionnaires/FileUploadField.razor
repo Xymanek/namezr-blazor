@@ -65,6 +65,9 @@
 @code {
 
     [Parameter]
+    public Guid? SubmissionId { get; set; }
+
+    [Parameter]
     public required QuestionnaireConfigFieldModel FieldConfig { get; set; }
 
     [Parameter]
@@ -80,8 +83,12 @@
     {
         if (!_newFileTokens.TryGetValue(file.Id, out string? ticket))
         {
-            // TODO
-            return "#";
+            if (SubmissionId is null)
+            {
+                throw new Exception("No submission ID but an existing file?");
+            }
+
+            return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId.Value}&fileId={file.Id}";
         }
 
         return $"{ApiEndpointPaths.FilesDownloadNew}?ticket={ticket}";

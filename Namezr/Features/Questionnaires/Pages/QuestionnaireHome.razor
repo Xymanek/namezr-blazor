@@ -120,6 +120,7 @@
     {
         <SubmissionEditor
             Config="ConfigModel"
+            SubmissionId="SubmissionId"
             InitialValues="_initialValues"
             FileUploadTickets="_fileUploadTickets"
             AllDisabled="_disabledReason.HasValue"
@@ -139,6 +140,7 @@
 
     private QuestionnaireConfigModel? ConfigModel { get; set; }
     private Guid? QuestionnaireVersionId { get; set; }
+    private Guid? SubmissionId { get; set; }
 
     private IReadOnlyDictionary<EligibilityPlanId, EligibilityPlan>? _eligibilityPlans;
     private ImmutableHashSet<EligibilityPlanId> _eligiblePlanIds = ImmutableHashSet<EligibilityPlanId>.Empty;
@@ -198,6 +200,7 @@
             if (submission is not null)
             {
                 _initialValues = new Dictionary<string, SubmissionValueModel>();
+                SubmissionId = submission.Id;
 
                 foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
                 {
