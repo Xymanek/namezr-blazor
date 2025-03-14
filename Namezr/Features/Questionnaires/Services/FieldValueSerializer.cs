@@ -23,7 +23,7 @@ internal class FieldValueSerializer : IFieldValueSerializer
         {
             QuestionnaireFieldType.Text => JsonSerializer.Serialize(value.StringValue),
             QuestionnaireFieldType.Number => JsonSerializer.Serialize(value.NumberValue),
-            QuestionnaireFieldType.FileUpload => throw new NotImplementedException(),
+            QuestionnaireFieldType.FileUpload => JsonSerializer.Serialize(value.FileValue ?? []),
 
             _ => throw new ArgumentOutOfRangeException()
         };
@@ -44,7 +44,11 @@ internal class FieldValueSerializer : IFieldValueSerializer
                 NumberValue = JsonSerializer.Deserialize<decimal>(valueSerialized),
             },
 
-            QuestionnaireFieldType.FileUpload => throw new NotImplementedException(),
+            QuestionnaireFieldType.FileUpload => new SubmissionValueModel
+            {
+                FileValue = JsonSerializer.Deserialize<List<SubmissionFileData>>(valueSerialized) ??
+                            throw new Exception("Deserialized list is null"),
+            },
 
             _ => throw new ArgumentOutOfRangeException()
         };

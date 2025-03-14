@@ -1,4 +1,6 @@
-﻿namespace Namezr.Features.Files;
+﻿using Namezr.Client.Public.Questionnaires;
+
+namespace Namezr.Features.Files;
 
 public record UploadedFileInfo
 {
@@ -8,4 +10,11 @@ public record UploadedFileInfo
 
     // TODO: replace with some kind of session ID
     public string? UserId { get; init; }
+
+    public bool Matches(SubmissionFileData submissionFileData)
+    {
+        return FileId == submissionFileData.Id &&
+               LengthBytes == submissionFileData.SizeBytes &&
+               OriginalFileName == submissionFileData.Name;
+    }
 };
