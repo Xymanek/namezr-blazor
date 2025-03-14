@@ -1,0 +1,33 @@
+﻿@page "/studio/{creatorId:guid}/config"
+
+@using Microsoft.AspNetCore.Authorization
+@using Namezr.Client
+@using Namezr.Components.Layout
+
+@attribute [Authorize]
+@layout StudioLayout
+
+<h3>Configuration home</h3>
+
+<ul>
+    <li>
+        <a href="/studio/@CreatorId.NoHyphens()/config/staff-invite">Invite staff member</a>
+    </li>
+</ul>
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        return Task.CompletedTask;
+    }
+
+}

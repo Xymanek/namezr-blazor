@@ -1,0 +1,70 @@
+﻿@page "/studio/staff-invite/{inviteId:guid}"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Account
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Data
+
+@attribute [Authorize]
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+@inject IdentityUserAccessor UserAccessor
+
+<h3>AcceptStaffInvite</h3>
+
+@_failReason
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [Parameter]
+    public Guid InviteId { get; set; }
+
+    private string? _failReason;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        StaffInviteEntity? invite = await dbContext.StaffInvites
+            .AsNoTracking()
+            .SingleOrDefaultAsync(i => i.Id == InviteId);
+
+        if (invite is null)
+        {
+            _failReason = "Invite not found";
+            return;
+        }
+
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        bool isUserAlreadyStaff = await dbContext.CreatorStaff
+            .AnyAsync(s => s.CreatorId == invite.CreatorId && s.UserId == user.Id);
+
+        if (isUserAlreadyStaff)
+        {
+            _failReason = "User is already a staff member";
+            return;
+        }
+        
+        // TODO: very bad UX and security wise
+
+        dbContext.StaffInvites.Remove(invite);
+        dbContext.CreatorStaff.Add(new CreatorStaffEntity
+        {
+            CreatorId = invite.CreatorId,
+            UserId = user.Id,
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        NavigationManager.NavigateTo($"/studio/{invite.CreatorId.NoHyphens()}");
+    }
+
+}

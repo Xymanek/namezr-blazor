@@ -1,0 +1,81 @@
+﻿@page "/studio/{creatorId:guid}/config/staff-invite"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Data
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Forms
+
+@attribute [Authorize]
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+
+<h3>Invite staff member</h3>
+
+<form method="post" @formname="invite-staff-form" @onsubmit="HandleSubmit">
+    <AntiforgeryToken/>
+    <button type="submit">Create invite</button>
+</form>
+
+@if (_generatedToken is not null)
+{
+    <p>
+        Staff invitation link:
+    </p>
+    <p>
+        @NavigationManager.ToAbsoluteUri($"/studio/staff-invite/{_generatedToken.Value.NoHyphens()}")
+    </p>
+}
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [SupplyParameterFromForm]
+    private DummyModel? FormModel { get; set; }
+    
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    private Guid? _generatedToken;
+
+    protected override async Task OnInitializedAsync()
+    {
+        StudioLayout.CurrentCreatorId = CreatorId;
+
+        // TODO: why does the native @onsubmit does not work????
+        if (HttpContext.Request.Method == HttpMethods.Post)
+        {
+            await HandleSubmit();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        StaffInviteEntity invite = new()
+        {
+            CreatorId = CreatorId,
+        };
+
+        dbContext.StaffInvites.Add(invite);
+        await dbContext.SaveChangesAsync();
+
+        _generatedToken = invite.Id;
+    }
+
+    private class DummyModel
+    {
+        //
+    }
+
+}
