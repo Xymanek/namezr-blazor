@@ -17,7 +17,14 @@ public class QuestionnaireSubmissionEntity : SelectionCandidateEntity
 
     public Instant SubmittedAt { get; set; }
 
-    // TODO: approval
+    public Instant? ApprovedAt { get; set; }
+
+    /// <summary>
+    /// <see cref="ApplicationUser.Id"/> of the user who approved the submission.
+    /// Null if the submission is not approved or was approved by the system
+    /// (e.g. <see cref="F:Namezr.Client.Studio.Questionnaires.Edit.QuestionnaireApprovalMode.GrantAutomatically"/>).
+    /// </summary>
+    public Guid? ApproverId { get; set; }
 
     public ICollection<QuestionnaireFieldValueEntity>? FieldValues { get; set; }
 }

@@ -104,7 +104,7 @@ public partial class SelectionWorker : ISelectionWorker
 
             // TODO: do not permit restart if we just went a full cycle with 0 picks
             // Otherwise this will just endlessly loop.
-            
+
             if (!allowRestarts)
             {
                 batchEntities.Add(new SelectionEntryEventEntity
@@ -276,6 +276,7 @@ public partial class SelectionWorker : ISelectionWorker
             {
                 QuestionnaireSubmissionEntity[] submissions = await dbContext.QuestionnaireSubmissions
                     .Where(s => s.Version.Questionnaire.Id == series.QuestionnaireId)
+                    .Where(s => s.ApprovedAt != null)
                     .ToArrayAsync(ct);
 
                 return submissions

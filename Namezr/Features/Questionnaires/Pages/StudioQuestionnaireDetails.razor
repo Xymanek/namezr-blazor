@@ -132,6 +132,7 @@
         <tr>
             <th>User</th>
             <th>Submitted at</th>
+            <th>Is approved</th>
             <th>Questionnaire version</th>
             <th></th>
         </tr>
@@ -145,6 +146,7 @@
             <tr>
                 <td>@submission.User.UserName</td>
                 <td>@submission.SubmittedAt</td>
+                <td>@(submission.ApprovedAt != null ? "Yes" : "No")</td>
                 <td>@submission.VersionId</td>
                 <td>
                     <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions/@submission.Id.NoHyphens()"

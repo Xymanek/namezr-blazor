@@ -1,6 +1,7 @@
 ﻿@page "/questionnaires/{QuestionnaireId:guid}"
 
 @using System.Collections.Immutable
+@using System.Diagnostics
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Public.Questionnaires
@@ -102,6 +103,15 @@
 
     @switch (_disabledReason)
     {
+        case null:
+            break;
+
+        case DisabledReason.SubmissionsClosed:
+            <HxAlert Color="ThemeColor.Secondary">
+                Submissions are currently closed.
+            </HxAlert>
+            break;
+        
         case DisabledReason.NotLoggedIn:
             <HxAlert Color="ThemeColor.Warning">
                 Please log in to submit a response.
@@ -114,8 +124,17 @@
                 You are currently not eligible.
             </HxAlert>
             break;
+        
+        case DisabledReason.AlreadyApproved:
+            <HxAlert Color="ThemeColor.Secondary">
+                Your submission has already been approved and cannot be edited.
+            </HxAlert>
+            break;
+
+        default:
+            throw new UnreachableException();
     }
-    
+
     @if (ConfigModel is not null)
     {
         <SubmissionEditor
@@ -160,11 +179,16 @@
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
 
+        // TODO: 404 if not found
+
+        if (_versionEntity!.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
+        {
+            _disabledReason = DisabledReason.SubmissionsClosed;
+        }
+
         ConfigModel = _versionEntity?.MapToConfigModel();
         QuestionnaireVersionId = _versionEntity?.Id;
 
-        CreateFileUploadTickets();
-        
         _eligibilityPlans = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
                 // TODO: in parallel
@@ -176,7 +200,7 @@
 
         if (user is null)
         {
-            _disabledReason = DisabledReason.NotLoggedIn;
+            _disabledReason ??= DisabledReason.NotLoggedIn;
         }
         else
         {
@@ -188,7 +212,7 @@
 
             if (!eligibilityResult.Any)
             {
-                _disabledReason = DisabledReason.NotEligible;
+                _disabledReason ??= DisabledReason.NotEligible;
             }
 
             _eligiblePlanIds = eligibilityResult.EligiblePlanIds;
@@ -197,8 +221,23 @@
                 .Include(x => x.FieldValues)
                 .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
 
-            if (submission is not null)
+            if (submission is null)
             {
+                if (_versionEntity.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly)
+                {
+                    _disabledReason ??= DisabledReason.SubmissionsClosed;
+                }
+            }
+            else
+            {
+                if (
+                    submission.ApprovedAt is not null &&
+                    _versionEntity.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
+                )
+                {
+                    _disabledReason ??= DisabledReason.AlreadyApproved;
+                }
+
                 _initialValues = new Dictionary<string, SubmissionValueModel>();
                 SubmissionId = submission.Id;
 
@@ -216,6 +255,11 @@
                     );
                 }
             }
+        }
+
+        if (_disabledReason == null)
+        {
+            CreateFileUploadTickets();
         }
     }
 
@@ -236,8 +280,10 @@
 
     private enum DisabledReason
     {
+        SubmissionsClosed,
         NotLoggedIn,
         NotEligible,
+        AlreadyApproved,
     }
 
 }

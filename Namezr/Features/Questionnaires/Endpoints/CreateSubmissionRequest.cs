@@ -49,6 +49,12 @@ internal partial class SubmissionCreateRequest
             throw new Exception("Questionnaire version not found");
         }
 
+        if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
+        {
+            // TODO: return 400
+            throw new Exception("Questionnaire is closed for submissions");
+        }
+
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
         SubmissionModelValuesValidator valuesOnlyValidator = new(
@@ -96,6 +102,28 @@ internal partial class SubmissionCreateRequest
                     s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId,
                 cancellationToken: ct
             );
+
+        if (
+            submissionEntity is null &&
+            questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly
+        )
+        {
+            // TODO: return 400
+            throw new Exception("Questionnaire is closed for submissions");
+        }
+
+        if (
+            submissionEntity is { ApprovedAt: not null } &&
+            questionnaireVersion.Questionnaire.ApprovalMode ==
+            QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
+        )
+        {
+            valuesValidationResult.Errors.Add(new ValidationFailure(
+                nameof(SubmissionCreateModel.QuestionnaireVersionId),
+                "Editing approved submissions is not allowed"
+            ));
+            ThrowFailedValuesValidation();
+        }
 
         HashSet<Guid> fileUploadFieldIds = questionnaireVersion.Fields!
             .Where(x => x.Field.Type == QuestionnaireFieldType.FileUpload)
@@ -170,6 +198,15 @@ internal partial class SubmissionCreateRequest
         {
             submissionEntity.VersionId = model.QuestionnaireVersionId;
             submissionEntity.SubmittedAt = clock.GetCurrentInstant();
+
+            if (
+                questionnaireVersion.Questionnaire.ApprovalMode ==
+                QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited
+            )
+            {
+                submissionEntity.ApprovedAt = null;
+                submissionEntity.ApproverId = null;
+            }
         }
         else
         {
@@ -192,6 +229,12 @@ internal partial class SubmissionCreateRequest
                 ValueSerialized = fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
             })
             .ToHashSet();
+
+        if (questionnaireVersion.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.GrantAutomatically)
+        {
+            submissionEntity.ApprovedAt = clock.GetCurrentInstant();
+            submissionEntity.ApproverId = null;
+        }
 
         await dbContext.SaveChangesAsync(ct);
 

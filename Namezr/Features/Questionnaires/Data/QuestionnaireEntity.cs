@@ -19,6 +19,7 @@ public class QuestionnaireEntity
     public required string? Description { get; set; }
 
     public required QuestionnaireApprovalMode ApprovalMode { get; set; }
+    public required QuestionnaireSubmissionOpenMode SubmissionOpenMode { get; set; }
 
     public EligibilityConfigurationEntity EligibilityConfiguration { get; set; } = null!;
     public long EligibilityConfigurationId { get; set; }

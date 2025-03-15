@@ -21,6 +21,28 @@
         Label="Description"
         @bind-Value="Model.Description"
     />
+    <div class="row">
+        <HxSelect
+            CssClass="col-6"
+            Label="Approval mode"
+            @bind-Value="Model.ApprovalMode"
+            Data="ApprovalModeOptions"
+            AutoSort="@false"
+            ValueSelector="@(x => x.mode)"
+            TextSelector="@(x => x.label)"
+            Nullable="false"
+        />
+        <HxSelect
+            CssClass="col-6"
+            Label="Submission open mode"
+            @bind-Value="Model.SubmissionOpenMode"
+            Data="SubmissionOpenModeOptions"
+            AutoSort="@false"
+            ValueSelector="@(x => x.mode)"
+            TextSelector="@(x => x.label)"
+            Nullable="false"
+        />
+    </div>
 
     <div class="row">
         <div class="col-11">
@@ -177,7 +199,7 @@
             }
 
             response.EnsureSuccessStatusCode();
-            
+
             // TODO: redirect to studio questionnaire details page
         }
         finally
@@ -211,5 +233,19 @@
                 break;
         }
     }
+
+    private static readonly IReadOnlyList<(QuestionnaireApprovalMode mode, string label)> ApprovalModeOptions =
+    [
+        (QuestionnaireApprovalMode.GrantAutomatically, "Granted automatically"),
+        (QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited, "Require approval (remove when edited)"),
+        (QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved, "Require approval (prohibit editing when approved)"),
+    ];
+
+    private static readonly IReadOnlyList<(QuestionnaireSubmissionOpenMode mode, string label)> SubmissionOpenModeOptions =
+    [
+        (QuestionnaireSubmissionOpenMode.Open, "Open"),
+        (QuestionnaireSubmissionOpenMode.EditExistingOnly, "Edit existing only"),
+        (QuestionnaireSubmissionOpenMode.Closed, "Closed"),
+    ];
 
 }

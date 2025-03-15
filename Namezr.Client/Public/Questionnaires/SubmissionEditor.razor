@@ -41,11 +41,12 @@
                     break;
 
                 case QuestionnaireFieldType.FileUpload:
+                    @* If the submission is disabled, there will be no tickets *@
                     /* TODO: is disabled */
                     <FileUploadField
                         FieldConfig="field"
                         SubmissionId="SubmissionId"
-                        FileUploadTicket="@(FileUploadTickets[field.Id])"
+                        FileUploadTicket="@(FileUploadTickets.GetValueOrDefault(field.Id))"
                         @bind-Value="Values[fieldIdStr]"
                         OnNewFileTicket="_newFileTickets.Add"
                     />

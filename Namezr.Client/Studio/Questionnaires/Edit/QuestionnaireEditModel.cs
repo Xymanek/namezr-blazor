@@ -8,7 +8,8 @@ public class QuestionnaireEditModel
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
-    public QuestionnaireApprovalMode ApprovalMode { get; set; }
+    public QuestionnaireApprovalMode ApprovalMode { get; set; } = QuestionnaireApprovalMode.GrantAutomatically;
+    public QuestionnaireSubmissionOpenMode SubmissionOpenMode { get; set; } = QuestionnaireSubmissionOpenMode.Open;
 
     public List<EligibilityOptionEditModel> EligibilityOptions { get; set; } = new();
     public List<QuestionnaireFieldEditModel> Fields { get; set; } = new();
@@ -214,7 +215,14 @@ public enum QuestionnaireFieldType
 
 public enum QuestionnaireApprovalMode
 {
-    NotRequired,
-    KeepApprovedWhilePending,
-    DeactivateWhilePending,
+    GrantAutomatically,
+    RequireApprovalRemoveWhenEdited,
+    RequireApprovalProhibitEditingApproved,
+}
+
+public enum QuestionnaireSubmissionOpenMode
+{
+    Open,
+    EditExistingOnly,
+    Closed,
 }

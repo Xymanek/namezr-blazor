@@ -1,6 +1,7 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/{submissionId:guid}"
 
 @using System.Diagnostics
+@using Havit.Blazor.Components.Web.Bootstrap
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client
@@ -10,12 +11,18 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Features.Questionnaires.Services
 @using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using Namezr.Components.Account
+@using NodaTime
 
 @attribute [Authorize]
 @layout StudioLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IFieldValueSerializer ValueSerializer
+@inject NavigationManager NavigationManager
+@inject IdentityUserAccessor UserAccessor
+@inject IClock Clock
 
 @if (_submission is not null)
 {
@@ -51,6 +58,49 @@
             <th>Questionnaire version</th>
             <td>@_submission.VersionId</td>
         </tr>
+
+        <tr>
+            <th>Is approved</th>
+            <td>
+                <div class="d-flex justify-content-between align-items-center gap-3">
+                    @if (_submission.ApprovedAt is not null)
+                    {
+                        <div>Yes</div>
+
+                        <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
+                            <HxSubmit
+                                Text="Remove approval"
+                                Color="@ThemeColor.Danger"
+                            />
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <div>No</div>
+
+                        <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
+                            <HxSubmit
+                                Text="Approve"
+                                Color="@ThemeColor.Success"
+                            />
+                        </EditForm>
+                    }
+                </div>
+            </td>
+        </tr>
+
+        @if (_submission.ApprovedAt is not null)
+        {
+            <tr>
+                <th>Approved at</th>
+                <td>@_submission.ApprovedAt</td>
+            </tr>
+
+            <tr>
+                <th>Approved by</th>
+                <td>@(_submission.ApproverId == null ? "System" : "Staff")</td>
+            </tr>
+        }
     </table>
 
     <table class="table table-striped mt-4">
@@ -122,6 +172,9 @@
 @code {
 
     [CascadingParameter]
+    public required HttpContext HttpContext { get; set; } = null!;
+
+    [CascadingParameter]
     public required StudioLayout StudioLayout { get; set; } = null!;
 
     [Parameter]
@@ -154,6 +207,40 @@
     private string GetDownloadUrl(SubmissionFileData file)
     {
         return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId}&fileId={file.Id}";
+    }
+
+    private async Task HandleGrantApproval()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        QuestionnaireSubmissionEntity submission = await dbContext.QuestionnaireSubmissions
+            .AsTracking()
+            .SingleAsync(x => x.Id == SubmissionId);
+
+        submission.ApprovedAt = Clock.GetCurrentInstant();
+        submission.ApproverId = (await UserAccessor.GetRequiredUserAsync(HttpContext)).Id;
+
+        await dbContext.SaveChangesAsync();
+
+        // Reload the page with new info
+        NavigationManager.Refresh();
+    }
+
+    private async Task HandleRemoveApproval()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        QuestionnaireSubmissionEntity submission = await dbContext.QuestionnaireSubmissions
+            .AsTracking()
+            .SingleAsync(x => x.Id == SubmissionId);
+
+        submission.ApprovedAt = null;
+        submission.ApproverId = null;
+
+        await dbContext.SaveChangesAsync();
+
+        // Reload the page with new info
+        NavigationManager.Refresh();
     }
 
 }
