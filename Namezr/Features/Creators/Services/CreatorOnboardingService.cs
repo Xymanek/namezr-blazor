@@ -109,10 +109,9 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
                 ThirdPartyTokenId = userLogin.ThirdPartyTokenId,
 
                 CampaignId = campaign.Id,
-                Title = campaign.CreationName,
+                Title = campaign.Vanity,
                 Url = campaign.Url,
 
-                // TODO: what are benefits? Do I need them?
                 Tiers = campaign.Relationships.Tiers
                     .Select(x => x.Title)
                     .ToArray(),

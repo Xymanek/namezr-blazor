@@ -1,4 +1,5 @@
-﻿using AspNet.Security.OAuth.Twitch;
+﻿using AspNet.Security.OAuth.Patreon;
+using AspNet.Security.OAuth.Twitch;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
@@ -15,6 +16,7 @@ public partial class TargetConsumerService
 {
     // TODO: IEnumerable of all interfaces
     private readonly TwitchConsumerService _twitchConsumerService;
+    private readonly PatreonConsumerService _patreonConsumerService;
 
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
@@ -40,6 +42,15 @@ public partial class TargetConsumerService
             {
                 // TODO: parallelize
                 result.Add(await _twitchConsumerService.GetOrCreateTwitchConsumer(userLogin, supportTargetId));
+            }
+            
+            if (
+                userLogin.LoginProvider == PatreonAuthenticationDefaults.AuthenticationScheme
+                && supportTarget.ServiceType == SupportServiceType.Patreon
+            )
+            {
+                // TODO: parallelize
+                result.Add(await _patreonConsumerService.GetOrCreatePatreonConsumer(userLogin, supportTargetId));
             }
         }
 

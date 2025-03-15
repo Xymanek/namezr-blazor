@@ -1,5 +1,6 @@
 ﻿using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
+using Namezr.Features.Creators.Data;
 using Namezr.Infrastructure.Patreon;
 using NodaTime.Extensions;
 using Patreon.Net;
@@ -15,24 +16,49 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
 
     public override SupportServiceType ServiceType => SupportServiceType.Patreon;
 
+    // The request just times out after no response from Patreon.
+    // Note that if the auth or user ID is invalid, the API does instantly return an error.
+    // Tested on 2025-03-15.
+    protected override bool IndividualQuerySupported => false;
+
     /// <inheritdoc/>
-    protected override async ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
+    protected override ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
         TargetConsumerEntity targetConsumer
     )
     {
-        PatreonClient patreonClient = _patreonApiProvider.GetPatreonApi(targetConsumer.SupportTarget.ServiceToken!);
-        Member patreonMember = await patreonClient.GetMemberAsync(targetConsumer.ServiceId);
+        throw new NotSupportedException();
+    }
 
-        Dictionary<string, SupportStatusData> result = new();
+    protected override bool AllConsumersQuerySupported => true;
 
-        foreach (Tier patreonTier in patreonMember.Relationships.Tiers)
+    // TODO: loaded relationships
+    protected override async ValueTask<Dictionary<string, Dictionary<string, SupportStatusData>>>
+        QueryAllConsumersStatuses(
+            SupportTargetEntity supportTarget
+        )
+    {
+        PatreonClient patreonClient = _patreonApiProvider.GetPatreonApi(supportTarget.ServiceToken!);
+
+        PatreonResourceArray<Member,MemberRelationships> resourceArray = 
+            await patreonClient.GetCampaignMembersAsync(supportTarget.ServiceId, Includes.Tiers);
+        
+        Dictionary<string, Dictionary<string, SupportStatusData>> result = new();
+        
+        await foreach (Member patreonMember in resourceArray)
         {
-            result[patreonTier.Id] = new SupportStatusData
+            Dictionary<string, SupportStatusData> memberResult = new();
+
+            foreach (Tier patreonTier in patreonMember.Relationships.Tiers)
             {
-                IsActive = true,
-                ExpiresAt = patreonMember.NextChargeDate?.ToInstant(),
-                EnrolledAt = patreonMember.PledgeRelationshipStart?.ToInstant(),
-            };
+                memberResult[patreonTier.Id] = new SupportStatusData
+                {
+                    IsActive = true,
+                    ExpiresAt = patreonMember.NextChargeDate?.ToInstant(),
+                    EnrolledAt = patreonMember.PledgeRelationshipStart?.ToInstant(),
+                };
+            }
+            
+            result.Add(patreonMember.Id, memberResult);
         }
 
         return result;

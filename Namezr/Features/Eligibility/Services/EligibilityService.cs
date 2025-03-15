@@ -50,6 +50,7 @@ public partial class EligibilityService : IEligibilityService
         yield return new EligibilityPlan(VirtualEligibilityType.NotListedSupportPlan);
     }
 
+    // TODO: evaluate usages of this to call the mass sync where applicable
     /// <param name="userId"></param>
     /// <param name="configuration">
     ///     <see cref="EligibilityConfigurationEntity.Options"/> must be loaded and non-empty.
