@@ -105,6 +105,14 @@ builder.Services.AddAuthentication().AddPatreon(options =>
         builder.Configuration["Patreon:ClientSecret"] ?? throw new Exception("Missing Patreon:ClientSecret");
 
     options.SaveTokens = true;
+    
+    options.Scope.Add("identity[email]");
+    options.Scope.Add("campaigns");
+    options.Scope.Add("w:campaigns.webhook");
+    options.Scope.Add("campaigns.members");
+    
+    // Get the email for the initial sign up
+    options.Fields.Add("email");
 });
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
