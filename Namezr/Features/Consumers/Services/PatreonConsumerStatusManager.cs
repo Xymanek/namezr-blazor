@@ -39,11 +39,11 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
     {
         PatreonClient patreonClient = _patreonApiProvider.GetPatreonApi(supportTarget.ServiceToken!);
 
-        PatreonResourceArray<Member,MemberRelationships> resourceArray = 
-            await patreonClient.GetCampaignMembersAsync(supportTarget.ServiceId, Includes.Tiers);
-        
+        PatreonResourceArray<Member, MemberRelationships> resourceArray =
+            await patreonClient.GetCampaignMembersAsync(supportTarget.ServiceId, Includes.CurrentlyEntitledTiers | Includes.User);
+
         Dictionary<string, Dictionary<string, SupportStatusData>> result = new();
-        
+
         await foreach (Member patreonMember in resourceArray)
         {
             Dictionary<string, SupportStatusData> memberResult = new();
@@ -57,8 +57,8 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
                     EnrolledAt = patreonMember.PledgeRelationshipStart?.ToInstant(),
                 };
             }
-            
-            result.Add(patreonMember.Id, memberResult);
+
+            result.Add(patreonMember.Relationships.User.Id, memberResult);
         }
 
         return result;

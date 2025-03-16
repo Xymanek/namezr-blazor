@@ -158,6 +158,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
                 targetConsumer = new TargetConsumerEntity
                 {
                     ServiceId = consumerId,
+                    SupportStatuses = [],
                 };
 
                 supportTarget.Consumers!.Add(targetConsumer);

@@ -73,7 +73,8 @@ public partial class EligibilityService : IEligibilityService
             .Distinct()
             .ToHashSet();
 
-        Guid[] relevantSupportTargetIds = relevantSupportPlanIds
+        // https://github.com/dotnet/efcore/pull/35719
+        IEnumerable<Guid> relevantSupportTargetIds = relevantSupportPlanIds
             .Select(planFullId => planFullId.SupportTargetId)
             .Distinct()
             .ToArray();
@@ -133,7 +134,9 @@ public partial class EligibilityService : IEligibilityService
         decimal modifier = optionsByPriorityGroup
             .Select(group => group
                 .Where(option => isMatchingPerEligibilityPlan[option.PlanId])
-                .Max(option => option.PriorityModifier)
+                .Select(option => option.PriorityModifier)
+                .Prepend(0) // Max fails if empty sequence and "0" effectively means uneligible
+                .Max()
             )
             .Sum();
 
