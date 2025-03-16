@@ -26,6 +26,15 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
         TargetConsumerEntity targetConsumer
     )
     {
+        // TODO: this can be supported.
+        // Patreon structures the data in the following way:
+        // User <> Member(ship)          <> Campaign
+        //                      <> Tier
+        // With user's token we can call /identity and get the list of memberships - BUT NOT the tiers or the campaigns
+        // However, knowing the member ID (GUID, different from the user ID) we can call /members/{memberId}
+        // and that will give us campaign (to match the support target) and the tiers.
+        // However, we probably also need to store the user ID <> member ID mapping in the database
+
         throw new NotSupportedException();
     }
 
@@ -40,7 +49,8 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
         PatreonClient patreonClient = _patreonApiProvider.GetPatreonApi(supportTarget.ServiceToken!);
 
         PatreonResourceArray<Member, MemberRelationships> resourceArray =
-            await patreonClient.GetCampaignMembersAsync(supportTarget.ServiceId, Includes.CurrentlyEntitledTiers | Includes.User);
+            await patreonClient.GetCampaignMembersAsync(supportTarget.ServiceId,
+                Includes.CurrentlyEntitledTiers | Includes.User);
 
         Dictionary<string, Dictionary<string, SupportStatusData>> result = new();
 
