@@ -31,8 +31,8 @@ public partial class ApplicationDbContext : IdentityUserContext<
         optionsBuilder.UseNpgsql(postgres => postgres.UseNodaTime());
 
         optionsBuilder.UseExceptionProcessor();
-        
-        optionsBuilder.EnableSensitiveDataLogging();
+
+        // optionsBuilder.EnableSensitiveDataLogging();
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
