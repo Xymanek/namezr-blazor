@@ -116,6 +116,17 @@ builder.Services.AddAuthentication().AddPatreon(options =>
     options.Fields.Add("email");
 });
 
+builder.Services.AddAuthentication().AddGoogle(options =>
+{
+    options.ClientId =
+        builder.Configuration["Google:ClientId"] ?? throw new Exception("Missing Google:ClientId");
+
+    options.ClientSecret =
+        builder.Configuration["Google:ClientSecret"] ?? throw new Exception("Missing Google:ClientSecret");
+
+    options.SaveTokens = true;
+});
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         // TODO: update this once the email management is finalized
