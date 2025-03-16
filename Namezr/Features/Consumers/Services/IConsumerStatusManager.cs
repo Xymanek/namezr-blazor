@@ -56,7 +56,18 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         }
         else if (eagerness > UserStatusSyncEagerness.NoSync)
         {
-            if (targetConsumer.SupportStatuses!.Count < 1)
+            if (
+                // Force sync if we have no data about the consumer status
+                targetConsumer.SupportStatuses!.Count < 1 &&
+                
+                // And there was no "all consumers sync" yet
+                (
+                    targetConsumer.SupportTarget.LastAllConsumersSyncAt == null ||
+                    
+                    // Or the last "all consumers sync" was too long ago
+                    targetConsumer.SupportTarget.LastAllConsumersSyncAt < _clock.GetCurrentInstant() - DefaultOutdatedExpiration
+                )
+            )
             {
                 syncNeeded = true;
             }
