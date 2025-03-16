@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Types;
+using Namezr.Features.Consumers.Data;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.ThirdParty;
+using NodaTime;
 
 namespace Namezr.Features.Creators.Data;
 
@@ -35,7 +37,10 @@ public class SupportTargetEntity
     public ThirdPartyToken? ServiceToken { get; set; }
     public long? ServiceTokenId { get; set; }
 
+    public Instant? LastAllConsumersSyncAt { get; set; }
+    
     public ICollection<SupportPlanInfoEntity>? SupportPlansInfos { get; set; }
+    public ICollection<TargetConsumerEntity>? Consumers { get; set; }
 }
 
 internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<SupportTargetEntity>

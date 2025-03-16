@@ -2,6 +2,7 @@
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
 using Namezr.Features.Creators;
+using Namezr.Features.Creators.Data;
 using Namezr.Infrastructure.Twitch;
 using TwitchLib.Api.Helix.Models.Channels.GetChannelFollowers;
 using TwitchLib.Api.Helix.Models.Subscriptions;
@@ -17,6 +18,8 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
 
     public override SupportServiceType ServiceType => SupportServiceType.Twitch;
 
+    protected override bool IndividualQuerySupported => true;
+    
     protected override async ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
         TargetConsumerEntity targetConsumer
     )
@@ -81,4 +84,14 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
         TwitchSupportPlansIds.Tier2,
         TwitchSupportPlansIds.Tier3,
     ];
+    
+    protected override bool AllConsumersQuerySupported => false;
+
+    protected override ValueTask<Dictionary<string, Dictionary<string, SupportStatusData>>> QueryAllConsumersStatuses(
+        SupportTargetEntity supportTarget
+    )
+    {
+        // TODO: implement
+        throw new NotSupportedException();
+    }
 }

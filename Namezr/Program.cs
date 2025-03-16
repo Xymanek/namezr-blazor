@@ -107,6 +107,7 @@ builder.Services.AddAuthentication().AddPatreon(options =>
     options.SaveTokens = true;
     
     options.Scope.Add("identity[email]");
+    options.Scope.Add("identity.memberships");
     options.Scope.Add("campaigns");
     options.Scope.Add("w:campaigns.webhook");
     options.Scope.Add("campaigns.members");
