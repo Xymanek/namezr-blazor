@@ -97,6 +97,27 @@ public partial class SupportPlansService : ISupportPlansService
 
                 break;
             }
+
+            case SupportServiceType.Discord:
+            {
+                foreach (SupportPlanInfoEntity supportPlansInfo in supportTarget.SupportPlansInfos!)
+                {
+                    yield return new SupportPlan
+                    {
+                        Id = new SupportPlanFullId
+                        {
+                            SupportTargetId = supportTarget.Id,
+                            SupportPlanId = supportPlansInfo.SupportPlanId,
+                        },
+                        ServiceType = SupportServiceType.Discord,
+                        DisplayName =
+                            supportPlansInfo.DisplayName ??
+                            throw new Exception("Discord role support plan has no display name"),
+                    };
+                }
+
+                break;
+            }
         }
     }
 }

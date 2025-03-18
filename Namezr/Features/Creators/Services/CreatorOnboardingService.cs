@@ -139,7 +139,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         if (userLogin is null) return [];
 
         // TODO: there is not a single line here that is efficient
-        
+
         await using DiscordRestClient discordUserClient = await _discordApiProvider.GetDiscordApiForUser(userId);
         await using DiscordRestClient discordAppClient = await _discordApiProvider.GetDiscordApiForApp();
 
@@ -168,7 +168,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
                     .Select(x => x.Name)
                     .ToArray();
             }
-            
+
             targets.Add(new PotentialDiscordSupportTarget
             {
                 // Discord info is gathered via bot token, not user oauth
@@ -247,6 +247,23 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
                 {
                     SupportPlanId = tier.Id,
                     DisplayName = tier.Title,
+                });
+            }
+        }
+
+        if (potentialSupportTarget is PotentialDiscordSupportTarget discordTarget)
+        {
+            await using DiscordRestClient discordAppClient = await _discordApiProvider.GetDiscordApiForApp();
+
+            RestGuild guild = await discordAppClient.GetGuildAsync(discordTarget.GuildId);
+
+            supportTarget.SupportPlansInfos ??= new HashSet<SupportPlanInfoEntity>();
+            foreach (RestRole role in guild.Roles)
+            {
+                supportTarget.SupportPlansInfos.Add(new SupportPlanInfoEntity
+                {
+                    SupportPlanId = role.Id.ToString(),
+                    DisplayName = role.Name,
                 });
             }
         }

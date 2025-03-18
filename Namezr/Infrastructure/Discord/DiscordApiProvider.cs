@@ -63,14 +63,6 @@ public partial class DiscordApiProvider : IDiscordApiProvider
     {
         Guard.IsTrue(token.ServiceType == DiscordConstants.ServiceType);
 
-        // DiscordRestClient client = new();
-        // client.GetGuildAsync();
-        //
-        // IDiscordClient s = client;
-        // (await s.GetGuildsAsync()).First().GetRoleAsync();
-        //
-        // IReadOnlyCollection<ulong> readOnlyCollection = (await (await s.GetGuildAsync(0)).GetUserAsync(0)).RoleIds;
-
         return await DoGetDiscordApi(token);
     }
 
