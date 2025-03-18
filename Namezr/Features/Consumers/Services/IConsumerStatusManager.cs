@@ -129,6 +129,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         if (IndividualQuerySupported)
         {
             await SyncConsumerStatus(consumer.Id);
+            return;
         }
 
         await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
