@@ -10,4 +10,5 @@ public enum SupportServiceType
     Patreon = 1,
     KoFi = 2,
     BuyMeACoffee = 3,
+    Discord = 4,
 }

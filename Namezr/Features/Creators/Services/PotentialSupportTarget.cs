@@ -37,3 +37,18 @@ internal record PotentialPatreonSupportTarget : PotentialSupportTarget
     public required string Url { get; init; }
     public required IReadOnlyList<string> Tiers { get; init; }
 }
+
+internal record PotentialDiscordSupportTarget : PotentialSupportTarget
+{
+    public override SupportServiceType ServiceType => SupportServiceType.Discord;
+    public override string ServiceId => GuildId.ToString();
+
+    public override string DisplayName => GuildName;
+
+    public required ulong GuildId { get; init; }
+    public required string GuildName { get; init; }
+
+    public required bool BotInstallRequired { get; init; }
+    
+    public required IReadOnlyList<string> RoleNames { get; init; }
+}

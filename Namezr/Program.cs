@@ -1,4 +1,5 @@
 using AspireRunner.AspNetCore;
+using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Twitch;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
+using Namezr.Infrastructure.Discord;
 using Namezr.Infrastructure.Twitch;
 using Namezr.Infrastructure.Twitch.MockServer;
 using NodaTime;
@@ -105,13 +107,13 @@ builder.Services.AddAuthentication().AddPatreon(options =>
         builder.Configuration["Patreon:ClientSecret"] ?? throw new Exception("Missing Patreon:ClientSecret");
 
     options.SaveTokens = true;
-    
+
     options.Scope.Add("identity[email]");
     options.Scope.Add("identity.memberships");
     options.Scope.Add("campaigns");
     options.Scope.Add("w:campaigns.webhook");
     options.Scope.Add("campaigns.members");
-    
+
     // Get the email for the initial sign up
     options.Fields.Add("email");
 });
@@ -124,8 +126,32 @@ builder.Services.AddAuthentication().AddGoogle(options =>
     options.ClientSecret =
         builder.Configuration["Google:ClientSecret"] ?? throw new Exception("Missing Google:ClientSecret");
 
-    options.SaveTokens = true;
+    // Tokens are not persisted currently
+    // options.SaveTokens = true;
 });
+
+// AddOAuth() call since we replace the auth handler
+builder.Services.AddAuthentication()
+    .AddOAuth<DiscordAuthenticationOptions, NamezrDiscordAuthenticationHandler>(
+        DiscordAuthenticationDefaults.AuthenticationScheme,
+        DiscordAuthenticationDefaults.DisplayName,
+        options =>
+        {
+            options.ClientId =
+                builder.Configuration["Discord:ClientId"] ?? throw new Exception("Missing Discord:ClientId");
+
+            options.ClientSecret =
+                builder.Configuration["Discord:ClientSecret"] ?? throw new Exception("Missing Discord:ClientSecret");
+
+            options.SaveTokens = true;
+
+            options.Scope.Add("guilds");
+            options.Scope.Add("guilds.members.read");
+        }
+    );
+
+builder.Services.AddOptions<DiscordAppOptions>()
+    .BindConfiguration(DiscordAppOptions.SectionPath);
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
