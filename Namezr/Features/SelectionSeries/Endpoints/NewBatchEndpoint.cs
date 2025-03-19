@@ -14,7 +14,7 @@ namespace Namezr.Features.SelectionSeries.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.SelectionNewBatch)]
-public partial class NewBatchEndpoint
+internal partial class NewBatchEndpoint
 {
     private static async ValueTask Handle(
         NewSelectionBatchRequest request,

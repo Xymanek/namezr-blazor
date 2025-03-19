@@ -10,6 +10,8 @@
 
 @inject IdentityUserAccessor UserAccessor
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+@inject ILogger<StudioLayout> Logger
 
 <div class="main-container">
     <div class="sidebar">
@@ -36,7 +38,7 @@
     public required HttpContext HttpContext { get; set; }
 
     private readonly TaskCompletionSource _creatorsLoaded = new();
-    
+
     protected override async Task OnInitializedAsync()
     {
         ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
@@ -51,23 +53,31 @@
                 DisplayName = entity.DisplayName,
             })
             .ToArrayAsync();
-        
+
         _creatorsLoaded.SetResult();
     }
 
     private Guid? CurrentCreatorId { get; set; }
-    
+
     public async Task SetCurrentCreatorAndValidateAccess(Guid creatorId)
     {
         await _creatorsLoaded.Task;
-        
+
         if (_creators.All(x => x.Id != creatorId))
         {
-            // TODO: 404 or something
-            throw new InvalidOperationException("User does not have access to creator studio");
+            ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+            Logger.LogWarning(
+                "User ({userId}) does not have access to creator ({creatorId}) studio",
+                user.Id, creatorId
+            );
+
+            // TODO: 404
+            NavigationManager.NavigateTo("");
         }
-        
+
         CurrentCreatorId = creatorId;
         StateHasChanged();
     }
+
 }
