@@ -2,6 +2,8 @@
 using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Namezr.Components.Account;
 using Namezr.Features.Creators.Services;
@@ -11,6 +13,7 @@ using Namezr.Infrastructure.Discord;
 namespace Namezr.Features.Creators.Endpoints;
 
 [Handler]
+[Authorize]
 [Behaviors] // Remove the default validator
 [MapPost(Route)]
 internal partial class OnboardingInstallDiscordBotEndpoint
@@ -29,7 +32,9 @@ internal partial class OnboardingInstallDiscordBotEndpoint
         ICreatorOnboardingService onboardingService
     )
     {
-        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        HttpContext httpContext = httpContextAccessor.HttpContext!;
+
+        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContext);
         IReadOnlyList<PotentialSupportTarget> potentialSupportTargets
             = await onboardingService.GetPotentialSupportTargets(user.Id);
 
@@ -47,6 +52,13 @@ internal partial class OnboardingInstallDiscordBotEndpoint
 
         AuthenticationProperties properties = new()
         {
+            // TODO: ideally handle the error case
+            // Until then, we can't pre-select the target
+            RedirectUri = UriHelper.BuildRelative(
+                httpContext.Request.PathBase,
+                "/studio/onboarding"
+            ),
+
             Parameters =
             {
                 [DiscordChallengeProperties.GuildId] = command.GuildId,
@@ -55,8 +67,6 @@ internal partial class OnboardingInstallDiscordBotEndpoint
                 {
                     "bot",
                 },
-
-                // TODO: return url
             }
         };
 
