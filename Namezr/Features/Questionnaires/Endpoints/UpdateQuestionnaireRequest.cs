@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Components.Account;
+using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
 
@@ -16,12 +18,12 @@ internal static partial class UpdateQuestionnaireRequest
 {
     private static async ValueTask HandleAsync(
         UpdateQuestionnaireCommand request,
+        IHttpContextAccessor httpContextAccessor,
+        IdentityUserAccessor userAccessor,
         ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        // TODO: validate against current user access
-
         QuestionnaireEntity? questionnaireEntity = await dbContext.Questionnaires
             .Include(x => x.Versions)
             .Include(x => x.Fields)
@@ -36,11 +38,33 @@ internal static partial class UpdateQuestionnaireRequest
             throw new Exception("Questionnaire not found");
         }
 
+        await ValidateAccess();
+
         // TODO: updates the eligibility plan IDs to the same value since instances are not the same
         // since owned types are used
         new QuestionnaireFormToEntityMapper(questionnaireEntity.Fields!)
             .UpdateEntityWithNewVersion(request.Model, questionnaireEntity);
 
         await dbContext.SaveChangesAsync(ct);
+
+        return;
+
+        async Task ValidateAccess()
+        {
+            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+
+            bool isCreatorStaff = await dbContext.CreatorStaff
+                .Where(
+                    staff =>
+                        staff.UserId == user.Id &&
+                        staff.CreatorId == questionnaireEntity.CreatorId
+                )
+                .AnyAsync(ct);
+
+            if (isCreatorStaff) return;
+
+            // TODO: correct
+            throw new Exception("Access denied");
+        }
     }
 }

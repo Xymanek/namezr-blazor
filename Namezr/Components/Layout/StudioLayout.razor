@@ -1,10 +1,20 @@
 ﻿@layout BaseLayout
 
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Studio
+@using Namezr.Components.Account
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Data
+
 @inherits LayoutComponentBase
+
+@inject IdentityUserAccessor UserAccessor
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <div class="main-container">
     <div class="sidebar">
         <StudioMenu
+            Creators="_creators"
             CurrentCreatorId="CurrentCreatorId"
         />
     </div>
@@ -20,14 +30,44 @@
 
 @code {
 
-    public Guid? CurrentCreatorId
+    private CreatorSelectorOption[] _creators = [];
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    private readonly TaskCompletionSource _creatorsLoaded = new();
+    
+    protected override async Task OnInitializedAsync()
     {
-        get => field;
-        set
-        {
-            field = value;
-            StateHasChanged();
-        }
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _creators = await dbContext.Creators
+            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
+            .Select(entity => new CreatorSelectorOption
+            {
+                Id = entity.Id,
+                DisplayName = entity.DisplayName,
+            })
+            .ToArrayAsync();
+        
+        _creatorsLoaded.SetResult();
     }
 
+    private Guid? CurrentCreatorId { get; set; }
+    
+    public async Task SetCurrentCreatorAndValidateAccess(Guid creatorId)
+    {
+        await _creatorsLoaded.Task;
+        
+        if (_creators.All(x => x.Id != creatorId))
+        {
+            // TODO: 404 or something
+            throw new InvalidOperationException("User does not have access to creator studio");
+        }
+        
+        CurrentCreatorId = creatorId;
+        StateHasChanged();
+    }
 }

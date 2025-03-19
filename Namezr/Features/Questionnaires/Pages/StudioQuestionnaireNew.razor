@@ -38,7 +38,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        StudioLayout.CurrentCreatorId = CreatorId;
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         EligibilityDescriptors = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(

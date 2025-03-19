@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Components.Account;
 using Namezr.Features.Files.Services;
+using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
@@ -28,7 +30,9 @@ internal partial class DownloadSubmissionFileEndpoint
         [AsParameters] Parameters parameters,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IFieldValueSerializer fieldValueSerializer,
+        IHttpContextAccessor httpContextAccessor,
         IFileStorageService fileStorageService,
+        IdentityUserAccessor userAccessor,
         CancellationToken ct
     )
     {
@@ -45,8 +49,9 @@ internal partial class DownloadSubmissionFileEndpoint
         {
             throw new Exception("Submission not found");
         }
-        
+
         // TODO: validate access to submission
+        await ValidateAccess();
 
         SubmissionFileData? fileData = submission.FieldValues!
             .Select(v => fieldValueSerializer.Deserialize(QuestionnaireFieldType.FileUpload, v.ValueSerialized))
@@ -63,5 +68,27 @@ internal partial class DownloadSubmissionFileEndpoint
             fileStorageService.GetFilePath(fileData.Id),
             fileDownloadName: fileData.Name
         );
+
+        async Task ValidateAccess()
+        {
+            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+
+            // Can always download own files
+            if (user.Id == submission.UserId) return;
+
+            // ReSharper disable once AccessToDisposedClosure
+            bool isCreatorStaff = await dbContext.CreatorStaff
+                .Where(
+                    staff =>
+                        staff.UserId == user.Id &&
+                        staff.CreatorId == submission.Version.Questionnaire.CreatorId
+                )
+                .AnyAsync(ct);
+
+            if (isCreatorStaff) return;
+
+            // TODO: correct
+            throw new Exception("Access denied");
+        }
     }
 }

@@ -16,9 +16,9 @@
     [CascadingParameter]
     public required StudioLayout StudioLayout { get; set; } = null!;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        StudioLayout.CurrentCreatorId = CreatorId;
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
     }
 
 }

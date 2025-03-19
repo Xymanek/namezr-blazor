@@ -174,7 +174,7 @@
     {
         NewSelectionBatchOptions ??= new NewSelectionBatchOptionsModel();
 
-        StudioLayout.CurrentCreatorId = CreatorId;
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 

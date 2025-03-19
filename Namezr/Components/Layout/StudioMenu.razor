@@ -1,7 +1,5 @@
 ﻿@using Microsoft.EntityFrameworkCore
 @using Namezr.Components.Account
-@using Namezr.Features.Creators.Data
-@using Namezr.Features.Identity.Data
 @using Namezr.Infrastructure.Data
 @using Namezr.Client.Studio
 
@@ -13,7 +11,7 @@
 
         <CreatorSelector
             CurrentCreatorId="CurrentCreatorId"
-            Creators="_creators"
+            Creators="Creators"
         />
 
         <div class="nav-item px-3">
@@ -55,28 +53,11 @@
 </div>
 
 @code {
-    private CreatorSelectorOption[] _creators = null!;
 
-    [CascadingParameter]
-    public required HttpContext HttpContext { get; set; }
+    [Parameter]
+    public CreatorSelectorOption[] Creators { get; set; } = [];
 
     [Parameter]
     public Guid? CurrentCreatorId { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
-
-        _creators = await dbContext.Creators
-            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
-            .Select(entity => new CreatorSelectorOption
-            {
-                Id = entity.Id,
-                DisplayName = entity.DisplayName,
-            })
-            .ToArrayAsync();
-    }
 
 }

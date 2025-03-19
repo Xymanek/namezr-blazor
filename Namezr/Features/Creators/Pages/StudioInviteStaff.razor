@@ -49,7 +49,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        StudioLayout.CurrentCreatorId = CreatorId;
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         // TODO: why does the native @onsubmit does not work????
         if (HttpContext.Request.Method == HttpMethods.Post)

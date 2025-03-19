@@ -23,11 +23,9 @@
     [Parameter]
     public Guid CreatorId { get; set; }
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        StudioLayout.CurrentCreatorId = CreatorId;
-
-        return Task.CompletedTask;
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
     }
 
 }

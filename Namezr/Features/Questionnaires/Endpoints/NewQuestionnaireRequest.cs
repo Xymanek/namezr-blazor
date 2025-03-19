@@ -1,8 +1,11 @@
 ﻿using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Components.Account;
+using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
 
@@ -15,11 +18,13 @@ internal static partial class NewQuestionnaireRequest
 {
     private static async ValueTask<Guid> HandleAsync(
         CreateQuestionnaireCommand command,
+        IHttpContextAccessor httpContextAccessor,
+        IdentityUserAccessor userAccessor,
         ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        // TODO: validate against current user access
+        await ValidateAccess();
 
         QuestionnaireEntity entity = new QuestionnaireFormToEntityMapper()
             .MapToEntity(command.Model);
@@ -30,5 +35,23 @@ internal static partial class NewQuestionnaireRequest
         await dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
+        
+        async Task ValidateAccess()
+        {
+            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+
+            bool isCreatorStaff = await dbContext.CreatorStaff
+                .Where(
+                    staff =>
+                        staff.UserId == user.Id &&
+                        staff.CreatorId == command.CreatorId
+                )
+                .AnyAsync(ct);
+
+            if (isCreatorStaff) return;
+
+            // TODO: correct
+            throw new Exception("Access denied");
+        }
     }
 }

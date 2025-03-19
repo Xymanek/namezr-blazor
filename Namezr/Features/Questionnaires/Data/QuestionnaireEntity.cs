@@ -2,6 +2,7 @@
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Eligibility.Data;
+using Namezr.Features.SelectionSeries.Data;
 
 namespace Namezr.Features.Questionnaires.Data;
 
@@ -26,4 +27,6 @@ public class QuestionnaireEntity
     
     public ICollection<QuestionnaireFieldEntity>? Fields { get; set; }
     public ICollection<QuestionnaireVersionEntity>? Versions { get; set; }
+    
+    public ICollection<SelectionSeriesEntity>? SelectionSeries { get; set; }
 }
