@@ -52,12 +52,16 @@ internal partial class OnboardingInstallDiscordBotEndpoint
 
         AuthenticationProperties properties = new()
         {
-            // TODO: ideally handle the error case
-            // Until then, we can't pre-select the target
-            RedirectUri = UriHelper.BuildRelative(
-                httpContext.Request.PathBase,
-                "/studio/onboarding"
-            ),
+            RedirectUri =
+                // TODO: this is bad for security - validate correct path base
+                httpContext.Request.Headers.Referer.FirstOrDefault() ??
+
+                // TODO: ideally handle the error case
+                // Until then, we can't pre-select the target
+                UriHelper.BuildRelative(
+                    httpContext.Request.PathBase,
+                    "/studio/onboarding"
+                ),
 
             Parameters =
             {
