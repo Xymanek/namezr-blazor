@@ -30,6 +30,12 @@ internal interface ICreatorOnboardingService
         CreatorOnboardingModel validatedModel,
         ApplicationUser owner
     );
+
+    Task AddTargetToCreator(
+        PotentialSupportTarget initialSupportTarget,
+        Guid creatorId,
+        ApplicationUser targetOwner
+    );
 }
 
 [AutoConstructor]
@@ -193,22 +199,13 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-        SupportTargetEntity supportTarget = new()
-        {
-            ServiceType = initialSupportTarget.ServiceType,
-            ServiceId = initialSupportTarget.ServiceId,
-
-            OwningStaffMemberId = owner.Id,
-            ServiceTokenId = initialSupportTarget.ThirdPartyTokenId,
-        };
-
-        await PopulateSupportTarget(supportTarget, initialSupportTarget);
+        SupportTargetEntity supportTarget = await SetupTarget(initialSupportTarget, owner);
 
         CreatorEntity creator = new()
         {
             DisplayName = validatedModel.CreatorName!,
 
-            SupportTargets = [supportTarget],
+            SupportTargets = [],
             Staff =
             [
                 new CreatorStaffEntity
@@ -223,6 +220,53 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         await dbContext.SaveChangesAsync();
 
         return creator;
+    }
+
+    public async Task AddTargetToCreator(
+        PotentialSupportTarget initialSupportTarget,
+        Guid creatorId,
+        ApplicationUser targetOwner
+    )
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        CreatorEntity creator = await dbContext.Creators
+            .AsTracking()
+            .Include(x => x.Staff)
+            .SingleAsync(x => x.Id == creatorId);
+
+        CreatorStaffEntity? staffEntity = creator.Staff!.SingleOrDefault(staff => staff.UserId == targetOwner.Id);
+
+        if (staffEntity == null)
+        {
+            throw new Exception("Target owner must be creator staff already");
+        }
+
+        SupportTargetEntity supportTarget = await SetupTarget(initialSupportTarget, targetOwner);
+        supportTarget.StaffEntry = staffEntity;
+        supportTarget.Creator = creator;
+
+        dbContext.SupportTargets.Add(supportTarget);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<SupportTargetEntity> SetupTarget(
+        PotentialSupportTarget initialSupportTarget,
+        ApplicationUser targetOwner
+    )
+    {
+        SupportTargetEntity supportTarget = new()
+        {
+            ServiceType = initialSupportTarget.ServiceType,
+            ServiceId = initialSupportTarget.ServiceId,
+
+            OwningStaffMemberId = targetOwner.Id,
+            ServiceTokenId = initialSupportTarget.ThirdPartyTokenId,
+        };
+
+        await PopulateSupportTarget(supportTarget, initialSupportTarget);
+
+        return supportTarget;
     }
 
     private async ValueTask PopulateSupportTarget(

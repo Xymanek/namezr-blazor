@@ -1,0 +1,209 @@
+﻿@using Namezr.Components.Account
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Creators.Endpoints
+@using Namezr.Features.Creators.Pages
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Identity.Data
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Microsoft.AspNetCore.Components.Forms
+@using vNext.BlazorComponents.FluentValidation
+
+@inject ICreatorOnboardingService OnboardingService
+@inject IdentityUserAccessor UserAccessor
+@inject NavigationManager NavigationManager
+
+@if (_isBadQuery)
+{
+    <HxAlert Color="ThemeColor.Danger">
+        Bad URL
+    </HxAlert>
+}
+
+<div>
+    Selected target: @SelectedTargetType
+</div>
+<div>
+    Selected id: @SelectedTargetId
+</div>
+
+@if (_selectedTarget == null)
+{
+    <div>Options:</div>
+
+    foreach (PotentialSupportTarget target in _targets)
+    {
+        <HxCard>
+            <BodyTemplate>
+                @switch (target)
+                {
+                    case PotentialTwitchSupportTarget twitchTarget:
+                        <div>Twitch</div>
+                        <div>@twitchTarget.UserTwitchId</div>
+                        <div>@twitchTarget.TwitchDisplayName</div>
+                        <div>@twitchTarget.TwitchProfileUrl</div>
+                        <div>@twitchTarget.BroadcasterType</div>
+                        break;
+
+                    case PotentialPatreonSupportTarget patreonTarget:
+                        <div>Patreon</div>
+                        <div>@patreonTarget.CampaignId</div>
+                        <div>@patreonTarget.Title</div>
+                        <div>@patreonTarget.Url</div>
+                        <div>Tiers: @string.Join(", ", patreonTarget.Tiers)</div>
+                        break;
+
+                    case PotentialDiscordSupportTarget discordTarget:
+                        <div>Discord</div>
+                        <div>@discordTarget.GuildName</div>
+
+                        if (discordTarget.BotInstallRequired)
+                        {
+                            <form
+                                method="post"
+                                action="@NavigationManager.ToAbsoluteUri(OnboardingInstallDiscordBotEndpoint.Route)"
+                            >
+                                <AntiforgeryToken/>
+                                <input
+                                    type="hidden"
+                                    name="@nameof(OnboardingInstallDiscordBotEndpoint.Command.GuildId)"
+                                    value="@discordTarget.GuildId"
+                                />
+
+                                <HxSubmit
+                                    Color="ThemeColor.Secondary"
+                                    Size="ButtonSize.Large"
+                                    Text="Install bot"
+                                />
+                            </form>
+                        }
+                        else
+                        {
+                            <div>Roles: @string.Join(", ", discordTarget.RoleNames)</div>
+                        }
+
+                        break;
+                }
+
+                @if (IsTargetEnabled(target))
+                {
+                    <div>
+                        <form method="get">
+                            <input type="hidden" name="@nameof(SelectedTargetType)" value="@target.ServiceType"/>
+                            <input type="hidden" name="@nameof(SelectedTargetId)" value="@target.ServiceId"/>
+
+                            <HxSubmit
+                                Color="ThemeColor.Primary"
+                                Size="ButtonSize.Large"
+                                Text="Select"/>
+                        </form>
+                    </div>
+                }
+            </BodyTemplate>
+        </HxCard>
+    }
+}
+else
+{
+    <EditForm Model="Model" method="post" OnValidSubmit="OnValidSubmit" FormName="new-creator-info">
+        <FluentValidationValidator/>
+
+        <HxInputText
+            Label="Creator name"
+            @bind-Value="Model!.CreatorName"
+        />
+
+        <HxSubmit
+            Text="Submit"
+            Color="ThemeColor.Primary"
+        />
+    </EditForm>
+}
+
+
+@code {
+    private IReadOnlyList<PotentialSupportTarget> _targets = [];
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { private get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? SelectedTargetType { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? SelectedTargetId { get; set; }
+
+    private bool _isBadQuery;
+    private PotentialSupportTarget? _selectedTarget;
+
+    [SupplyParameterFromForm]
+    private CreatorOnboardingModel? Model { get; set; }
+
+    /// <summary>
+    /// If set, will be adding the new target to an existing creator.
+    /// Otherwise, a new creator will be created. 
+    /// </summary>
+    [Parameter]
+    public Guid? CreatorId { get; set; }
+    
+    private ApplicationUser _currentUser = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUser = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        _targets = await OnboardingService.GetPotentialSupportTargets(_currentUser.Id);
+
+        await LoadQueryParameters();
+
+        if (_selectedTarget != null && Model == null)
+        {
+            Model = new CreatorOnboardingModel
+            {
+                CreatorName = _selectedTarget.DisplayName,
+            };
+        }
+    }
+
+    private async Task LoadQueryParameters()
+    {
+        if (SelectedTargetType == null || SelectedTargetId == null) return;
+
+        _selectedTarget = _targets
+            .SingleOrDefault(x => x.ServiceType.ToString() == SelectedTargetType && x.ServiceId == SelectedTargetId);
+
+        if (_selectedTarget is null)
+        {
+            _isBadQuery = true;
+            return;
+        }
+
+        // TODO: very bad, should at least be POST + antiforgery
+        if (CreatorId != null)
+        {
+            await OnboardingService.AddTargetToCreator(_selectedTarget, CreatorId.Value, _currentUser);
+            RedirectToCreatorHome(CreatorId.Value);
+        }
+    }
+
+    private static bool IsTargetEnabled(PotentialSupportTarget target)
+    {
+        if (target is PotentialDiscordSupportTarget { BotInstallRequired: true })
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task OnValidSubmit()
+    {
+        CreatorEntity creator = await OnboardingService.CreateCreator(_selectedTarget!, Model!, _currentUser);
+
+        RedirectToCreatorHome(creator.Id);
+    }
+
+    private void RedirectToCreatorHome(Guid creatorId)
+    {
+        NavigationManager.NavigateTo($"/studio/{creatorId}");
+    }
+
+}

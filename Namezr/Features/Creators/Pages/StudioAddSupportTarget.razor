@@ -1,0 +1,27 @@
+﻿@page "/studio/{creatorId:guid}/config/targets/new"
+
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Components
+
+@layout StudioLayout
+
+<h3>Add support target</h3>
+
+<PotentialTargetSelector
+    CreatorId="CreatorId"
+/>
+
+@code {
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+    }
+
+}
