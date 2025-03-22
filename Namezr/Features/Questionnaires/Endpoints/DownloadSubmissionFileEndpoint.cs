@@ -41,6 +41,7 @@ internal partial class DownloadSubmissionFileEndpoint
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
             .AsNoTracking()
             .Include(x => x.FieldValues!.Where(value => value.Field.Type == QuestionnaireFieldType.FileUpload))
+            .Include(x => x.Version.Questionnaire)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == parameters.SubmissionId, ct);
 
