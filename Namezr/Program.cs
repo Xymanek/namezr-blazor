@@ -1,7 +1,6 @@
 using AspireRunner.AspNetCore;
 using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Twitch;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -211,16 +210,6 @@ if (builder.Environment.IsDevelopment())
         .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri("http://localhost:4317"));
 }
 
-bool trustForwardedHeaders = builder.Configuration.GetValue<bool>("App:ForwardedHeaders:Trust");
-if (trustForwardedHeaders)
-{
-    builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    {
-        // TODO: expose to config
-        options.ForwardedHeaders = ForwardedHeaders.All;
-    });
-}
-
 var app = builder.Build();
 
 if (args.FirstOrDefault() == "migrate-db")
@@ -231,11 +220,6 @@ if (args.FirstOrDefault() == "migrate-db")
     
     dbContext.Database.Migrate();
     return;
-}
-
-if (trustForwardedHeaders)
-{
-    app.UseForwardedHeaders();
 }
 
 // Configure the HTTP request pipeline.
