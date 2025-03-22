@@ -91,7 +91,9 @@
         }
 
         // If the user does not have an account, then create an account.
+        
         string email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+        string username = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
 
         if (string.IsNullOrEmpty(email))
         {
@@ -102,7 +104,10 @@
             );
         }
 
-        if (await UserStore.FindByNameAsync(email, CancellationToken.None) != null)
+        if (
+            await UserStore.FindByNameAsync(email, CancellationToken.None) != null || 
+            await GetEmailStore().FindByEmailAsync(email, CancellationToken.None) != null
+    )
         {
             RedirectManager.RedirectToWithStatus(
                 "Account/Login",
@@ -112,6 +117,7 @@
         }
 
         Input.Email = email;
+        Input.Username = username;
 
         await OnValidSubmitAsync();
     }
@@ -126,8 +132,9 @@
         var emailStore = GetEmailStore();
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        await emailStore.SetEmailConfirmedAsync(user, true, CancellationToken.None);
 
         var result = await UserManager.CreateAsync(user);
         if (result.Succeeded)
@@ -187,7 +194,13 @@
 
     private sealed class InputModel
     {
-        [Required] [EmailAddress] public string Email { get; set; } = "";
+        [Required]
+        [EmailAddress]
+        public string Username { get; set; } = "";
+        
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
     }
 
 }

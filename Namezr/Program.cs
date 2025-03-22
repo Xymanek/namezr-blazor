@@ -145,6 +145,7 @@ builder.Services.AddAuthentication()
 
             options.SaveTokens = true;
 
+            options.Scope.Add("email");
             options.Scope.Add("guilds");
             options.Scope.Add("guilds.members.read");
         }

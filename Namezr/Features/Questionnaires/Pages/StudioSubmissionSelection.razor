@@ -67,7 +67,7 @@
                         {
                             QuestionnaireSubmissionEntity submission = (QuestionnaireSubmissionEntity)picked.Candidate;
 
-                            <td>@submission.User.Email</td>
+                            <td>@submission.User.UserName</td>
                             <td>@submission.Id</td>
                             <td>
                                 <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@submission.Id.NoHyphens()"
