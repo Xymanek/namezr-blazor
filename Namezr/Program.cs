@@ -212,6 +212,16 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+if (args.FirstOrDefault() == "migrate-db")
+{
+    using ApplicationDbContext dbContext = app.Services
+        .GetRequiredService<IDbContextFactory<ApplicationDbContext>>()
+        .CreateDbContext();
+    
+    dbContext.Database.Migrate();
+    return;
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
