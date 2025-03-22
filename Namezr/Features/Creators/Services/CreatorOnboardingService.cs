@@ -205,7 +205,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         {
             DisplayName = validatedModel.CreatorName!,
 
-            SupportTargets = [],
+            SupportTargets = [supportTarget],
             Staff =
             [
                 new CreatorStaffEntity
