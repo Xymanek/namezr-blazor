@@ -20,9 +20,19 @@ using NodaTime;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Trace;
+using Sentry.OpenTelemetry;
 using SystemClock = NodaTime.SystemClock;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation();
+        tracing.AddHttpClientInstrumentation();
+
+        tracing.AddSource(Diagnostics.ActivitySourceName);
+    });
 
 string? sentryDsn = builder.Configuration["Sentry:Dsn"];
 if (sentryDsn is not null)
@@ -33,7 +43,16 @@ if (sentryDsn is not null)
         
         // Enabled traces
         sentry.TracesSampleRate = 1.0;
+        
+        sentry.UseOpenTelemetry();
     });
+    
+    
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing =>
+        {
+            tracing.AddSentry();
+        });
 }
 
 builder.AddServiceDefaults();
@@ -214,11 +233,6 @@ if (builder.Environment.IsDevelopment())
     });
 
     builder.Services.AddOpenTelemetry()
-        .WithTracing(tracing =>
-        {
-            tracing.AddSource(Diagnostics.ActivitySourceName);
-            tracing.AddHttpClientInstrumentation();
-        })
         // TODO: figure out a way to unhardcode this (or switch to full aspire?)
         .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri("http://localhost:4317"));
 }
