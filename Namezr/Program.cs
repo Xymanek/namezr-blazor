@@ -27,7 +27,13 @@ var builder = WebApplication.CreateBuilder(args);
 string? sentryDsn = builder.Configuration["Sentry:Dsn"];
 if (sentryDsn is not null)
 {
-    builder.WebHost.UseSentry(sentryDsn);
+    builder.WebHost.UseSentry(sentry =>
+    {
+        sentry.Dsn = sentryDsn;
+        
+        // Enabled traces
+        sentry.TracesSampleRate = 1.0;
+    });
 }
 
 builder.AddServiceDefaults();
