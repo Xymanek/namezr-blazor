@@ -1,0 +1,58 @@
+﻿@page "/studio/{creatorId:guid}/config/targets"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Data
+@using Namezr.Infrastructure.Data
+
+@layout StudioLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<h3>Current support targets</h3>
+
+<table class="table table-striped table-hover table-bordered">
+    <thead>
+        <tr>
+            <th>Service type</th>
+            
+            @* TODO: display the name or vanity link instead *@
+            <th>Account ID</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (SupportTargetEntity supportTarget in _supportTargets)
+        {
+            <tr>
+                <td>@supportTarget.ServiceType</td>
+                <td>@supportTarget.ServiceId</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; } = null!;
+
+    [CascadingParameter]
+    public required StudioLayout StudioLayout { get; set; } = null!;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    private SupportTargetEntity[] _supportTargets = [];
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _supportTargets = await dbContext.SupportTargets
+            .Where(t => t.CreatorId == CreatorId)
+            .ToArrayAsync(HttpContext.RequestAborted);
+    }
+
+}
