@@ -24,6 +24,12 @@ using SystemClock = NodaTime.SystemClock;
 
 var builder = WebApplication.CreateBuilder(args);
 
+string? sentryDsn = builder.Configuration["Sentry:Dsn"];
+if (sentryDsn is not null)
+{
+    builder.WebHost.UseSentry(sentryDsn);
+}
+
 builder.AddServiceDefaults();
 
 builder.Services.AddAppShared();

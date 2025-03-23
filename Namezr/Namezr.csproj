@@ -39,6 +39,7 @@
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
         <PackageReference Include="Patreon.Net" />
+        <PackageReference Include="Sentry.AspNetCore" />
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>
