@@ -1,0 +1,12 @@
+﻿.logo-letter {
+    height: 2rem;
+    width: 2rem;
+}
+
+.logo-text {
+    font-family: "Leckerli One", cursive;
+    font-weight: 400;
+    font-style: normal;
+    
+    font-size: 1.8rem;
+}
