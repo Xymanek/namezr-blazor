@@ -9,7 +9,12 @@ internal sealed class IdentityRedirectManager(NavigationManager navigationManage
 
     private static readonly CookieBuilder StatusCookieBuilder = new()
     {
-        SameSite = SameSiteMode.Strict,
+        // Because OAuth redirects are initiated by a different site, SameSiteMode.Strict
+        // do not get sent to the Login page (it is the final destination in the OAuth redirect series).
+
+        // SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.Lax,
+
         HttpOnly = true,
         IsEssential = true,
         MaxAge = TimeSpan.FromSeconds(5),
