@@ -14,6 +14,7 @@ using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 using Namezr.Infrastructure.Discord;
+using Namezr.Infrastructure.Http;
 using Namezr.Infrastructure.Twitch;
 using Namezr.Infrastructure.Twitch.MockServer;
 using NodaTime;
@@ -40,14 +41,13 @@ if (sentryDsn is not null)
     builder.WebHost.UseSentry(sentry =>
     {
         sentry.Dsn = sentryDsn;
-        
+
         // Enabled traces
         sentry.TracesSampleRate = 1.0;
-        
+
         sentry.UseOpenTelemetry();
     });
-    
-    
+
     builder.Services.AddOpenTelemetry()
         .WithTracing(tracing =>
         {
@@ -244,7 +244,7 @@ if (args.FirstOrDefault() == "migrate-db")
     using ApplicationDbContext dbContext = app.Services
         .GetRequiredService<IDbContextFactory<ApplicationDbContext>>()
         .CreateDbContext();
-    
+
     dbContext.Database.Migrate();
     return;
 }
@@ -259,20 +259,22 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+app.UseMiddleware<SuppressActivityMiddleware>();
+
+app.MapStaticAssets()
+    .Add(endpoint => endpoint.Metadata.Add(SuppressActivityMiddleware.EndpointMetadataItem));
+
 app.MapObservabilityEndpoints();
 
 app.UseAuthorization();
 
 app.UseAntiforgery();
 
-app.MapStaticAssets();
-
 app.MapNamezrEndpoints();
+app.MapAdditionalIdentityEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly);
-
-app.MapAdditionalIdentityEndpoints();
 
 app.Run();
