@@ -1,6 +1,7 @@
 using AspireRunner.AspNetCore;
 using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Twitch;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -46,6 +47,9 @@ if (sentryDsn is not null)
         sentry.TracesSampleRate = 1.0;
 
         sentry.UseOpenTelemetry();
+
+        // SSR Blazor redirects
+        sentry.AddExceptionFilterForType<NavigationException>();
     });
 
     builder.Services.AddOpenTelemetry()
