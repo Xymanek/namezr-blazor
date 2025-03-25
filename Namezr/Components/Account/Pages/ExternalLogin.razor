@@ -18,7 +18,7 @@
 
 @code {
     /* TODO: this is a giant mess, a quick hack from the default templates */
-    
+
     public const string LoginCallbackAction = "LoginCallback";
 
     private string? message;
@@ -38,12 +38,14 @@
     {
         if (RemoteError is not null)
         {
+            Logger.LogInformation("External login failed: provider error: {ProviderError}", RemoteError);
             RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);
         }
 
-        var info = await SignInManager.GetExternalLoginInfoAsync();
+        ExternalLoginInfo? info = await SignInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
+            Logger.LogWarning("External login failed: provider error: no external login information");
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
         }
 
@@ -57,6 +59,8 @@
                 return;
             }
 
+            Logger.LogInformation("External login failed: not a login callback invocation");
+
             // We should only reach this page via the login callback, so redirect back to
             // the login page if we get here some other way.
             RedirectManager.RedirectTo("Account/Login");
@@ -67,6 +71,7 @@
     {
         if (externalLoginInfo is null)
         {
+            Logger.LogWarning("External login failed: provider error: no external login information");
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
         }
 
@@ -87,16 +92,26 @@
         }
         else if (result.IsLockedOut)
         {
+            Logger.LogInformation(
+                "External login failed: account lockout. Provider: {LoginProvider}. Name: {Name}",
+                externalLoginInfo.LoginProvider,
+                externalLoginInfo.Principal.Identity?.Name
+            );
             RedirectManager.RedirectTo("Account/Lockout");
         }
 
         // If the user does not have an account, then create an account.
-        
+
         string email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
         string username = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
 
         if (string.IsNullOrEmpty(email))
         {
+            Logger.LogError(
+                "External login failed: external service did not provide account email. Provider: {LoginProvider}. Name: {Name}",
+                externalLoginInfo.LoginProvider,
+                externalLoginInfo.Principal.Identity?.Name
+            );
             RedirectManager.RedirectToWithStatus(
                 "Account/Login",
                 "External service did not provide account email",
@@ -107,11 +122,18 @@
         if (
             await UserStore.FindByNameAsync(email, CancellationToken.None) != null || 
             await GetEmailStore().FindByEmailAsync(email, CancellationToken.None) != null
-    )
+        )
         {
+            Logger.LogInformation(
+                "External login failed: user with this email exists already. " +
+                "Provider: {LoginProvider}. Username: {UsernameName}. Email: {Email}",
+                externalLoginInfo.LoginProvider,
+                username,
+                email
+            );
             RedirectManager.RedirectToWithStatus(
                 "Account/Login",
-                "User with this email exists already. Please login using previously-linked service and link the new account trough My Account",
+                "User with this username or email exists already. Please login using previously-linked service and link the new account trough My Account",
                 HttpContext
             );
         }
@@ -126,6 +148,7 @@
     {
         if (externalLoginInfo is null)
         {
+            Logger.LogWarning("External login failed: provider error: no external login information");
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information during confirmation.", HttpContext);
         }
 
@@ -166,6 +189,10 @@
 
         message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
 
+        Logger.LogInformation(
+            "External login failed: errors: {Errors}",
+            result.Errors.Select(error => $"[{error.Code}] {error.Description}")
+        );
         RedirectManager.RedirectToWithStatus("Account/Login", message, HttpContext);
     }
 
@@ -197,7 +224,7 @@
         [Required]
         [EmailAddress]
         public string Username { get; set; } = "";
-        
+
         [Required]
         [EmailAddress]
         public string Email { get; set; } = "";
