@@ -3,6 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
 @using Namezr.Features.Identity.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
@@ -11,6 +12,7 @@
 @* @inject IEmailSender<ApplicationUser> EmailSender *@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ExternalLogin> Logger
+@inject IOptionsMonitor<IdentityOptions> IdentityOptions
 
 <PageTitle>Register</PageTitle>
 
@@ -155,7 +157,7 @@
         var emailStore = GetEmailStore();
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, SanitizeUsername(Input.Username), CancellationToken.None);
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         await emailStore.SetEmailConfirmedAsync(user, true, CancellationToken.None);
 
@@ -194,6 +196,17 @@
             result.Errors.Select(error => $"[{error.Code}] {error.Description}")
         );
         RedirectManager.RedirectToWithStatus("Account/Login", message, HttpContext);
+    }
+
+    private string SanitizeUsername(string username)
+    {
+        HashSet<char> allowedChars = IdentityOptions.CurrentValue.User.AllowedUserNameCharacters.ToHashSet();
+
+        char[] sanitizedUsernameChars = username
+            .Select(c => allowedChars.Contains(c) ? c : '_')
+            .ToArray();
+
+        return new string(sanitizedUsernameChars);
     }
 
     private ApplicationUser CreateUser()
