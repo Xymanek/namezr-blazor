@@ -7,6 +7,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{32F57BCF-1329-4C72-953C-5287873C9169}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Packages.props = Directory.Packages.props
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namezr.BackendServiceDefaults", "Namezr.BackendServiceDefaults\Namezr.BackendServiceDefaults.csproj", "{B7B446D7-F913-4D17-9E82-B16EE734D8FB}"
