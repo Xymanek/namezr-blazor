@@ -1,5 +1,6 @@
 ﻿@using System.Net.Http.Headers
 @using Namezr.Client.Infra
+@using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
 
 @inherits Editor<SubmissionValueModel>
@@ -177,9 +178,11 @@
 
     private bool ValidateFileWithToasts(IBrowserFile file)
     {
+        QuestionnaireFileUploadFieldOptionsModel options = FieldConfig.FileUploadOptions!;
+        
         if (
-            FieldConfig.FileUploadOptions!.MinItemSizeBytes is not null &&
-            file.Size < FieldConfig.FileUploadOptions!.MinItemSizeBytes
+            options.MinItemSizeBytes is not null &&
+            file.Size < options.MinItemSizeBytes
         )
         {
             HxMessenger.AddError("File is too small");
@@ -187,11 +190,22 @@
         }
         
         if (
-            FieldConfig.FileUploadOptions!.MaxItemSizeBytes is not null &&
-            file.Size > FieldConfig.FileUploadOptions!.MaxItemSizeBytes
+            options.MaxItemSizeBytes is not null &&
+            file.Size > options.MaxItemSizeBytes
         )
         {
             HxMessenger.AddError("File is too large");
+            return false;
+        }
+        
+        if (
+            options.AllowedExtensions is {Count: > 0} &&
+            !options.AllowedExtensions.Any(
+                extension => file.Name.EndsWith($".{extension}", StringComparison.OrdinalIgnoreCase
+            ))
+        )
+        {
+            HxMessenger.AddError("Invalid file extension");
             return false;
         }
         

@@ -202,6 +202,10 @@ public class QuestionnaireFileUploadFieldOptionsModel
             RuleFor(x => x.MaxItemCount)
                 .GreaterThan(0)
                 .GreaterThanOrEqualTo(x => x.MinItemCount);
+        
+            RuleFor(x => x.AllowedExtensions)
+                .Must(extensions => extensions.All(extension => !extension.StartsWith('.')))
+                .WithMessage("Do not include the starting dot (it will prepended automatically)");
         }
     }
 }
