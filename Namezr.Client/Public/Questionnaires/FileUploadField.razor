@@ -5,6 +5,7 @@
 @inherits Editor<SubmissionValueModel>
 
 @inject ISpaHttpClientProvider HttpClientProvider
+@inject IHxMessengerService HxMessenger
 
 <h5>@FieldConfig.Title</h5>
 
@@ -117,11 +118,10 @@
 
     private async Task OnFilesSelected(InputFileChangeEventArgs e)
     {
-        // TODO: validate
-
         // await _dropZone.UploadAsync();
 
         IEnumerable<Task> tasks = e.GetMultipleFiles(MoreFilesAllowed)
+            .Where(ValidateFileWithToasts)
             .Select(async file =>
             {
                 _uploadsInProgress.Add(file);
@@ -175,6 +175,29 @@
         await Task.WhenAll(tasks);
     }
 
+    private bool ValidateFileWithToasts(IBrowserFile file)
+    {
+        if (
+            FieldConfig.FileUploadOptions!.MinItemSizeBytes is not null &&
+            file.Size < FieldConfig.FileUploadOptions!.MinItemSizeBytes
+        )
+        {
+            HxMessenger.AddError("File is too small");
+            return false;
+        }
+        
+        if (
+            FieldConfig.FileUploadOptions!.MaxItemSizeBytes is not null &&
+            file.Size > FieldConfig.FileUploadOptions!.MaxItemSizeBytes
+        )
+        {
+            HxMessenger.AddError("File is too large");
+            return false;
+        }
+        
+        return true;
+    }
+    
     // TODO: actual limit
     // TODO: reference in UI, on server, etc.
     private const long AbsoluteMaxFileSize = 5 * 1024 * 1024; // 5 MB
