@@ -65,7 +65,7 @@ internal class SubmissionValueBaseValidator : AbstractValidator<SubmissionValueM
         if (fieldType != QuestionnaireFieldType.Text)
         {
             RuleFor(x => x.StringValue)
-                .Null();
+                .Empty();
         }
 
         if (fieldType != QuestionnaireFieldType.Number)
