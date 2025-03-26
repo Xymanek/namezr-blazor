@@ -6,10 +6,12 @@
 
 @inject ISpaHttpClientProvider HttpClientProvider
 @inject NavigationManager NavigationManager
+@inject IHxMessengerService HxMessenger
 
 <EditForm
     Model="Model"
     OnValidSubmit="HandleValidSubmit"
+    OnInvalidSubmit="HandleInvalidSubmit"
 >
     <FluentValidationValidator/>
 
@@ -198,7 +200,13 @@
                 );
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                HxMessenger.AddError("Failed to save questionnaire");
+                return;
+            }
+
+            HxMessenger.AddInformation("Questionnaire saved");
 
             // TODO: redirect to studio questionnaire details page
         }
@@ -247,5 +255,10 @@
         (QuestionnaireSubmissionOpenMode.EditExistingOnly, "Edit existing only"),
         (QuestionnaireSubmissionOpenMode.Closed, "Closed"),
     ];
+
+    private void HandleInvalidSubmit()
+    {
+        HxMessenger.AddError("Form validation failed");
+    }
 
 }

@@ -6,8 +6,13 @@
 @rendermode InteractiveWebAssembly
 
 @inject ISpaHttpClientProvider HttpClientProvider
+@inject IHxMessengerService HxMessenger
 
-<EditForm Model="Values" OnValidSubmit="HandleValidSubmit">
+<EditForm
+    Model="Values"
+    OnValidSubmit="HandleValidSubmit"
+    OnInvalidSubmit="HandleInvalidSubmit"
+>
     <FluentValidationValidator Validator="Validator"/>
 
     @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
@@ -147,7 +152,7 @@
         IsSending = true;
         try
         {
-            await HttpClientProvider.HttpClient.PostAsJsonAsync(
+            HttpResponseMessage response = await HttpClientProvider.HttpClient.PostAsJsonAsync(
                 ApiEndpointPaths.QuestionnaireSubmissionSave,
                 new SubmissionCreateModel
                 {
@@ -156,12 +161,21 @@
                     NewFileTickets = [.._newFileTickets],
                 }
             );
+            
+            response.EnsureSuccessStatusCode();
+
+            HxMessenger.AddInformation("Submission saved");
         }
         finally
         {
             IsSending = false;
             StateHasChanged();
         }
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        HxMessenger.AddError("Form validation failed");
     }
 
 }
