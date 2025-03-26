@@ -42,8 +42,8 @@
 
                 case QuestionnaireFieldType.FileUpload:
                     @* If the submission is disabled, there will be no tickets *@
-                    /* TODO: is disabled */
                     <FileUploadField
+                        Enabled="!AllDisabled"
                         FieldConfig="field"
                         SubmissionId="SubmissionId"
                         FileUploadTicket="@(FileUploadTickets.GetValueOrDefault(field.Id))"

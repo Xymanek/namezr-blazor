@@ -11,6 +11,7 @@
 @if (CanAddMoreFiles)
 {
     <InputFile
+        disabled=@(!Enabled)
         Multiple="@(FieldConfig.FileUploadOptions!.MaxItemCount > 1)"
         OnChange="OnFilesSelected"
     />
@@ -45,6 +46,7 @@
 
             <td>
                 <HxButton
+                    Enabled="Enabled"
                     Icon="@BootstrapIcon.Trash"
                     Color="ThemeColor.Danger"
                     Tooltip="Remove"
@@ -63,6 +65,9 @@
 </table>
 
 @code {
+
+    [Parameter]
+    public bool Enabled { get; set; } = true;
 
     [Parameter]
     public Guid? SubmissionId { get; set; }
