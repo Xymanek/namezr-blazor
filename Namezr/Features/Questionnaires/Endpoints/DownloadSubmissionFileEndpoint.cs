@@ -51,7 +51,6 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("Submission not found");
         }
 
-        // TODO: validate access to submission
         await ValidateAccess();
 
         SubmissionFileData? fileData = submission.FieldValues!
