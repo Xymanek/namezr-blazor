@@ -41,7 +41,7 @@ internal class FieldValueSerializer : IFieldValueSerializer
 
             QuestionnaireFieldType.Number => new SubmissionValueModel
             {
-                NumberValue = JsonSerializer.Deserialize<decimal>(valueSerialized),
+                NumberValue = JsonSerializer.Deserialize<decimal?>(valueSerialized),
             },
 
             QuestionnaireFieldType.FileUpload => new SubmissionValueModel
