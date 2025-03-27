@@ -174,7 +174,12 @@ public class QuestionnaireNumberFieldOptionsModel
 public class QuestionnaireFileUploadFieldOptionsModel
 {
     /// <summary>
-    /// If empty - any extension
+    /// <para>
+    /// If empty - any extension.
+    /// </para>
+    /// <para>
+    /// Entries must not start with a dot - it will be prepended automatically.
+    /// </para>
     /// </summary>
     public List<string> AllowedExtensions { get; set; } = new();
 

@@ -7,18 +7,26 @@ public class SubmissionValueModel
 {
     public string StringValue { get; set; } = string.Empty;
     public decimal? NumberValue { get; set; }
-    
+
     /// <summary>
     /// File IDs that are selected
     /// </summary>
     public List<SubmissionFileData>? FileValue { get; set; }
 }
 
-public record SubmissionFileData
+/// <summary>
+/// Information about a file that is available before it is uploaded
+/// (and hence before the ID is assigned)
+/// </summary>
+public record SubmittableFileData
 {
-    public required Guid Id { get; init; }
     public required string Name { get; init; }
     public required long SizeBytes { get; init; }
+}
+
+public record SubmissionFileData : SubmittableFileData
+{
+    public required Guid Id { get; init; }
 }
 
 /// <typeparam name="TKey">
@@ -33,18 +41,16 @@ public class SubmissionValuesValidator<TKey> : AbstractValidator<Dictionary<TKey
 
         foreach (QuestionnaireConfigFieldModel fieldConfig in config.Fields)
         {
-            IValidator<SubmissionValueModel>? validator = fieldConfig.Type switch
+            IValidator<SubmissionValueModel> validator = fieldConfig.Type switch
             {
                 QuestionnaireFieldType.Text => new SubmissionValueStringValidator(fieldConfig.TextOptions!),
                 QuestionnaireFieldType.Number => new SubmissionValueNumberValidator(fieldConfig.NumberOptions!),
-
-                // TODO: File upload validation is handled separately in the UI and the API
-                QuestionnaireFieldType.FileUpload => null,
+                QuestionnaireFieldType.FileUpload => new SubmissionValueFileUploadValidator(
+                    fieldConfig.FileUploadOptions!
+                ),
 
                 _ => throw new ArgumentOutOfRangeException(),
             };
-
-            if (validator is null) continue;
 
             TKey key = keySelector(fieldConfig.Id);
 
@@ -72,6 +78,12 @@ internal class SubmissionValueBaseValidator : AbstractValidator<SubmissionValueM
         {
             RuleFor(x => x.NumberValue)
                 .Null();
+        }
+
+        if (fieldType != QuestionnaireFieldType.FileUpload)
+        {
+            RuleFor(x => x.FileValue)
+                .Empty();
         }
     }
 }
@@ -110,6 +122,68 @@ internal class SubmissionValueNumberValidator : SubmissionValueBaseValidator
         if (options.MaxValue is not null)
         {
             ruleBuilder.LessThanOrEqualTo(options.MaxValue.Value);
+        }
+    }
+}
+
+internal class SubmissionValueFileUploadValidator : SubmissionValueBaseValidator
+{
+    public SubmissionValueFileUploadValidator(QuestionnaireFileUploadFieldOptionsModel options)
+        : base(QuestionnaireFieldType.FileUpload)
+    {
+        IRuleBuilderInitial<SubmissionValueModel, List<SubmissionFileData>?> collectionRules
+            = RuleFor(x => x.FileValue);
+
+        collectionRules
+            .NotNull()
+            .DependentRules(() =>
+            {
+                collectionRules
+                    .Must(files => files!.Count >= options.MinItemCount)
+                    .WithMessage($"At least {options.MinItemCount} files are required");
+
+                collectionRules
+                    .Must(files => files!.Count <= options.MaxItemCount)
+                    .WithMessage($"At most {options.MaxItemCount} files are allowed");
+
+                RuleForEach(x => x.FileValue)
+                    .SetValidator(new SubmittableFileDataValidator(options))
+                    .ChildRules(itemRules =>
+                    {
+                        itemRules.RuleFor(file => file.Id)
+                            .NotEmpty();
+                    });
+            });
+    }
+}
+
+internal class SubmittableFileDataValidator : AbstractValidator<SubmittableFileData>
+{
+    public SubmittableFileDataValidator(QuestionnaireFileUploadFieldOptionsModel options)
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty();
+
+        if (options.MinItemSizeBytes is not null)
+        {
+            RuleFor(x => x.SizeBytes)
+                .GreaterThanOrEqualTo(options.MinItemSizeBytes.Value);
+        }
+
+        if (options.MaxItemSizeBytes is not null)
+        {
+            RuleFor(x => x.SizeBytes)
+                .LessThanOrEqualTo(options.MaxItemSizeBytes.Value);
+        }
+
+        if (options.AllowedExtensions is { Count: > 0 })
+        {
+            RuleFor(x => x.Name)
+                .Must(name => options.AllowedExtensions.Any(ext => name.EndsWith(
+                    $".{ext}",
+                    StringComparison.InvariantCultureIgnoreCase
+                )))
+                .WithMessage("Invalid file extension");
         }
     }
 }

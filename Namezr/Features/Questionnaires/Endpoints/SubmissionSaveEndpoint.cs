@@ -153,8 +153,6 @@ internal partial class SubmissionSaveEndpoint
             List<SubmissionFileData> submittedFiles
                 = model.Values.GetValueOrDefault(fileUploadFieldId)?.FileValue ?? [];
 
-            // TODO: validate file restrictions (max count, etc) + that can be dene before loading existing submission
-
             Dictionary<Guid, SubmissionFileData> existingFieldFiles
                 = existingFiles.GetValueOrDefault(fileUploadFieldId) ?? [];
 
