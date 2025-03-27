@@ -14,7 +14,7 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnairesNew)]
-internal static partial class NewQuestionnaireRequest
+internal static partial class NewQuestionnaireEndpoint
 {
     private static async ValueTask<Guid> HandleAsync(
         CreateQuestionnaireCommand command,

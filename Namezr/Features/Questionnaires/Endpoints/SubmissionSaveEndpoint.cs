@@ -23,7 +23,7 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionSave)]
-internal partial class SubmissionCreateRequest
+internal partial class SubmissionSaveEndpoint
 {
     // TODO: refactor, this has seriously overgrown
     private static async ValueTask<Guid> HandleAsync(
