@@ -128,36 +128,17 @@
                             break;
 
                         case QuestionnaireFieldType.FileUpload:
-                            <table class="table table-striped table-bordered">
-                                <thead>
-                                <tr>
-                                    <th>File name</th>
-                                    <th>Size</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-
-                                @if ((value.FileValue ?? []) is { Count: 0 })
-                                {
-                                    <tr>
-                                        <td colspan="2"><i>No files</i></td>
-                                    </tr>
-                                }
-
+                            <div class="row">
                                 @foreach (SubmissionFileData file in value.FileValue ?? [])
                                 {
-                                    <tr>
-                                        <td>
-                                            <a href=@(GetDownloadUrl(file)) target="_blank">
-                                                @file.Name
-                                            </a>
-                                        </td>
-                                        <td><i>@file.SizeBytes bytes</i></td>
-                                    </tr>
+                                    <div class="col-md-3">
+                                        <SubmittedFile
+                                            SubmissionId="SubmissionId"
+                                            FileData="file"
+                                        />
+                                    </div>
                                 }
-
-                                </tbody>
-                            </table>
+                            </div>
                             break;
 
                         default:
