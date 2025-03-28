@@ -4,8 +4,7 @@
 
     @if (IsImage)
     {
-        /* TODO: preview popup */
-        <a href="@DownloadUrl" target="_blank">
+        <a href="@DownloadUrl" target="_blank" data-fancybox="gallery" data-caption="@FileData.Name">
             <img
                 src="@DownloadUrl"
                 alt="@FileData.Name - preview"
