@@ -44,5 +44,41 @@
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\cs.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\cs.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\de.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\de.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\en.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\en.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\es.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\es.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\fr.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\fr.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\it.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\it.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\ja.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\ja.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\lv.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\lv.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\pl.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\pl.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\sk.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\sk.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\zh_CN.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\l10n\zh_CN.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.pins.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.pins.esm.d.ts" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.pins.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.pins.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.toolbar.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.toolbar.esm.d.ts" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.toolbar.esm.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.toolbar.umd.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\fancybox\5.0.36\panzoom\panzoom.umd.js" />
+    </ItemGroup>
 
 </Project>

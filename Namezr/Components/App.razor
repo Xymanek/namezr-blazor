@@ -30,12 +30,9 @@
 @((MarkupString)HxSetup.RenderBootstrapJavaScriptReference())
 <WasmTrigger />
 
-@* TODO: store locally *@
-<script src=@("https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js")></script>
-<link
-    rel="stylesheet"
-    href=@("https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css")
-/>
+@* Fancybox *@
+<script src="@Assets["lib/fancybox/5.0.36/fancybox.umd.js"]"></script>
+<link href="@Assets["lib/fancybox/5.0.36/fancybox.css"]" rel="stylesheet" />
 <script>
     Fancybox.bind("[data-fancybox]", {
         // Causes a page refresh when closing the gallery
