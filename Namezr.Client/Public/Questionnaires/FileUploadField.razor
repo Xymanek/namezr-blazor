@@ -25,7 +25,7 @@
 }
 
 <div class="row">
-    @foreach (SubmissionFileData file in Value.FileValue!)
+    @foreach (SubmissionFileData file in Value.FileValue ?? [])
     {
         <div class="col-md-3">
             <SubmittedFile
