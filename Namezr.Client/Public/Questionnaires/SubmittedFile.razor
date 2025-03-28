@@ -1,4 +1,5 @@
-﻿<div class="card">
+﻿@using Namezr.Client.Shared
+<div class="card">
 
     @if (IsImage)
     {
@@ -20,7 +21,10 @@
         </a>
 
         <div class="d-flex justify-content-between align-items-center gap-2">
-            <i>@FileData.SizeBytes bytes</i>
+            <i>
+                <BytesReadoutText Value="@FileData.SizeBytes"/>
+            </i>
+
             <div>
                 @ButtonContent
             </div>

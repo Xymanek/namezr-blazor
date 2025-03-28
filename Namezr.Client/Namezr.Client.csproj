@@ -20,6 +20,7 @@
         </PackageReference>
         <PackageReference Include="FluentValidation" />
         <PackageReference Include="Havit.Blazor.Components.Web.Bootstrap" />
+        <PackageReference Include="Humanizer.Core" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly"/>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" />
         <PackageReference Include="Riok.Mapperly" />

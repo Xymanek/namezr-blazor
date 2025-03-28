@@ -1,0 +1,31 @@
+﻿@using System.Globalization
+@using Humanizer.Bytes
+@rendermode InteractiveWebAssembly
+
+<HxTooltip Text="@TooltipText">
+    @_size.LargestWholeNumberValue.ToString("##") @_size.LargestWholeNumberSymbol
+</HxTooltip>
+
+@code {
+
+    [Parameter]
+    public required long Value
+    {
+        set => _size = ByteSize.FromBytes(value);
+    }
+
+    private ByteSize _size;
+
+    private string TooltipText => _size.Bytes.ToString("#,0", NumberFormatInfo) + " bytes";
+
+    private static readonly NumberFormatInfo NumberFormatInfo = CreateNumberFormatInfo();
+
+    private static NumberFormatInfo CreateNumberFormatInfo()
+    {
+        NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+        nfi.NumberGroupSeparator = " ";
+
+        return nfi;
+    }
+
+}
