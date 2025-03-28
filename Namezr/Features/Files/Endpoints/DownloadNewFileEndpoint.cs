@@ -18,18 +18,19 @@ public partial class DownloadNewFileEndpoint
         public required string Ticket { get; init; }
     }
 
-
     [SuppressMessage("ImmediateHandler", "IHR0012:Handler method should use CancellationToken")]
     private static ValueTask<IResult> Handle(
         [AsParameters] Payload payload,
         IFileUploadTicketHelper ticketHelper,
-        IFileStorageService storageService
+        IFileStorageService storageService,
+        IDownloadContentTypeProvider contentTypeProvider
     )
     {
         UploadedFileInfo fileInfo = ticketHelper.UnprotectUploadedForCurrentUser(payload.Ticket);
 
         return ValueTask.FromResult(Results.File(
             storageService.GetFilePath(fileInfo.FileId),
+            contentType: contentTypeProvider.MaybeGetFromFilename(fileInfo.OriginalFileName),
             fileDownloadName: fileInfo.OriginalFileName
         ));
     }

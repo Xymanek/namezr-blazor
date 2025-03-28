@@ -24,48 +24,27 @@
     />*@
 }
 
-<table class="table table-striped">
-    @if (Value.FileValue?.Count > 0)
+<div class="row">
+    @foreach (SubmissionFileData file in Value.FileValue!)
     {
-        <thead>
-        <tr>
-            <th>File name</th>
-            <th>Size</th>
-            <th></th>
-        </tr>
-        </thead>
+        <div class="col-md-3">
+            <SubmittedFile
+                SubmissionId="SubmissionId"
+                FileData="file"
+                NewFileToken="@_newFileTokens.GetValueOrDefault(file.Id)"
+            >
+                <ButtonContent>
+                    <HxButton
+                        Enabled="Enabled"
+                        Icon="@BootstrapIcon.Trash"
+                        Color="ThemeColor.Danger"
+                        Tooltip="Remove"
+                        OnClick="() => RemoveFile(file.Id)"/>
+                </ButtonContent>
+            </SubmittedFile>
+        </div>
     }
-    <tbody>
-    @foreach (SubmissionFileData file in Value.FileValue ?? [])
-    {
-        <tr>
-            <td>
-                <a href=@(GetDownloadUrl(file)) target="_blank">
-                    @file.Name
-                </a>
-                @* TODO: validation error display here since the rules might've changed since a past submission *@
-            </td>
-            <td><i>@file.SizeBytes bytes</i></td>
-
-            <td>
-                <HxButton
-                    Enabled="Enabled"
-                    Icon="@BootstrapIcon.Trash"
-                    Color="ThemeColor.Danger"
-                    Tooltip="Remove"
-                    OnClick="() => RemoveFile(file.Id)"/>
-            </td>
-        </tr>
-    }
-
-    @if (_uploadsInProgress.Count > 0)
-    {
-        <tr>
-            <td colspan="3">Uploading...</td>
-        </tr>
-    }
-    </tbody>
-</table>
+</div>
 
 @* TODO: currently does not show since the editor is on the SubmissionValueModel, not FileValue *@
 <HxValidationMessage For="ValueExpression"/>
@@ -99,21 +78,6 @@
 
     private readonly HashSet<IBrowserFile> _uploadsInProgress = [];
     private readonly Dictionary<Guid, string> _newFileTokens = [];
-
-    private string GetDownloadUrl(SubmissionFileData file)
-    {
-        if (!_newFileTokens.TryGetValue(file.Id, out string? ticket))
-        {
-            if (SubmissionId is null)
-            {
-                throw new Exception("No submission ID but an existing file?");
-            }
-
-            return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId.Value}&fileId={file.Id}";
-        }
-
-        return $"{ApiEndpointPaths.FilesDownloadNew}?ticket={ticket}";
-    }
 
     private int MoreFilesAllowed
     {
@@ -197,7 +161,7 @@
             Name = file.Name,
             SizeBytes = file.Size,
         });
-        
+
         if (!result.IsValid)
         {
             HxMessenger.AddError(

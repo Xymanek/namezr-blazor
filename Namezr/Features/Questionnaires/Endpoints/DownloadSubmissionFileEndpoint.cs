@@ -33,6 +33,7 @@ internal partial class DownloadSubmissionFileEndpoint
         IHttpContextAccessor httpContextAccessor,
         IFileStorageService fileStorageService,
         IdentityUserAccessor userAccessor,
+        IDownloadContentTypeProvider contentTypeProvider,
         CancellationToken ct
     )
     {
@@ -66,6 +67,7 @@ internal partial class DownloadSubmissionFileEndpoint
 
         return Results.File(
             fileStorageService.GetFilePath(fileData.Id),
+            contentType: contentTypeProvider.MaybeGetFromFilename(fileData.Name),
             fileDownloadName: fileData.Name
         );
 
