@@ -1,0 +1,21 @@
+﻿@using Namezr.Client
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Client.Shared
+
+<QuestionnairesBreadcrumbs CreatorId="Questionnaire.CreatorId"/>
+
+<HxBreadcrumbItem
+    Href=@($"studio/{Questionnaire.CreatorId.NoHyphens()}/questionnaires/{Questionnaire.Id.NoHyphens()}")>
+    
+    @* TODO: no underline when truncated *@
+    <TruncatedText
+        Text="@Questionnaire.Title"
+        MaxLength="30"/>
+</HxBreadcrumbItem>
+
+@code {
+    
+    [Parameter]
+    public required QuestionnaireEntity Questionnaire { get; set; }
+
+}

@@ -8,28 +8,41 @@
 @using Namezr.Infrastructure.Data
 @using Namezr.Features.SelectionSeries.Data
 @using Namezr.Client.Studio.Questionnaires.Selection
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.Questionnaires.Components
+@using Namezr.Client.Shared
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
-@if (_questionnaire is not null)
-{
-    <div class="d-flex gap-3 align-items-center justify-content-between">
-        <h3>@_questionnaire.Title</h3>
-        <a
-            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
-            class="btn btn-secondary">
-            Questionnaire
-        </a>
-    </div>
-}
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_questionnaire is not null)
+        {
+            <SelectionsBreadcrumbs
+                Questionnaire="_questionnaire"
+            />
+        }
 
-@if (_selectionSeries is not null)
-{
-    <h4>@_selectionSeries.Name</h4>
-}
+        @if (_selectionSeries is not null)
+        {
+            <HxBreadcrumbItem
+                Href=@($"studio/{CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/selection/{_selectionSeries.Id.NoHyphens()}")
+            >
+                <TruncatedText
+                    Text="@_selectionSeries.Name"
+                    MaxLength="30"
+                />
+            </HxBreadcrumbItem>
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    @_selectionSeries?.Name
+</SectionContent>
 
 <NewSelectionBatchForm
     SelectionSeriesId="SelectionId"
@@ -153,7 +166,7 @@
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; }
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -174,7 +187,7 @@
     {
         NewSelectionBatchOptions ??= new NewSelectionBatchOptionsModel();
 
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 

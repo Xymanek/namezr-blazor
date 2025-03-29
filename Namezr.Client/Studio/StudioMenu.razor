@@ -1,0 +1,68 @@
+﻿@rendermode InteractiveWebAssembly
+
+<HxSidebar CssClass="bg-primary-subtle unset-max-height">
+    <HeaderTemplate>
+        @* TODO for mobile/responsive *@
+        @*<HxSidebarBrand BrandName="NewProjectTemplate" BrandNameShort="NP"/>*@
+
+        <CreatorSelector
+            CurrentCreatorId="CurrentCreatorId"
+            Creators="Creators"
+        />
+    </HeaderTemplate>
+
+    <ItemsTemplate>
+        <HxSidebarItem
+            Text="Home"
+            Href=@($"studio/{CurrentCreatorId?.NoHyphens()}")
+            Icon="@BootstrapIcon.HouseDoorFill"
+            Match="NavLinkMatch.All"
+        />
+
+        <HxSidebarItem
+            Text="Questionnaires"
+            Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/questionnaires")
+            Icon="@BootstrapIcon.FileFill"
+        />
+
+        <HxSidebarItem
+            Text="Polls"
+            Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/polls")
+            Icon="@BootstrapIcon.ListCheck"
+        />
+
+        <HxSidebarItem
+            Text="Raffles"
+            Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/raffles")
+            Icon="@BootstrapIcon.QuestionCircleFill"
+        />
+
+        <HxSidebarItem
+            Text="Supporters"
+            Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/supporters")
+            Icon="@BootstrapIcon.PeopleFill"
+        />
+
+        <HxSidebarItem Text="Configuration" Icon="BootstrapIcon.GearFill">
+            <HxSidebarItem
+                Text="Invite staff member"
+                Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/staff-invite")
+            />
+            <HxSidebarItem
+                Text="Support targets"
+                Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/targets")
+            />
+        </HxSidebarItem>
+    </ItemsTemplate>
+
+</HxSidebar>
+
+@code {
+
+    [Parameter]
+    public CreatorSelectorOption[] Creators { get; set; } = [];
+
+    [Parameter]
+    public Guid? CurrentCreatorId { get; set; }
+
+}

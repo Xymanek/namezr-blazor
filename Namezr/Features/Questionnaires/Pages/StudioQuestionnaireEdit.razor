@@ -9,15 +9,35 @@
 @using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
 
-<h3>QuestionnaireEditPage</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_latestVersionEntity is not null)
+        {
+            <QuestionnaireBreadcrumbs
+                Questionnaire="_latestVersionEntity.Questionnaire"
+            />
+            <HxBreadcrumbItem
+                Href=@($"studio/{CreatorId.NoHyphens()}/questionnaires/{_latestVersionEntity.Questionnaire.Id.NoHyphens()}/edit")
+                Text="Edit"
+            />
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Edit questionnaire
+</SectionContent>
 
 @if (InitialModel is not null && EligibilityDescriptors is not null)
 {
@@ -28,16 +48,11 @@
         EligibilityDescriptors="EligibilityDescriptors"
     />
 }
-/* TODO: conflates with is loading */
-else
-{
-    <div>Not found</div>
-}
 
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; }
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -50,16 +65,17 @@ else
     /// </remarks>
     private Guid? QuestionnaireId { get; set; }
 
+    private QuestionnaireVersionEntity? _latestVersionEntity;
     private QuestionnaireEditModel? InitialModel { get; set; }
     private List<EligibilityPlan>? EligibilityDescriptors { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        QuestionnaireVersionEntity? entity = await dbContext.QuestionnaireVersions
+        _latestVersionEntity = await dbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
@@ -68,8 +84,8 @@ else
 
         // TODO: Handle not found
 
-        InitialModel = entity?.MapToEditModel();
-        QuestionnaireId = entity?.QuestionnaireId;
+        InitialModel = _latestVersionEntity?.MapToEditModel();
+        QuestionnaireId = _latestVersionEntity?.QuestionnaireId;
 
         EligibilityDescriptors = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(

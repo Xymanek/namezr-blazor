@@ -1,0 +1,36 @@
+﻿@using Microsoft.AspNetCore.Components.Sections
+@inherits LayoutComponentBase
+
+@layout StudioBaseLayout
+
+<div class="bg-secondary-subtle p-3 border-bottom">
+    @*<HxBreadcrumb>
+        <HxBreadcrumbItem Text="Home"/>
+        <HxBreadcrumbItem Text="Step 1"/>
+        <HxBreadcrumbItem Text="Step 2"/>
+    </HxBreadcrumb>*@
+    <SectionOutlet SectionId="BreadcrumbSectionId"/>
+
+    <div class="d-flex justify-content-between align-items-center gap-3">
+        <h2>
+            <SectionOutlet SectionId="TitleSectionId"/>
+        </h2>
+        <div>
+            <SectionOutlet SectionId="ButtonsSectionId"/>
+            @*<HxButton Color="ThemeColor.Primary">Primary</HxButton>
+            <HxButton Color="ThemeColor.Secondary">Secondary</HxButton>*@
+        </div>
+    </div>
+</div>
+
+<div class="p-4">
+    @Body
+</div>
+
+@code
+{
+    public static readonly object BreadcrumbSectionId = new();
+    
+    public static readonly object TitleSectionId = new();
+    public static readonly object ButtonsSectionId = new();
+}

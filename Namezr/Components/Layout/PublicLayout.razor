@@ -1,9 +1,19 @@
-﻿@layout BaseLayout
+﻿@inherits LayoutComponentBase
 
-@inherits LayoutComponentBase
+@layout BaseLayout
 
-<main>
-    <div class="container pt-3 pb-5">
-        @Body
+<div class="min-vh-100 d-flex flex-column">
+    <TopMenu
+        NavbarContainerCssClass="container"
+    />
+
+    <div class="main flex-grow-1 bg-light-subtle">
+        @* TODO: page header version *@
+
+        <div class="container">
+            <div class="pt-4">
+                @Body
+            </div>
+        </div>
     </div>
-</main>
+</div>

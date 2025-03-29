@@ -14,11 +14,11 @@
     public required Guid CreatorId { get; set; }
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
     }
 
 }

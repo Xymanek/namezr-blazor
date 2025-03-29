@@ -1,0 +1,27 @@
+﻿@rendermode InteractiveWebAssembly
+
+@if (Text is not null)
+{
+    @if (!IsTruncated)
+    {
+        @Text
+    }
+    else
+    {
+        <HxTooltip Text="@Text">
+            @(TruncatedString)...
+        </HxTooltip>
+    }    
+}
+
+@code {
+    [Parameter]
+    public required string? Text { get; set; }
+    
+    [Parameter]
+    public required int MaxLength { get; set; }
+    
+    private bool IsTruncated => Text!.Length > MaxLength;
+    
+    private string TruncatedString => Text![..(MaxLength - 3)];
+}

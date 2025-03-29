@@ -15,104 +15,120 @@
 >
     <FluentValidationValidator/>
 
-    <HxInputText
-        Label="Title"
-        @bind-Value="Model.Title"
-    />
-    <HxInputTextArea
-        Label="Description"
-        @bind-Value="Model.Description"
-    />
-    <div class="row">
-        <HxSelect
-            CssClass="col-6"
-            Label="Approval mode"
-            @bind-Value="Model.ApprovalMode"
-            Data="ApprovalModeOptions"
-            AutoSort="@false"
-            ValueSelector="@(x => x.mode)"
-            TextSelector="@(x => x.label)"
-            Nullable="false"
-        />
-        <HxSelect
-            CssClass="col-6"
-            Label="Submission open mode"
-            @bind-Value="Model.SubmissionOpenMode"
-            Data="SubmissionOpenModeOptions"
-            AutoSort="@false"
-            ValueSelector="@(x => x.mode)"
-            TextSelector="@(x => x.label)"
-            Nullable="false"
-        />
-    </div>
-
-    <div class="row">
-        <div class="col-11">
-            <h3>Eligibility</h3>
-        </div>
-        <div class="col-1 text-right">
-            <HxButton
-                Icon="@BootstrapIcon.Plus"
-                Color="ThemeColor.Success"
-                Tooltip="Add"
-                OnClick="() => Model.EligibilityOptions.Add(new())"
+    <HxCard>
+        <BodyTemplate>
+            <HxInputText
+                Label="Title"
+                @bind-Value="Model.Title"
             />
-        </div>
-    </div>
-
-    <div>
-        <HxValidationMessage
-            For="@(() => Model.EligibilityOptions)"
-        />
-    </div>
-
-    @for (int i = 0; i < Model.EligibilityOptions.Count; i++)
-    {
-        int optionIndex = i;
-
-        <EligibilityOptionEditor
-            EligibilityDescriptors="EligibilityDescriptors"
-            @bind-Value="Model.EligibilityOptions[optionIndex]"
-            CanRemove="Model.EligibilityOptions.Count > 1"
-            OnRemove="() => Model.EligibilityOptions.RemoveAt(optionIndex)"
-        />
-    }
-
-    <div class="row">
-        <div class="col-11">
-            <h3>Fields</h3>
-        </div>
-        <div class="col-1 text-right">
-            <HxButton
-                Icon="@BootstrapIcon.Plus"
-                Color="ThemeColor.Success"
-                Tooltip="Add"
-                OnClick="Model.AddBlankField"
+            <HxInputTextArea
+                Label="Description"
+                @bind-Value="Model.Description"
             />
-        </div>
-    </div>
+            <div class="row">
+                <HxSelect
+                    CssClass="col-6"
+                    Label="Approval mode"
+                    @bind-Value="Model.ApprovalMode"
+                    Data="ApprovalModeOptions"
+                    AutoSort="@false"
+                    ValueSelector="@(x => x.mode)"
+                    TextSelector="@(x => x.label)"
+                    Nullable="false"
+                />
+                <HxSelect
+                    CssClass="col-6"
+                    Label="Submission open mode"
+                    @bind-Value="Model.SubmissionOpenMode"
+                    Data="SubmissionOpenModeOptions"
+                    AutoSort="@false"
+                    ValueSelector="@(x => x.mode)"
+                    TextSelector="@(x => x.label)"
+                    Nullable="false"
+                />
+            </div>
+        </BodyTemplate>
+    </HxCard>
 
-    @for (int i = 0; i < Model.Fields.Count; i++)
-    {
-        int fieldIndex = i;
+    <HxCard>
+        <HeaderTemplate>
+            <div class="row">
+                <div class="col-11">
+                    <h3>Eligibility</h3>
+                </div>
+                <div class="col-1 text-right">
+                    <HxButton
+                        Icon="@BootstrapIcon.Plus"
+                        Color="ThemeColor.Success"
+                        Tooltip="Add"
+                        OnClick="() => Model.EligibilityOptions.Add(new())"
+                    />
+                </div>
+            </div>
+        </HeaderTemplate>
 
-        <QuestionnaireFieldEditor
-            ForbidTypeChangeFields="ForbidTypeChangeFields"
-            @bind-Value="Model.Fields[fieldIndex]"
-            CanMoveUp="fieldIndex > 0"
-            OnMoveUp="() => MoveField(fieldIndex, -1)"
-            CanMoveDown="fieldIndex + 1 < Model.Fields.Count"
-            OnMoveDown="() => MoveField(fieldIndex, +1)"
-            CanRemove="Model.Fields.Count > 1"
-            OnRemove="() => Model.Fields.RemoveAt(fieldIndex)"
-            OnSyncOptionsToNewType="newType => SyncOptionsToNewType(fieldIndex, newType)"
-        />
+        <BodyTemplate>
+            <div>
+                <HxValidationMessage
+                    For="@(() => Model.EligibilityOptions)"
+                />
+            </div>
 
-        if (fieldIndex + 1 < Model.Fields.Count)
-        {
-            <hr/>
-        }
-    }
+            @for (int i = 0; i < Model.EligibilityOptions.Count; i++)
+            {
+                int optionIndex = i;
+
+                <EligibilityOptionEditor
+                    EligibilityDescriptors="EligibilityDescriptors"
+                    @bind-Value="Model.EligibilityOptions[optionIndex]"
+                    CanRemove="Model.EligibilityOptions.Count > 1"
+                    OnRemove="() => Model.EligibilityOptions.RemoveAt(optionIndex)"
+                />
+            }
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
+            <div class="row">
+                <div class="col-11">
+                    <h3>Fields</h3>
+                </div>
+                <div class="col-1 text-right">
+                    <HxButton
+                        Icon="@BootstrapIcon.Plus"
+                        Color="ThemeColor.Success"
+                        Tooltip="Add"
+                        OnClick="Model.AddBlankField"
+                    />
+                </div>
+            </div>
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            @for (int i = 0; i < Model.Fields.Count; i++)
+            {
+                int fieldIndex = i;
+
+                <QuestionnaireFieldEditor
+                    ForbidTypeChangeFields="ForbidTypeChangeFields"
+                    @bind-Value="Model.Fields[fieldIndex]"
+                    CanMoveUp="fieldIndex > 0"
+                    OnMoveUp="() => MoveField(fieldIndex, -1)"
+                    CanMoveDown="fieldIndex + 1 < Model.Fields.Count"
+                    OnMoveDown="() => MoveField(fieldIndex, +1)"
+                    CanRemove="Model.Fields.Count > 1"
+                    OnRemove="() => Model.Fields.RemoveAt(fieldIndex)"
+                    OnSyncOptionsToNewType="newType => SyncOptionsToNewType(fieldIndex, newType)"
+                />
+
+                if (fieldIndex + 1 < Model.Fields.Count)
+                {
+                    <hr/>
+                }
+            }
+        </BodyTemplate>
+    </HxCard>
 
     <HxSubmit
         Text="Save"

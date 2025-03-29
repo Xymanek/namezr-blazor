@@ -6,21 +6,33 @@
 @using Namezr.Components.Layout
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
-<h3>StudioQuestionnaireHome</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <QuestionnairesBreadcrumbs CreatorId="CreatorId"/>
+    </HxBreadcrumb>
+</SectionContent>
 
-<a href="/studio/@CreatorId.NoHyphens()/questionnaires/new">New questionnaire</a>
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Questionnaires
+</SectionContent>
 
-@if (Questionnaires is null)
-{
-    <p><em>Loading...</em></p>
-}
-else if (Questionnaires.Any())
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/questionnaires/new"
+        class="btn btn-success">
+        Create
+    </a>
+</SectionContent>
+
+@if (Questionnaires?.Any() ?? false)
 {
     <ul>
         @foreach (QuestionnaireEntity questionnaire in Questionnaires)
@@ -41,7 +53,7 @@ else
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -50,7 +62,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 

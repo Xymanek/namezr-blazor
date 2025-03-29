@@ -1,0 +1,86 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Studio
+@using Namezr.Components.Account
+@using Namezr.Features.Identity.Data
+@using Namezr.Infrastructure.Data
+
+@layout BaseLayout
+
+@inherits LayoutComponentBase
+@implements IStudioPageContext
+
+@inject IdentityUserAccessor UserAccessor
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+@inject ILogger<StudioBaseLayout> Logger
+
+<div class="min-vh-100 d-flex flex-column">
+    <TopMenu
+        NavbarContainerCssClass="container-fluid"
+    />
+
+    <div class="d-md-flex flex-grow-1 justify-content-stretch">
+        <StudioMenu
+            Creators="_creators"
+            CurrentCreatorId="CurrentCreatorId"
+        />
+
+        <div class="main flex-grow-1 bg-light-subtle">
+            <CascadingValue TValue="IStudioPageContext" Value="this">
+                @Body
+            </CascadingValue>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private CreatorSelectorOption[] _creators = [];
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    private readonly TaskCompletionSource _creatorsLoaded = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _creators = await dbContext.Creators
+            .Where(c => c.Staff!.Any(s => s.UserId == user.Id))
+            .Select(entity => new CreatorSelectorOption
+            {
+                Id = entity.Id,
+                DisplayName = entity.DisplayName,
+            })
+            .ToArrayAsync();
+
+        _creatorsLoaded.SetResult();
+    }
+
+    private Guid? CurrentCreatorId { get; set; }
+
+    public async Task SetCurrentCreatorAndValidateAccess(Guid creatorId)
+    {
+        await _creatorsLoaded.Task;
+
+        if (_creators.All(x => x.Id != creatorId))
+        {
+            ApplicationUser user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+            Logger.LogWarning(
+                "User ({userId}) does not have access to creator ({creatorId}) studio",
+                user.Id, creatorId
+            );
+
+            // TODO: 404
+            NavigationManager.NavigateTo("");
+        }
+
+        CurrentCreatorId = creatorId;
+        StateHasChanged();
+    }
+
+}

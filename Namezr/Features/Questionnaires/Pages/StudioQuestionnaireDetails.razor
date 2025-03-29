@@ -1,6 +1,7 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{id:guid}"
 
 @using System.Diagnostics
+@using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client.Types
@@ -11,38 +12,45 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 @using Namezr.Client
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
 
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_questionnaireVersion is not null)
+        {
+            <QuestionnaireBreadcrumbs
+                Questionnaire="_questionnaireVersion.Questionnaire"
+            />
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    @_questionnaireVersion?.Questionnaire.Title
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/selection"
+        class="btn btn-secondary">
+        Selection
+    </a>
+    <a
+        href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/edit"
+        class="btn btn-primary">
+        Edit
+    </a>
+</SectionContent>
+
 @if (_questionnaireVersion is not null)
 {
-    <div class="d-flex gap-3 align-items-center justify-content-between">
-        <h3>@_questionnaireVersion.Questionnaire.Title</h3>
-        <div>
-            <a
-                href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/selection"
-                class="btn btn-secondary">
-                Selection
-            </a>
-            <a
-                href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/edit"
-                class="btn btn-primary">
-                Edit
-            </a>
-        </div>
-    </div>
-
-    <div>
-        <pre>@_questionnaireVersion.Questionnaire.Description</pre>
-    </div>
-
-    <hr class="my-4"/>
-
     /* TODO: nice labels */
     <table class="table table-striped">
         <tr>
@@ -55,7 +63,7 @@
             <td>@_questionnaireVersion.Questionnaire.SubmissionOpenMode</td>
         </tr>
     </table>
-    
+
     <h4>Eligibility</h4>
 
     <table class="table table-striped">
@@ -176,7 +184,7 @@
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -190,7 +198,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 

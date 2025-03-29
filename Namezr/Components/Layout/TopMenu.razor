@@ -1,4 +1,5 @@
 ﻿@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Components.Account
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Identity.Data
@@ -10,87 +11,95 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
-<header class="p-3 border-bottom">
-    <div class="container">
-        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-            <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 link-body-emphasis text-decoration-none">
-                @*<svg class="bi me-2" width="40" height="32" role="img" aria-label="Bootstrap">
-                        <use xlink:href="#bootstrap"></use>
-                    </svg>*@
-                @* <strong>Namezr</strong> *@
-                <img src="logo-letter.png" alt="N" class="logo-letter"/>
-                <span class="logo-text">amezr</span>
-            </a>
+<HxNavbar
+    CssClass="bg-body-tertiary sticky-top"
+    ContainerCssClass="@NavbarContainerCssClass"
+    >
+    <HxNavbarBrand>
+        @*Navbar*@
 
-            <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-                <li><a href="PublicCreatorsList" class="nav-link px-2 link-body-emphasis">Creators list</a></li>
+        <img src="@Assets["logo-letter.png"]" alt="N" class="logo-letter"/>
+        <span class="logo-text">amezr</span>
+    </HxNavbarBrand>
+    <HxNavbarToggler/>
 
-                @if (_firstCreatorId is not null)
-                {
-                    <li>
-                        <a href="studio/@_firstCreatorId.Value.NoHyphens()" class="nav-link px-2 link-body-emphasis">
-                            Studio
-                        </a>
-                    </li>
-                }
-                else if (_isAuthenticated)
-                {
-                    <li>
-                        <a href="studio/onboarding" class="nav-link px-2 link-body-emphasis">Creator onboarding</a>
-                    </li>
-                }
-                else
-                {
-                    <li><a href="#" class="nav-link px-2 link-body-emphasis">For creators</a></li>
-                }
-            </ul>
+    <HxNavbarCollapse>
+        <HxNav CssClass="me-auto mb-2 mb-lg-0">
+            <HxNavLink Href="/PublicCreatorsList">Creators list</HxNavLink>
 
-            @* At some point, we will want a site-wide search bar, e.g. creators *@
-            @*<form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3" role="search">
-                    <input type="search" class="form-control" placeholder="Search..." aria-label="Search">
-                </form>*@
+            @if (_firstCreatorId is not null)
+            {
+                <HxNavLink Href=@($"studio/{_firstCreatorId.Value.NoHyphens()}")>
+                    Studio
+                </HxNavLink>
+            }
+            else if (_isAuthenticated)
+            {
+                <HxNavLink Href="studio/onboarding">
+                    Creator onboarding
+                </HxNavLink>
+            }
+            else
+            {
+                <HxNavLink Href="#">For creators</HxNavLink>
+            }
+        </HxNav>
 
-            <AuthorizeView>
-                <Authorized>
-                    <div class="dropdown text-end">
-                        <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            @context.User.Identity?.Name
-                        </a>
-                        <ul class="dropdown-menu text-small">
-                            <li><a class="dropdown-item" href="#">My creators</a></li>
-                            <li><a class="dropdown-item" href="Account/Manage">My account</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li>
-                                <form action="Account/Logout" method="post">
-                                    <AntiforgeryToken/>
-                                    <input type="hidden" name="ReturnUrl" value="@_currentUrl"/>
-                                    <button type="submit" class="dropdown-item">
-                                        Logout
-                                    </button>
-                                </form>
-                                @* <a class="dropdown-item" href="#">Sign out</a> *@
-                            </li>
-                        </ul>
-                    </div>
-                </Authorized>
-                <NotAuthorized>
-                    @* TODO: redirect back to current page *@
-                    <a class="btn btn-primary" href="Account/Login">
-                        Login
-                    </a>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
-    </div>
-</header>
+        @* At some point, we will want a site-wide search bar, e.g. creators *@
+        @*<EditForm Model="@query">
+            <div class="d-flex">
+                <HxInputText CssClass="me-2" Placeholder="Search" @bind-Value="@query"/>
+                <HxSubmit Color="ThemeColor.Success" Outline="true">Search</HxSubmit>
+            </div>
+        </EditForm>*@
+
+        <AuthorizeView>
+            <Authorized>
+                <HxDropdown>
+                    @* TODO: why is the nav-link class not added automatically? *@
+                    <HxDropdownToggleElement ElementName="a" Caret="true" role="button" CssClass="nav-link">
+                        @context.User.Identity?.Name
+                    </HxDropdownToggleElement>
+
+                    <HxDropdownMenu Alignment="DropdownMenuAlignment.End">
+                        <HxDropdownItemNavLink Href="#">My creators</HxDropdownItemNavLink>
+                        <HxDropdownItemNavLink Href="Account/Manage">My account</HxDropdownItemNavLink>
+
+                        <HxDropdownDivider/>
+
+                        <form action="Account/Logout" method="post">
+                            <AntiforgeryToken/>
+                            <input type="hidden" name="ReturnUrl" value="@_currentUrl"/>
+                            <button type="submit" class="dropdown-item">
+                                Logout
+                            </button>
+                        </form>
+                    </HxDropdownMenu>
+                </HxDropdown>
+            </Authorized>
+
+            <NotAuthorized>
+                @* TODO: redirect back to current page *@
+                <a class="btn btn-primary" href="Account/Login">
+                    Login
+                </a>
+                
+                @* TODO: why component looks oof? *@
+                @*<HxNavLink Href="Account/Login" CssClass="btn btn-primary">
+                    Login
+                </HxNavLink>*@
+            </NotAuthorized>
+        </AuthorizeView>
+    </HxNavbarCollapse>
+</HxNavbar>
 
 @code {
 
     [CascadingParameter]
-    public HttpContext HttpContext { get; set; } = null!;
+    public required HttpContext HttpContext { get; set; }
+
+    [Parameter]
+    public string? NavbarContainerCssClass { get; set; }
 
     private string? _currentUrl;
     private bool _isAuthenticated;

@@ -1,7 +1,6 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/{submissionId:guid}"
 
 @using System.Diagnostics
-@using Havit.Blazor.Components.Web.Bootstrap
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client
@@ -11,12 +10,13 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Features.Questionnaires.Services
 @using Namezr.Infrastructure.Data
-@using Microsoft.AspNetCore.Components.Forms
 @using Namezr.Components.Account
 @using NodaTime
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IFieldValueSerializer ValueSerializer
@@ -26,20 +26,48 @@
 
 @if (_submission is not null)
 {
-    <div class="d-flex gap-3 align-items-center justify-content-between">
-        <h3>@_submission.Version.Questionnaire.Title</h3>
-        <a
-            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
-            class="btn btn-secondary">
-            Questionnaire
-        </a>
-    </div>
+    <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+        <HxBreadcrumb>
+            <QuestionnaireBreadcrumbs
+                Questionnaire="_submission.Version.Questionnaire"
+            />
 
-    <div>
-        <pre>@_submission.Version.Questionnaire.Description</pre>
-    </div>
+            <HxBreadcrumbItem
+                Text="Submissions"
+            />
 
-    <hr class="my-4"/>
+            @* TODO: nice ID *@
+            <HxBreadcrumbItem
+                Href=@(NavigationManager.Uri)
+                Text="@SubmissionId.NoHyphens()"
+            />
+        </HxBreadcrumb>
+    </SectionContent>
+    
+    <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+        Submission details
+    </SectionContent>
+
+    <SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+        @if (_submission.ApprovedAt is not null)
+        {
+            <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
+                <HxSubmit
+                    Text="Remove approval"
+                    Color="@ThemeColor.Danger"
+                />
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
+                <HxSubmit
+                    Text="Approve"
+                    Color="@ThemeColor.Success"
+                />
+            </EditForm>
+        }
+    </SectionContent>
 
     /* TODO: user info, eligibility breakdown, etc. */
 
@@ -66,24 +94,10 @@
                     @if (_submission.ApprovedAt is not null)
                     {
                         <div>Yes</div>
-
-                        <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
-                            <HxSubmit
-                                Text="Remove approval"
-                                Color="@ThemeColor.Danger"
-                            />
-                        </EditForm>
                     }
                     else
                     {
                         <div>No</div>
-
-                        <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
-                            <HxSubmit
-                                Text="Approve"
-                                Color="@ThemeColor.Success"
-                            />
-                        </EditForm>
                     }
                 </div>
             </td>
@@ -157,7 +171,7 @@
     public required HttpContext HttpContext { get; set; } = null!;
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -172,7 +186,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
@@ -184,11 +198,6 @@
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
-    }
-
-    private string GetDownloadUrl(SubmissionFileData file)
-    {
-        return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId}&fileId={file.Id}";
     }
 
     private async Task HandleGrantApproval()

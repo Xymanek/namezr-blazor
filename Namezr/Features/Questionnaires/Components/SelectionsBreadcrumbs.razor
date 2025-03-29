@@ -1,0 +1,18 @@
+﻿@using Namezr.Client
+@using Namezr.Features.Questionnaires.Data
+
+<QuestionnaireBreadcrumbs
+    Questionnaire="Questionnaire"
+/>
+
+<HxBreadcrumbItem
+    href=@($"studio/{Questionnaire.CreatorId.NoHyphens()}/questionnaires/{Questionnaire.Id.NoHyphens()}/selection")
+    Text="Selection"
+/>
+
+@code {
+    
+    [Parameter]
+    public required QuestionnaireEntity Questionnaire { get; set; }
+
+}

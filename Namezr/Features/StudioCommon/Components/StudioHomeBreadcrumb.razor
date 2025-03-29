@@ -1,0 +1,10 @@
+﻿@using Namezr.Client
+
+<HxBreadcrumbItem Href=@($"studio/{CreatorId.NoHyphens()}")>
+    <HxIcon Icon="@BootstrapIcon.HouseDoorFill"/>
+</HxBreadcrumbItem>
+
+@code {
+    [Parameter]
+    public Guid CreatorId { get; set; }
+}

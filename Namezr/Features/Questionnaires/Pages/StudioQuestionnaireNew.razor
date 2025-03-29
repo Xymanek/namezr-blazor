@@ -6,14 +6,29 @@
 @using Namezr.Components.Layout
 @using Namezr.Features.Creators.Services
 @using Namezr.Features.Eligibility.Services
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
 
-<h3>New questionnaire</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <QuestionnairesBreadcrumbs CreatorId="CreatorId"/>
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/questionnaires/new")
+            Text="New"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    New questionnaire
+</SectionContent>
 
 @if (EligibilityDescriptors is not null)
 {
@@ -27,7 +42,7 @@
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -38,7 +53,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         EligibilityDescriptors = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(

@@ -15,60 +15,64 @@
 >
     <FluentValidationValidator Validator="Validator"/>
 
-    @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
-    {
-        string fieldIdStr = field.Id.ToString();
-
-        if (FieldValidatorProviders.TryGetValue(fieldIdStr, out FieldValidatorProvider? validatorProvider))
-        {
-            <FluentValidationValidator ValidatorFactory="validatorProvider"/>
-        }
-
-        <div class="my-3">
-            @switch (field.Type)
+    <HxCard>
+        <BodyTemplate>
+            @foreach (QuestionnaireConfigFieldModel field in Config.Fields)
             {
-                case QuestionnaireFieldType.Text:
-                    <HxInputText
-                        Enabled="!AllDisabled"
-                        LabelType="LabelType.Floating"
-                        Label="@field.Title"
-                        @bind-Value="Values[fieldIdStr].StringValue"
-                    />
-                    break;
+                string fieldIdStr = field.Id.ToString();
 
-                case QuestionnaireFieldType.Number:
-                    <HxInputNumber
-                        Enabled="!AllDisabled"
-                        LabelType="LabelType.Floating"
-                        Label="@field.Title"
-                        @bind-Value="Values[fieldIdStr].NumberValue"
-                    />
-                    break;
+                if (FieldValidatorProviders.TryGetValue(fieldIdStr, out FieldValidatorProvider? validatorProvider))
+                {
+                    <FluentValidationValidator ValidatorFactory="validatorProvider"/>
+                }
 
-                case QuestionnaireFieldType.FileUpload:
-                    @* If the submission is disabled, there will be no tickets *@
-                    <FileUploadField
-                        Enabled="!AllDisabled"
-                        FieldConfig="field"
-                        SubmissionId="SubmissionId"
-                        FileUploadTicket="@(FileUploadTickets.GetValueOrDefault(field.Id))"
-                        @bind-Value="Values[fieldIdStr]"
-                        OnNewFileTicket="_newFileTickets.Add"
-                    />
-                    break;
+                <div class="my-3">
+                    @switch (field.Type)
+                    {
+                        case QuestionnaireFieldType.Text:
+                            <HxInputText
+                                Enabled="!AllDisabled"
+                                LabelType="LabelType.Floating"
+                                Label="@field.Title"
+                                @bind-Value="Values[fieldIdStr].StringValue"
+                            />
+                            break;
 
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                        case QuestionnaireFieldType.Number:
+                            <HxInputNumber
+                                Enabled="!AllDisabled"
+                                LabelType="LabelType.Floating"
+                                Label="@field.Title"
+                                @bind-Value="Values[fieldIdStr].NumberValue"
+                            />
+                            break;
 
-            @if (!string.IsNullOrWhiteSpace(field.Description))
-            {
-                <div>
-                    <pre>@field.Description</pre>
+                        case QuestionnaireFieldType.FileUpload:
+                            @* If the submission is disabled, there will be no tickets *@
+                            <FileUploadField
+                                Enabled="!AllDisabled"
+                                FieldConfig="field"
+                                SubmissionId="SubmissionId"
+                                FileUploadTicket="@(FileUploadTickets.GetValueOrDefault(field.Id))"
+                                @bind-Value="Values[fieldIdStr]"
+                                OnNewFileTicket="_newFileTickets.Add"
+                            />
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(field.Description))
+                    {
+                        <div>
+                            <pre>@field.Description</pre>
+                        </div>
+                    }
                 </div>
             }
-        </div>
-    }
+        </BodyTemplate>
+    </HxCard>
 
     <HxSubmit
         Enabled="!AllDisabled && RendererInfo.IsInteractive"

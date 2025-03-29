@@ -1,0 +1,3 @@
+﻿::deep .unset-max-height {
+    max-height: unset !important;
+}

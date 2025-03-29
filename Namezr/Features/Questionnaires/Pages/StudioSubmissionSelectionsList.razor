@@ -6,29 +6,32 @@
 @using Namezr.Components.Layout
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
-@using Havit.Blazor.Components.Web.Bootstrap
 @using Namezr.Features.SelectionSeries.Data
-@using Microsoft.AspNetCore.Components.Forms
 @using Namezr.Features.Eligibility.Data
 @using vNext.BlazorComponents.FluentValidation
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.Questionnaires.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 
-@if (_questionnaire is not null)
-{
-    <div class="d-flex gap-3 align-items-center justify-content-between">
-        <h3>@_questionnaire.Title</h3>
-        <a
-            href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
-            class="btn btn-secondary">
-            Questionnaire
-        </a>
-    </div>
-}
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_questionnaire is not null)
+        {
+            <SelectionsBreadcrumbs
+                Questionnaire="_questionnaire"
+            />
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Selection
+</SectionContent>
 
 <h4>New selection series</h4>
 
@@ -71,7 +74,7 @@
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; }
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -91,7 +94,7 @@
     {
         NewSeries ??= new NewSeriesModel();
 
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 

@@ -6,19 +6,35 @@
 @using Namezr.Components.Layout
 @using Namezr.Features.Creators.Data
 @using Namezr.Infrastructure.Data
-@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.StudioCommon.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 
-<h3>Invite staff member</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <ConfigurationBreadcrumbItems CreatorId="CreatorId"/>
+
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/staff-invite")
+            Text="Invite staff member"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Invite staff member
+</SectionContent>
 
 <form method="post" @formname="invite-staff-form" @onsubmit="HandleSubmit">
     <AntiforgeryToken/>
-    <button type="submit">Create invite</button>
+    <HxSubmit Color="ThemeColor.Success">
+        Create invite
+    </HxSubmit>
 </form>
 
 @if (_generatedToken is not null)
@@ -34,7 +50,7 @@
 @code {
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -49,7 +65,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         // TODO: why does the native @onsubmit does not work????
         if (HttpContext.Request.Method == HttpMethods.Post)

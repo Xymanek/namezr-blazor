@@ -3,15 +3,19 @@
 @inject NavigationManager NavigationManager
 @inject ILogger<CreatorSelector> Logger
 
-<HxSelect
-    Label="Creator"
-    Data="Creators"
-    @bind-Value="_selectedCreator"
-    @bind-Value:after="OnCreatorSelected"
-    Nullable="false"
-    TextSelector="x => x.DisplayName"
-    ValueSelector="x => x"
-/>
+<HxTooltip
+    WrapperCssClass="d-block flex-grow-1"
+    Text="Select creator"
+>
+    <HxSelect
+        Data="Creators"
+        @bind-Value="_selectedCreator"
+        @bind-Value:after="OnCreatorSelected"
+        Nullable="false"
+        TextSelector="x => x.DisplayName"
+        ValueSelector="x => x"
+    />
+</HxTooltip>
 
 @code {
 

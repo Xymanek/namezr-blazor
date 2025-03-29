@@ -4,12 +4,37 @@
 @using Namezr.Components.Layout
 @using Namezr.Features.Creators.Data
 @using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.StudioCommon.Components
 
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
-<h3>Current support targets</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <ConfigurationBreadcrumbItems CreatorId="CreatorId"/>
+
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/targets")
+            Text="Support targets"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Current support targets
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/config/targets/new"
+        class="btn btn-success"
+    >
+        Add
+    </a>
+</SectionContent>
 
 <table class="table table-striped table-hover table-bordered">
     <thead>
@@ -37,7 +62,7 @@
     public required HttpContext HttpContext { get; set; } = null!;
 
     [CascadingParameter]
-    public required StudioLayout StudioLayout { get; set; } = null!;
+    public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
     public Guid CreatorId { get; set; }
@@ -46,7 +71,7 @@
     
     protected override async Task OnInitializedAsync()
     {
-        await StudioLayout.SetCurrentCreatorAndValidateAccess(CreatorId);
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
