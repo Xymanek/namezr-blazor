@@ -16,6 +16,10 @@ public class SelectionUserDataEntity
     // TODO: rename to LatestWeight
     public required decimal LatestModifier { get; set; }
 
+    /// <summary>
+    /// Number of times the user has been selected in the current cycle.
+    /// Currently this will only be 0 or 1.
+    /// </summary>
     public required int SelectedCount { get; set; }
     public required int TotalSelectedCount { get; set; }
 }

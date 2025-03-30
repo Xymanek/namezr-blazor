@@ -67,7 +67,7 @@
             <tr>
                 <td colspan="3" class="text-center">
                     <strong>
-                        Rolled 
+                        Rolled
                         <RelativeTime Value="batch.RollCompletedAt.ToDateTimeOffset()"/>
                     </strong>
                 </td>
@@ -151,7 +151,7 @@
     <tr>
         <th>User</th>
         <th>Weight</th>
-        <th>Has been select in current iteration</th>
+        <th>Has been select in current cycle</th>
         <th>Total times selected</th>
     </tr>
     </thead>
@@ -163,11 +163,13 @@
             <td>@userData.User.UserName</td>
             <td>@userData.LatestModifier</td>
             <td>
-                <i title="Not implemented yet">N/A</i>
+                @* 
+                    TODO: display exactlyhow many times the user has been selected in the current cycle
+                    if we choose to allow multiple submissions/selections per cycle
+                 *@
+                @(userData.SelectedCount > 0 ? "Yes" : "No")
             </td>
-            <td>
-                <i title="Not implemented yet">N/A</i>
-            </td>
+            <td>@userData.TotalSelectedCount</td>
         </tr>
     }
     @*<tr>

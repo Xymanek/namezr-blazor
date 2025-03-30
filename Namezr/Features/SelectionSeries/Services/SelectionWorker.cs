@@ -78,7 +78,8 @@ public partial class SelectionWorker : ISelectionWorker
         // do this only if the user is a candidate but store the result in case of multiple cycles
 
         // 3) Get users which were not selected in the current cycle
-        int currentCycle = seriesEntity.CompleteCyclesCount;
+        int startingCycle = seriesEntity.CompleteCyclesCount;
+        int currentCycle = startingCycle;
 
         SelectionEntryPickedEntity[] existingSelections = await dbContext.SelectionEntries
             .OfType<SelectionEntryPickedEntity>()
@@ -99,8 +100,8 @@ public partial class SelectionWorker : ISelectionWorker
         {
             PickCurrentCycleMostPossible();
 
-            // We are done if we fulfilled the request
-            if (numberOfEntriesToSelect <= CountPicksSoFar()) break;
+            // We are done if we have fulfilled the request
+            if (IsRequestFulfilled()) break;
 
             // TODO: do not permit restart if we just went a full cycle with 0 picks
             // Otherwise this will just endlessly loop.
@@ -129,40 +130,64 @@ public partial class SelectionWorker : ISelectionWorker
 
         // 6) Store used eligibility into user data entries
 
-        // Clear ineligible users. TODO: this is wrong
+        // Record users that have become ineligible
         seriesEntity.UserData!
-            .ToArray()
             .Where(userData =>
                 !userEligibilities.TryGetValue(userData.UserId, out EligibilityResult? userEligibility)
                 || !userEligibility.Any
             )
-            .ForEach(userData => seriesEntity.UserData!.Remove(userData));
+            // TODO: this must be null; how to distinguish between ineligible and not approved?
+            .ForEach(userData => userData.LatestModifier = 0);
 
         Dictionary<Guid, SelectionUserDataEntity> userDataPerUserId = seriesEntity.UserData!
             .ToDictionary(userData => userData.UserId);
 
-        foreach ((Guid userId, EligibilityResult? eligibility) in userEligibilities)
+        foreach ((Guid userId, EligibilityResult eligibility) in userEligibilities)
         {
+            // Was cleared above
+            if (!eligibility.Any) continue;
+
             if (userDataPerUserId.TryGetValue(userId, out SelectionUserDataEntity? userData))
             {
                 userData.LatestModifier = eligibility.Modifier;
+                // Counts will be updated below
 
-                // TODO: selected counts
-
-                break;
+                continue;
             }
 
-            seriesEntity.UserData!.Add(new SelectionUserDataEntity
+            userData = new SelectionUserDataEntity
             {
                 UserId = userId,
 
                 LatestModifier = eligibility.Modifier,
 
-                // TODO
+                // Will be updated below
                 SelectedCount = 0,
                 TotalSelectedCount = 0,
-            });
+            };
+
+            userDataPerUserId[userId] = userData;
+            seriesEntity.UserData!.Add(userData);
         }
+
+        // Update whether the user has been selected in the current cycle or not.
+        // Note: this handles the case where the user has been selected before but is now ineligible by
+        // (1) user data entry would exist from the previous batch(es),
+        //     so the skip in the previous loop is not a problem
+        // (2) usersSelectedInCurrentCycle includes previous batch users, so the "selected in current cycle"
+        //     status will be retained even if eligibility was lost between batches
+        //     (but we are still in the same cycle as when the user was selected)
+        foreach ((Guid userId, SelectionUserDataEntity userData) in userDataPerUserId)
+        {
+            userData.SelectedCount = usersSelectedInCurrentCycle.Contains(userId) ? 1 : 0;
+        }
+
+        // Update total selected counts by
+        // adding how many times the user has been selected in the current batch to the previous total
+        batchEntities
+            .OfType<SelectionEntryPickedEntity>()
+            .GroupBy(x => userIdPerCandidateId[x.CandidateId])
+            .ForEach(grouping => userDataPerUserId[grouping.Key].TotalSelectedCount += grouping.Count());
 
         // 7) Save to DB
 
@@ -235,7 +260,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         void PickCurrentCycleMostPossible()
         {
-            while (true)
+            while (!IsRequestFulfilled())
             {
                 SelectionCandidateEntity? candidate = PickOneForCurrentCycle();
 
@@ -253,6 +278,11 @@ public partial class SelectionWorker : ISelectionWorker
                     Cycle = currentCycle,
                 });
             }
+        }
+
+        bool IsRequestFulfilled()
+        {
+            return numberOfEntriesToSelect <= CountPicksSoFar();
         }
 
         int CountPicksSoFar()
