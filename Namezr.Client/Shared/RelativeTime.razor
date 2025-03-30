@@ -1,0 +1,37 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Humanizer
+
+@implements IDisposable
+
+@if (Value is not null)
+{
+    <HxTooltip Text="@Value.Value.ToString("F")">
+        @Value.Humanize()
+    </HxTooltip>
+}
+
+@code {
+
+    [Parameter]
+    public DateTimeOffset? Value { get; set; }
+
+    private Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        if (!RendererInfo.IsInteractive) return;
+
+        // Refresh the value every second
+        _timer = new Timer(
+            _ => InvokeAsync(StateHasChanged),
+            null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)
+        );
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+}
