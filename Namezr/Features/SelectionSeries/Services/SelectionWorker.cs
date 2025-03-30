@@ -125,7 +125,12 @@ public partial class SelectionWorker : ISelectionWorker
 
                 // If we have not picked anything in the current cycle, we can't restart.
                 // Otherwise, this will just endlessly loop.
-                CountPicksSoFar() == numberPicksBeforeCurrentCycle
+                (
+                    // Permit at least one restart else the process will never restart
+                    // if there are no candidates left in the current/starting cycle
+                    startingCycle != currentCycle &&
+                    CountPicksSoFar() == numberPicksBeforeCurrentCycle
+                )
             )
             {
                 batchEntities.Add(new SelectionEntryEventEntity
