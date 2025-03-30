@@ -13,6 +13,7 @@
 @using Namezr.Infrastructure.Data
 @using Namezr.Client
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Client.Shared
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -152,7 +153,7 @@
         <thead>
         <tr>
             <th>User</th>
-            <th>Submitted at</th>
+            <th>Submitted</th>
             <th>Is approved</th>
             <th>Questionnaire version</th>
             <th></th>
@@ -166,7 +167,9 @@
 
             <tr>
                 <td>@submission.User.UserName</td>
-                <td>@submission.SubmittedAt</td>
+                <td>
+                    <RelativeTime Value="submission.SubmittedAt.ToDateTimeOffset()"/>
+                </td>
                 <td>@(submission.ApprovedAt != null ? "Yes" : "No")</td>
                 <td>@submission.VersionId</td>
                 <td>

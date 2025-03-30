@@ -14,6 +14,7 @@
 @using NodaTime
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Client.Shared
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -78,8 +79,10 @@
         </tr>
 
         <tr>
-            <th>Submitted at</th>
-            <td>@_submission.SubmittedAt</td>
+            <th>Submitted</th>
+            <td>
+                <RelativeTime Value="_submission.SubmittedAt.ToDateTimeOffset()"/>
+            </td>
         </tr>
 
         <tr>
@@ -106,8 +109,10 @@
         @if (_submission.ApprovedAt is not null)
         {
             <tr>
-                <th>Approved at</th>
-                <td>@_submission.ApprovedAt</td>
+                <th>Approved</th>
+                <td>
+                    <RelativeTime Value="_submission.ApprovedAt.Value.ToDateTimeOffset()"/>
+                </td>
             </tr>
 
             <tr>
