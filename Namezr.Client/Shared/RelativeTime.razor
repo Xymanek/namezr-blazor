@@ -6,7 +6,7 @@
 
 @if (Value is not null)
 {
-    <HxTooltip Text="@Value.Value.ToString("F")">
+    <HxTooltip Text="@Value.Value.ToString(FullTimestampFormat)">
         @Value.Humanize()
     </HxTooltip>
 }
@@ -28,6 +28,10 @@
             null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)
         );
     }
+
+    private string FullTimestampFormat => !RendererInfo.IsInteractive 
+        ? "R" // During SSR we don't know the user's timezone, so we include the timezone in the readout  
+        : "F";
 
     public void Dispose()
     {
