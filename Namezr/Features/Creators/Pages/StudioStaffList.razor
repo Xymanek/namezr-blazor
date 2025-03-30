@@ -1,0 +1,74 @@
+﻿@page "/studio/{creatorId:guid}/config/staff"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Data
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Features.StudioCommon.Components
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <ConfigurationBreadcrumbItems CreatorId="CreatorId"/>
+
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/staff")
+            Text="Staff"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Staff members
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/config/staff/invite"
+        class="btn btn-success"
+    >
+        Invite
+    </a>
+</SectionContent>
+
+<HxCard>
+    <BodyTemplate>
+        <ul>
+            @foreach (CreatorStaffEntity staffEntity in _staffEntities)
+            {
+                <li>
+                    @staffEntity.User.UserName
+                </li>
+            }
+        </ul>
+    </BodyTemplate>
+</HxCard>
+
+@code {
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    private CreatorStaffEntity[] _staffEntities = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+        
+        _staffEntities = await dbContext.CreatorStaff
+            .Where(x => x.CreatorId == CreatorId)
+            .Include(x => x.User)
+            .ToArrayAsync();
+    }
+}

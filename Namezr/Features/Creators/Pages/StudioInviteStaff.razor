@@ -1,4 +1,4 @@
-﻿@page "/studio/{creatorId:guid}/config/staff-invite"
+﻿@page "/studio/{creatorId:guid}/config/staff/invite"
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
@@ -20,8 +20,13 @@
         <ConfigurationBreadcrumbItems CreatorId="CreatorId"/>
 
         <HxBreadcrumbItem
-            Href=@($"studio/{CreatorId.NoHyphens()}/config/staff-invite")
-            Text="Invite staff member"
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/staff")
+            Text="Staff"
+        />
+        
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/staff/invite")
+            Text="Invite"
         />
     </HxBreadcrumb>
 </SectionContent>
