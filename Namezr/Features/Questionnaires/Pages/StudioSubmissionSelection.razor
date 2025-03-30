@@ -147,19 +147,32 @@
     <thead>
     <tr>
         <th>User</th>
-        <th>Modifier</th>
+        <th>Weight</th>
         <th>Has been select in current iteration</th>
         <th>Total times selected</th>
     </tr>
     </thead>
 
     <tbody>
-    <tr>
+    @foreach (SelectionUserDataEntity userData in GetUserDataSorted())
+    {
+        <tr>
+            <td>@userData.User.UserName</td>
+            <td>@userData.LatestModifier</td>
+            <td>
+                <i title="Not implemented yet">N/A</i>
+            </td>
+            <td>
+                <i title="Not implemented yet">N/A</i>
+            </td>
+        </tr>
+    }
+    @*<tr>
         <td>john@example.com</td>
         <td>1.5</td>
         <td>No</td>
         <td>3</td>
-    </tr>
+    </tr>*@
     </tbody>
 </table>
 
@@ -196,13 +209,20 @@
             .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
 
         _selectionSeries = await dbContext.SelectionSeries
-            .Include(x => x.UserData)
+            .Include(x => x.UserData!).ThenInclude(x => x.User)
             .Include(x => x.Batches!)
             .ThenInclude(x => x.Entries)
             .ThenInclude(entry => (entry as SelectionEntryPickedEntity)!.Candidate)
             .ThenInclude(candidate => (candidate as QuestionnaireSubmissionEntity)!.User)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == SelectionId);
+    }
+
+    private IEnumerable<SelectionUserDataEntity> GetUserDataSorted()
+    {
+        if (_selectionSeries is null) return [];
+
+        return _selectionSeries.UserData!.OrderBy(data => data.User.UserName);
     }
 
 }

@@ -13,6 +13,7 @@ public class SelectionUserDataEntity
     public ApplicationUser User { get; set; } = null!;
     public Guid UserId { get; set; }
 
+    // TODO: rename to LatestWeight
     public required decimal LatestModifier { get; set; }
 
     public required int SelectedCount { get; set; }
