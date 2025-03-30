@@ -30,46 +30,61 @@
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-    Selection
+    Selection series
 </SectionContent>
 
-<h4>New selection series</h4>
+<div class="row">
+    <div class="col-lg-6">
+        <HxCard>
+            <HeaderTemplate>
+                Existing
+            </HeaderTemplate>
+            <BodyTemplate>
+                <ul>
+                    @foreach (SelectionSeriesEntity series in _series ?? [])
+                    {
+                        <li>
+                            <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/selection/@series.Id.NoHyphens()">
+                                @series.Name
+                            </a>
+                        </li>
+                    }
+                </ul>
 
-<EditForm
-    Model="NewSeries"
-    FormName="new-series"
-    OnValidSubmit="HandleNewSeriesValidSubmit"
->
-    <FluentValidationValidator/>
-
-    <div class="grid">
-        <HxInputText
-            CssClass="col-9"
-            Label="Name"
-            Placeholder="@_newSeriesNamePlaceholder"
-            @bind-Value="NewSeries!.Name"/>
-        <HxSubmit
-            CssClass="col-3"
-            Text="Create"
-            Color="ThemeColor.Success"/>
+                @if (_series?.Length == 0)
+                {
+                    <p>No selection series yet.</p>
+                    <p>Use the form on the right to create a new one.</p>
+                }
+            </BodyTemplate>
+        </HxCard>
     </div>
-</EditForm>
 
-<h4>Existing selection series</h4>
+    <div class="col-lg-6">
+        <HxCard>
+            <HeaderTemplate>
+                New
+            </HeaderTemplate>
+            <BodyTemplate>
+                <EditForm
+                    Model="NewSeries"
+                    FormName="new-series"
+                    OnValidSubmit="HandleNewSeriesValidSubmit"
+                >
+                    <FluentValidationValidator/>
 
-<ul>
-    @if (_series is not null)
-    {
-        @foreach (SelectionSeriesEntity series in _series)
-        {
-            <li>
-                <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/selection/@series.Id.NoHyphens()">
-                    @series.Name
-                </a>
-            </li>
-        }
-    }
-</ul>
+                    <HxInputText
+                        Label="Name"
+                        @bind-Value="NewSeries!.Name"/>
+                    <HxSubmit
+                        Text="Create"
+                        Color="ThemeColor.Success"/>
+                </EditForm>
+
+            </BodyTemplate>
+        </HxCard>
+    </div>
+</div>
 
 @code {
 
@@ -85,13 +100,12 @@
     private SelectionSeriesEntity[]? _series;
     private QuestionnaireEntity? _questionnaire;
 
-    private string _newSeriesNamePlaceholder = "Default";
-
     [SupplyParameterFromForm]
     public NewSeriesModel? NewSeries { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        bool setDefaultNewSeriesName = NewSeries is null;
         NewSeries ??= new NewSeriesModel();
 
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
@@ -106,9 +120,9 @@
             .Where(x => x.QuestionnaireId == QuestionnaireId)
             .ToArrayAsync();
 
-        if (_series.Length > 0)
+        if (setDefaultNewSeriesName)
         {
-            _newSeriesNamePlaceholder = $"Series {_series.Length + 1}";
+            NewSeries.Name = _series.Length > 0 ? $"Series {_series.Length + 1}" : "Default";
         }
     }
 
