@@ -7,6 +7,7 @@ using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.SelectionSeries.Data;
 using Namezr.Infrastructure.Data;
 using NodaTime;
+using NuGet.Packaging; // TODO: remove
 using SuperLinq;
 
 namespace Namezr.Features.SelectionSeries.Services;
@@ -49,6 +50,9 @@ public partial class SelectionWorker : ISelectionWorker
 
         EligibilityConfigurationEntity eligibilityConfiguration = await GetEligibilityConfiguration(seriesEntity, ct);
 
+        // Note: since the only place where GetAndCacheUserEligibility() is called
+        // is inside foreach(candidates), this list also filters out the unapproved users.
+        // Currently, this is convenient but technically misleading. 
         Dictionary<Guid, EligibilityResult> userEligibilities = new();
 
         // 1) Fetch all candidates
@@ -83,8 +87,20 @@ public partial class SelectionWorker : ISelectionWorker
 
         SelectionEntryPickedEntity[] existingSelections = await dbContext.SelectionEntries
             .OfType<SelectionEntryPickedEntity>()
+            // ReSharper disable once AccessToModifiedClosure - capture is unreferenced by the time the variable is modified
             .Where(e => e.Batch.SeriesId == seriesEntity.Id && e.Cycle == currentCycle)
             .ToArrayAsync(ct);
+
+        // We might have selected candidates in the previous batch that are no longer in the candidate list,
+        // e.g. if a submission had approval removed.
+        // But still, cache the user IDs for these old candidates, else we will crash later.
+        userIdPerCandidateId.AddRange(await GetUserIdForPotentialCandidateIds(
+            seriesEntity,
+            existingSelections
+                .Select(x => x.CandidateId)
+                .Where(x => !userIdPerCandidateId.ContainsKey(x)),
+            ct
+        ));
 
         // Will be updated below and by PickCurrentCycleMostPossible as we go,
         // but start with old values from DB 
@@ -98,15 +114,19 @@ public partial class SelectionWorker : ISelectionWorker
 
         while (true)
         {
+            int numberPicksBeforeCurrentCycle = CountPicksSoFar();
             PickCurrentCycleMostPossible();
 
             // We are done if we have fulfilled the request
             if (IsRequestFulfilled()) break;
 
-            // TODO: do not permit restart if we just went a full cycle with 0 picks
-            // Otherwise this will just endlessly loop.
+            if (
+                !allowRestarts ||
 
-            if (!allowRestarts)
+                // If we have not picked anything in the current cycle, we can't restart.
+                // Otherwise, this will just endlessly loop.
+                CountPicksSoFar() == numberPicksBeforeCurrentCycle
+            )
             {
                 batchEntities.Add(new SelectionEntryEventEntity
                 {
@@ -293,6 +313,9 @@ public partial class SelectionWorker : ISelectionWorker
         }
     }
 
+    /// <remarks>
+    /// Keep in sync with <see cref="GetUserIdForPotentialCandidateIds"/>.
+    /// </remarks>
     private async Task<List<(SelectionCandidateEntity, Guid UserId)>> GetAllCandidates(
         SelectionSeriesEntity series,
         CancellationToken ct
@@ -312,6 +335,43 @@ public partial class SelectionWorker : ISelectionWorker
                 return submissions
                     .Select(s => ((SelectionCandidateEntity)s, s.UserId))
                     .ToList();
+            }
+
+            default:
+                throw new NotSupportedException(
+                    $"Only {EligibilityConfigurationOwnershipType.Questionnaire} is implemented currently"
+                );
+        }
+    }
+
+    /// <summary>
+    /// Does not exclude currently invalid candidates (e.g. unapproved submission).
+    /// </summary>
+    /// <remarks>
+    /// Keep in sync with <see cref="GetAllCandidates"/>.
+    /// </remarks>
+    private async Task<Dictionary<Guid, Guid>> GetUserIdForPotentialCandidateIds(
+        SelectionSeriesEntity series,
+        IEnumerable<Guid> candidateIds,
+        CancellationToken ct
+    )
+    {
+        candidateIds = candidateIds.ToArray();
+        if (!candidateIds.Any()) return [];
+
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+
+        switch (series.OwnershipType)
+        {
+            case EligibilityConfigurationOwnershipType.Questionnaire:
+            {
+                QuestionnaireSubmissionEntity[] submissions = await dbContext.QuestionnaireSubmissions
+                    .Where(s => s.Version.Questionnaire.Id == series.QuestionnaireId)
+                    .Where(submission => candidateIds.Contains(submission.Id))
+                    .ToArrayAsync(ct);
+
+                return submissions
+                    .ToDictionary(x => x.Id, x => x.UserId);
             }
 
             default:
