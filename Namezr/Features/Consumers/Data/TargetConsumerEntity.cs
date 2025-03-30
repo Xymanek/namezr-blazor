@@ -4,6 +4,8 @@ using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Consumers.Data;
 
+// This is potentially speculative, e.g. we will create a TargetConsumerEntity for a
+// twitch user for a specific channel, even if the user has never visited the channel before
 public class TargetConsumerEntity
 {
     public Guid Id { get; set; }
@@ -11,8 +13,12 @@ public class TargetConsumerEntity
     public SupportTargetEntity SupportTarget { get; set; } = null!;
     public Guid SupportTargetId { get; set; }
 
+    // TODO: rename to ServiceUserId
     public required string ServiceId { get; set; }
 
+    // TODO: docs
+    public string? RelationshipId { get; set; }
+    
     public ICollection<ConsumerSupportStatusEntity>? SupportStatuses { get; set; }
 }
 
