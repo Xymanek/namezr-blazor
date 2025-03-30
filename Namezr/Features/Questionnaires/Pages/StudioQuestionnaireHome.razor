@@ -32,8 +32,18 @@
     </a>
 </SectionContent>
 
+@* TODO: brief explanation of the system *@
+
 @if (Questionnaires?.Any() ?? false)
 {
+    /*
+        TODO:
+        - description
+        - number of submissions
+        - number of eligible submissions
+        - number of version
+        - selections preview?
+     */
     <ul>
         @foreach (QuestionnaireEntity questionnaire in Questionnaires)
         {

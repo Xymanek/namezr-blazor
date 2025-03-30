@@ -64,6 +64,7 @@
     {
         @foreach (SelectionBatchEntity batch in _selectionSeries.Batches!.OrderByDescending(x => x.RollCompletedAt))
         {
+            /* TODO: animate the rows appearing */
             <tr>
                 <td colspan="3" class="text-center">
                     <strong>

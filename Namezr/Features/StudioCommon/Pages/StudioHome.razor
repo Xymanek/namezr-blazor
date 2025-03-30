@@ -2,11 +2,62 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Components.Layout
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.StudioCommon.Components
 
 @attribute [Authorize]
-@layout StudioLayout
+@layout StudioPageHeaderLayout
 
-<h3>StudioHome</h3>
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <StudioHomeBreadcrumb CreatorId="CreatorId"/>
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Creator studio
+</SectionContent>
+
+<div class="d-flex flex-column gap-3">
+    <HxCard>
+        <BodyTemplate>
+            <a href="/studio/@CreatorId.NoHyphens()/questionnaires">
+                <HxCardTitle>Questionnaires</HxCardTitle>
+            </a>
+            
+            <HxCardText>
+                Forms for your supporters to fill.
+                You can then pick at random, while automatically rewarding higher tier supporters.
+            </HxCardText>
+        </BodyTemplate>
+    </HxCard>
+    
+    <HxCard>
+        <BodyTemplate>
+            <a href="/studio/@CreatorId.NoHyphens()/raffles">
+                <HxCardTitle>Raffles</HxCardTitle>
+            </a>
+            
+            <HxCardText>
+                Randomly pick from your supporters. Individual supporters can only opt-in/out.
+            </HxCardText>
+        </BodyTemplate>
+    </HxCard>
+    
+    <HxCard>
+        <BodyTemplate>
+            <a href="/studio/@CreatorId.NoHyphens()/polls">
+                <HxCardTitle>Polls</HxCardTitle>
+            </a>
+            
+            <HxCardText>
+                Supporters choose from predetermined options.
+                Higher tier supporters' votes automatically having more impact
+            </HxCardText>
+        </BodyTemplate>
+    </HxCard>
+</div>
 
 @code {
 
