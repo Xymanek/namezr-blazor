@@ -35,11 +35,11 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
     {
         // TODO
         CancellationToken ct = CancellationToken.None;
-        
-        
+
+
         // TODO: validate and lots of docs
-        
-        
+
+
         // TODO: this can be supported.
         // Patreon structures the data in the following way:
         // User <> Member(ship)          <> Campaign
@@ -50,7 +50,7 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
         // However, we probably also need to store the user ID <> member ID mapping in the database
 
         Member? membership;
-        
+
         // If local ID is null 
         if (targetConsumer.RelationshipId is null)
         {
@@ -61,18 +61,20 @@ internal partial class PatreonConsumerStatusManager : ConsumerStatusManagerBase
             PatreonClient patreonClientCreator = _patreonApiProvider.GetPatreonApi(
                 targetConsumer.SupportTarget.ServiceToken!
             );
-            
-            membership = await FetchMembership(patreonClientCreator,targetConsumer.RelationshipId);
+
+            membership = await FetchMembership(patreonClientCreator, targetConsumer.RelationshipId);
         }
-        
+
         // If we didn't find a membership, the user is not a patron
         if (membership is null) return [];
-        
+
         return BuildMemberResult(membership);
     }
 
     private async Task<Member?> FindMembershipAndAssociate(TargetConsumerEntity targetConsumer, CancellationToken ct)
     {
+        using var _ = Diagnostics.ActivitySource.StartActivity();
+
         Member? membership = await DoFindMembership(targetConsumer, ct);
 
         if (membership is not null)
@@ -196,7 +198,7 @@ file static class EnumerableExtensions
     public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
         where T : class
     {
-        // (ab)use of implementation detail
+        // (ab)use of runtime/implementation detail
         return source.OfType<T>();
     }
 }
