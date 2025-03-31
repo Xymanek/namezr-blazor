@@ -61,7 +61,7 @@ public class EligibilityOptionEditModel
     public EligibilityPlanId? PlanId { get; set; }
 
     public string PriorityGroup { get; set; } = string.Empty;
-    public decimal PriorityModifier { get; set; } = 1;
+    public decimal PriorityModifier { get; set; } = 1; // TODO: rename: Weight
 
     [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
     internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>

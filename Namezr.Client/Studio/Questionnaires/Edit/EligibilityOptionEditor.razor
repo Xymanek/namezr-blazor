@@ -23,10 +23,14 @@
         />
     </div>
     <div class="col-2">
-        <HxInputNumber
-            Label="Priority modifier"
-            @bind-Value="Value.PriorityModifier"
-        />
+        <HxTooltip
+            Trigger="TooltipTrigger.Focus"
+            Text="How likely the entry is to be selected. An entry with a weight of 6 is twice as likely as one with a weight of 3. Highest weight per priority group is used. When multiple priority groups match, the highest weights will be summed together."
+        >
+            <HxInputNumber
+                Label="Weight"
+                @bind-Value="Value.PriorityModifier"/>
+        </HxTooltip>
     </div>
 
     <div class="col-1">
