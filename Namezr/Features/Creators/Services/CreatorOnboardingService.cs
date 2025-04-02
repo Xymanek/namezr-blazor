@@ -8,7 +8,7 @@ using Namezr.Client.Types;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Creators.Pages;
 using Namezr.Features.Identity.Data;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 using Namezr.Infrastructure.Data;
 using Namezr.Infrastructure.Discord;
 using Namezr.Infrastructure.Patreon;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 
 namespace Namezr.Features.Identity.Data;
 

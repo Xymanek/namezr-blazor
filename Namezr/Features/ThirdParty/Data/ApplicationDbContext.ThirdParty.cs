@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 
 // ReSharper disable once CheckNamespace
 namespace Namezr.Infrastructure.Data;

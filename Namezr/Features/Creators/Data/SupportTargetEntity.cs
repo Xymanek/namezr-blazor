@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
 using Namezr.Features.Identity.Data;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 using NodaTime;
 
 namespace Namezr.Features.Creators.Data;

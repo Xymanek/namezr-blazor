@@ -3,7 +3,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Namezr.Features.ThirdParty;
+namespace Namezr.Features.ThirdParty.Data;
 
 [EntityTypeConfiguration(typeof(ThirdPartyTokenConfiguration))]
 public class ThirdPartyToken

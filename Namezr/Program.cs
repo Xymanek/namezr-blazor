@@ -12,6 +12,7 @@ using Namezr.Components;
 using Namezr.Components.Account;
 using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
+using Namezr.Features.ThirdParty.Cli;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 using Namezr.Infrastructure.Discord;
@@ -245,11 +246,20 @@ var app = builder.Build();
 
 if (args.FirstOrDefault() == "migrate-db")
 {
-    using ApplicationDbContext dbContext = app.Services
+    await using ApplicationDbContext dbContext = app.Services
         .GetRequiredService<IDbContextFactory<ApplicationDbContext>>()
         .CreateDbContext();
 
     dbContext.Database.Migrate();
+    return;
+}
+
+if (args.FirstOrDefault() == "print-third-party-token")
+{
+    await app.Services
+        .GetRequiredService<PrintThirdPartyTokenCommand>()
+        .Execute(args.Skip(1));
+
     return;
 }
 

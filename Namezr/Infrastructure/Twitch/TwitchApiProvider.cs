@@ -4,7 +4,7 @@ using CommunityToolkit.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Namezr.Features.Identity.Data;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 using Namezr.Infrastructure.Data;
 using Namezr.Infrastructure.OAuth;
 using NodaTime;

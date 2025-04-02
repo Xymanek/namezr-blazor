@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Features.Identity.Data;
-using Namezr.Features.ThirdParty;
+using Namezr.Features.ThirdParty.Data;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 using NodaTime;
