@@ -6,8 +6,12 @@ namespace Namezr.Infrastructure.Data;
 
 public partial class ApplicationDbContext
 {
-    private static readonly string ThirdPartyTokenValueProtectorPurpose =
-        typeof(ThirdPartyToken).FullName! + "." + nameof(ThirdPartyToken.Value);
+    // Used to be
+    // `typeof(ThirdPartyToken).FullName! + "." + nameof(ThirdPartyToken.Value)`
+    // but the class moved to a different namespace and changing the purpose
+    // breaks the existing encrypted values
+    private const string ThirdPartyTokenValueProtectorPurpose =
+        "Namezr.Features.ThirdParty.ThirdPartyToken.Value";
 
     public DbSet<ThirdPartyToken> ThirdPartyTokens { get; set; } = null!;
 
