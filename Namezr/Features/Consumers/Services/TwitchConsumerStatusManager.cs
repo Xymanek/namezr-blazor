@@ -19,10 +19,8 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
     public override SupportServiceType ServiceType => SupportServiceType.Twitch;
 
     protected override bool IndividualQuerySupported => true;
-    
-    protected override async ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
-        TargetConsumerEntity targetConsumer
-    )
+
+    protected override async ValueTask<ConsumerResult?> QueryStatuses(TargetConsumerEntity targetConsumer)
     {
         ITwitchAPI twitchApi = await _twitchApiProvider
             .GetTwitchApi(targetConsumer.SupportTarget.ServiceToken!);
@@ -33,14 +31,14 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             .Subscriptions
             .GetUserSubscriptionsAsync(
                 targetConsumer.SupportTarget.ServiceId,
-                [targetConsumer.ServiceId]
+                [targetConsumer.ServiceUserId]
             );
 
         Task<GetChannelFollowersResponse> followsTask = twitchApi.Helix
             .Channels
             .GetChannelFollowersAsync(
                 broadcasterId: targetConsumer.SupportTarget.ServiceId,
-                userId: targetConsumer.ServiceId
+                userId: targetConsumer.ServiceUserId
             );
 
         GetUserSubscriptionsResponse subscriptions = await subscriptionTask;
@@ -49,14 +47,14 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
         // Instant? followedAt = (await followsTask).Data.SingleOrDefault()?.FollowedAt.ToInstant();
         bool following = (await followsTask).Data.SingleOrDefault() != null;
 
-        Dictionary<string, SupportStatusData> result = new();
+        Dictionary<string, SupportStatusData> statuses = new();
 
         // TODO: this approach currently does not create entities for non-current tiers - but do we need them?
         foreach (Subscription subscription in subscriptions.Data)
         {
             Guard.IsTrue(TwitchSubscriptionTiers.Contains(subscription.Tier));
 
-            result.Add(subscription.Tier, new SupportStatusData
+            statuses.Add(subscription.Tier, new SupportStatusData
             {
                 IsActive = true,
 
@@ -66,7 +64,7 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             });
         }
 
-        result.Add(TwitchSupportPlansIds.Follower, new SupportStatusData
+        statuses.Add(TwitchSupportPlansIds.Follower, new SupportStatusData
         {
             IsActive = following,
             EnrolledAt = null,
@@ -75,7 +73,13 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             ExpiresAt = null,
         });
 
-        return result;
+        return new ConsumerResult
+        {
+            ServiceUserId = targetConsumer.ServiceUserId,
+            RelationshipId = null, // There is no dedicated ID for "user in a specific channel"
+
+            SupportPlanStatuses = statuses,
+        };
     }
 
     private static readonly IReadOnlyList<string> TwitchSubscriptionTiers =
@@ -84,10 +88,10 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
         TwitchSupportPlansIds.Tier2,
         TwitchSupportPlansIds.Tier3,
     ];
-    
+
     protected override bool AllConsumersQuerySupported => false;
 
-    protected override ValueTask<Dictionary<string, Dictionary<string, SupportStatusData>>> QueryAllConsumersStatuses(
+    protected override ValueTask<IReadOnlyCollection<ConsumerResult>> QueryAllConsumersStatuses(
         SupportTargetEntity supportTarget
     )
     {

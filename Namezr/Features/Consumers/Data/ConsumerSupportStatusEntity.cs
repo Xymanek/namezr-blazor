@@ -19,8 +19,6 @@ public class ConsumerSupportStatusEntity
 
     public Instant? EnrolledAt { get; set; }
     public Instant? ExpiresAt { get; set; }
-
-    public required Instant LastSyncedAt { get; set; }
 }
 
 internal class ConsumerSupportStatusEntityConfiguration : IEntityTypeConfiguration<ConsumerSupportStatusEntity>

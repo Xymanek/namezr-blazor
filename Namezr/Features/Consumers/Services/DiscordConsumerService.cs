@@ -41,7 +41,9 @@ public partial class DiscordConsumerService
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
 
         TargetConsumerEntity? entity = await dbContext.TargetConsumers
-            .SingleOrDefaultAsync(x => x.ServiceId == userLogin.ProviderKey && x.SupportTargetId == supportTargetId);
+            .SingleOrDefaultAsync(x =>
+                x.ServiceUserId == userLogin.ProviderKey && x.SupportTargetId == supportTargetId
+            );
 
         if (entity is not null)
         {
@@ -53,7 +55,7 @@ public partial class DiscordConsumerService
             entity = new TargetConsumerEntity
             {
                 SupportTargetId = supportTargetId,
-                ServiceId = userLogin.ProviderKey,
+                ServiceUserId = userLogin.ProviderKey,
             };
 
             dbContext.TargetConsumers.Add(entity);
@@ -66,7 +68,7 @@ public partial class DiscordConsumerService
             // Race, it was already created
 
             return await dbContext.TargetConsumers
-                .SingleAsync(x => x.ServiceId == userLogin.ProviderKey && x.SupportTargetId == supportTargetId);
+                .SingleAsync(x => x.ServiceUserId == userLogin.ProviderKey && x.SupportTargetId == supportTargetId);
         }
     }
 }

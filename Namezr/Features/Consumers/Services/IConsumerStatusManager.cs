@@ -25,6 +25,7 @@ public interface IConsumerStatusManager
 internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManager
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly ILogger<ConsumerStatusManagerBase> _logger;
     private readonly IClock _clock;
 
     public abstract SupportServiceType ServiceType { get; }
@@ -56,26 +57,14 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         }
         else if (eagerness > UserStatusSyncEagerness.NoSync)
         {
-            if (
-                // Force sync if we have no data about the consumer status
-                targetConsumer.SupportStatuses!.Count < 1 &&
-                
-                // And there was no "all consumers sync" yet
-                (
-                    targetConsumer.SupportTarget.LastAllConsumersSyncAt == null ||
-                    
-                    // Or the last "all consumers sync" was too long ago
-                    targetConsumer.SupportTarget.LastAllConsumersSyncAt < _clock.GetCurrentInstant() - DefaultOutdatedExpiration
-                )
-            )
+            if (targetConsumer.LastSyncedAt == null)
             {
+                // Force sync if we have no data about the consumer status
                 syncNeeded = true;
             }
             else
             {
-                syncNeeded = targetConsumer.SupportStatuses.Any(supportStatus =>
-                    supportStatus.LastSyncedAt < _clock.GetCurrentInstant() - DefaultOutdatedExpiration
-                );
+                syncNeeded = targetConsumer.LastSyncedAt < _clock.GetCurrentInstant() - DefaultOutdatedExpiration;
             }
         }
 
@@ -86,7 +75,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
             // Refresh the targetConsumer. TODO: optimize?
             targetConsumer = await dbContext.TargetConsumers
                 .AsSplitQuery()
-                .AsTracking()
+                .AsNoTrackingWithIdentityResolution() // Important, otherwise we'll just get the old entities 
                 .Include(x => x.SupportTarget.ServiceToken)
                 .Include(x => x.SupportStatuses)
                 .SingleAsync(x => x.Id == consumerId);
@@ -107,14 +96,14 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
                 SupportTargetServiceId = targetConsumer.SupportTarget.ServiceId,
                 UserId = default, // TODO: oblivious here (user may not exist)
                 ConsumerId = consumerId,
-                ConsumerServiceId = targetConsumer.ServiceId,
+                ConsumerServiceId = targetConsumer.ServiceUserId,
                 Data = new SupportStatusData
                 {
                     IsActive = supportStatus.IsActive,
                     ExpiresAt = supportStatus.ExpiresAt,
                     EnrolledAt = supportStatus.EnrolledAt,
                 },
-                LastSyncedAt = supportStatus.LastSyncedAt,
+                LastSyncedAt = targetConsumer.LastSyncedAt!.Value,
             });
         }
 
@@ -128,8 +117,16 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
     {
         if (IndividualQuerySupported)
         {
-            await SyncConsumerStatus(consumer.Id);
-            return;
+            try
+            {
+                await DoSyncIndividualConsumer(consumer.Id);
+                return;
+            }
+            catch (SyncAllRequired)
+            {
+                LogSyncAllRequired(consumer.Id);
+                // Fall through to ForceSyncAllConsumersStatus
+            }
         }
 
         await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
@@ -151,7 +148,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
 
         Guard.IsTrue(supportTarget.ServiceType == ServiceType);
 
-        Dictionary<string, Dictionary<string, SupportStatusData>> consumersStatuses
+        IReadOnlyCollection<ConsumerResult> consumersResults
             = await QueryAllConsumersStatuses(supportTarget);
 
         // This will probably be every so slightly misaligned with the actual API response time but
@@ -160,44 +157,87 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         // to have the value once all requests are completed
         Instant checkedAt = _clock.GetCurrentInstant();
 
-        Dictionary<string, TargetConsumerEntity> unprocessedConsumers = supportTarget.Consumers!
-            .ToDictionary(x => x.ServiceId);
+        Dictionary<string, TargetConsumerEntity> consumersByServiceUserId = supportTarget.Consumers!
+            .ToDictionary(x => x.ServiceUserId);
 
-        foreach ((var consumerId, Dictionary<string, SupportStatusData> statusesInfo) in consumersStatuses)
+        Dictionary<string, TargetConsumerEntity> consumersByRelationshipId = supportTarget.Consumers!
+            .Where(x => x.RelationshipId is not null)
+            .ToDictionary(x => x.RelationshipId!);
+
+        HashSet<TargetConsumerEntity> unprocessedConsumers = supportTarget.Consumers!.ToHashSet();
+
+        foreach (ConsumerResult result in consumersResults)
         {
-            if (!unprocessedConsumers.Remove(consumerId, out TargetConsumerEntity? targetConsumer))
+            TargetConsumerEntity? targetConsumer = null;
+
+            if (result.RelationshipId is not null)
+            {
+                consumersByRelationshipId.TryGetValue(result.RelationshipId, out targetConsumer);
+            }
+
+            if (targetConsumer is null)
+            {
+                consumersByServiceUserId.TryGetValue(result.ServiceUserId, out targetConsumer);
+            }
+
+            if (targetConsumer != null)
+            {
+                unprocessedConsumers.Remove(targetConsumer);
+            }
+            else
             {
                 targetConsumer = new TargetConsumerEntity
                 {
-                    ServiceId = consumerId,
+                    ServiceUserId = result.ServiceUserId,
+                    RelationshipId = result.RelationshipId,
+
                     SupportStatuses = [],
                 };
 
                 supportTarget.Consumers!.Add(targetConsumer);
+                consumersByServiceUserId.Add(targetConsumer.ServiceUserId, targetConsumer);
+
+                if (targetConsumer.RelationshipId != null)
+                {
+                    consumersByRelationshipId.Add(targetConsumer.RelationshipId, targetConsumer);
+                }
             }
 
-            StoreConsumerStatusInfo(targetConsumer, statusesInfo, checkedAt);
+            StoreConsumerResult(targetConsumer, result, checkedAt);
         }
 
-        // Clear out any support statuses on consumers which were not returned.
-        // We assume that they no longer exist or at least no longer support the target.
-        foreach (TargetConsumerEntity targetConsumer in unprocessedConsumers.Values)
+        foreach (TargetConsumerEntity targetConsumer in unprocessedConsumers)
         {
-            foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
-            {
-                supportStatus.LastSyncedAt = checkedAt;
-                supportStatus.IsActive = false;
-                supportStatus.ExpiresAt = null;
-                supportStatus.EnrolledAt = null;
-            }
+            StoreConsumerResult(targetConsumer, null, checkedAt);
         }
-
-        supportTarget.LastAllConsumersSyncAt = checkedAt;
 
         await dbContext.SaveChangesAsync();
     }
 
     public async Task SyncConsumerStatus(Guid consumerId)
+    {
+        try
+        {
+            await DoSyncIndividualConsumer(consumerId);
+        }
+        catch (SyncAllRequired)
+        {
+            LogSyncAllRequired(consumerId);
+            await ForceAllSyncByConsumerId(consumerId);
+        }
+    }
+
+    private async Task ForceAllSyncByConsumerId(Guid consumerId)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
+
+        TargetConsumerEntity consumer = await dbContext.TargetConsumers
+            .SingleAsync(x => x.Id == consumerId);
+
+        await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
+    }
+
+    private async Task DoSyncIndividualConsumer(Guid consumerId)
     {
         if (!IndividualQuerySupported)
         {
@@ -220,7 +260,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
 
         Guard.IsTrue(targetConsumer.SupportTarget.ServiceType == ServiceType);
 
-        Dictionary<string, SupportStatusData> statusesInfo = await QueryStatuses(targetConsumer);
+        ConsumerResult? consumerResult = await QueryStatuses(targetConsumer);
 
         // This will probably be every so slightly misaligned with the actual API response time but
         // [a] it's really hard to get the exact time due to all the latencies (network, processing)
@@ -228,17 +268,64 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         // to have the value once all requests are completed
         Instant checkedAt = _clock.GetCurrentInstant();
 
-        StoreConsumerStatusInfo(targetConsumer, statusesInfo, checkedAt);
+        StoreConsumerResult(targetConsumer, consumerResult, checkedAt);
 
         await dbContext.SaveChangesAsync();
     }
 
-    private static void StoreConsumerStatusInfo(
+    /// <param name="targetConsumer"></param>
+    /// <param name="result">If null, the consumer is assumed to be gone.</param>
+    /// <param name="checkedAt"></param>
+    private static void StoreConsumerResult(
         TargetConsumerEntity targetConsumer,
-        Dictionary<string, SupportStatusData> statusesInfo,
+        ConsumerResult? result,
         Instant checkedAt
     )
     {
+        // First, mark as updated
+        targetConsumer.LastSyncedAt = checkedAt;
+
+        // Then, bail if we got nothing
+        if (result == null)
+        {
+            // Clear out any support statuses on consumers which were not returned.
+            // We assume that they no longer exist or at least no longer support the target.
+            foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
+            {
+                supportStatus.IsActive = false;
+                supportStatus.ExpiresAt = null;
+                supportStatus.EnrolledAt = null;
+            }
+
+            return;
+        }
+
+        // Ensure we got the right user
+        Guard.IsEqualTo(targetConsumer.ServiceUserId, result.ServiceUserId);
+
+        if (result.RelationshipId is null)
+        {
+            // If we got no relationship ID then ensure the stored record also has none
+            // There is currently no known scenario where a relationship ID "disappears"
+            Guard.IsNull(targetConsumer.RelationshipId);
+        }
+        else
+        {
+            // Store the relationship ID if we did not already know it (this happens with Patreon)
+            if (targetConsumer.RelationshipId is null)
+            {
+                targetConsumer.RelationshipId = result.RelationshipId;
+            }
+
+            // If we already had a relationship ID, ensure it matches
+            else
+            {
+                Guard.IsEqualTo(targetConsumer.RelationshipId, result.RelationshipId);
+            }
+        }
+
+        IReadOnlyDictionary<string, SupportStatusData> statusesInfo = result.SupportPlanStatuses;
+
         foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
         {
             if (statusesInfo.ContainsKey(supportStatus.SupportPlanId)) continue;
@@ -271,18 +358,10 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
                     IsActive = statusData.IsActive,
                     EnrolledAt = statusData.EnrolledAt,
                     ExpiresAt = statusData.ExpiresAt,
-
-                    LastSyncedAt = checkedAt,
                 };
 
                 targetConsumer.SupportStatuses!.Add(supportStatus);
             }
-        }
-
-        // Mark all as updated
-        foreach (ConsumerSupportStatusEntity supportStatus in targetConsumer.SupportStatuses!)
-        {
-            supportStatus.LastSyncedAt = checkedAt;
         }
     }
 
@@ -304,9 +383,20 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
     /// <exception cref="NotSupportedException">
     /// Thrown if <see cref="IndividualQuerySupported"/> is <see langword="false"/>.
     /// </exception>
-    protected abstract ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
+    protected abstract ValueTask<ConsumerResult?> QueryStatuses(
         TargetConsumerEntity targetConsumer
     );
+
+    /// <summary>
+    /// To be thrown ONLY BY <see cref="ConsumerStatusManagerBase.QueryStatuses"/>.
+    /// </summary>
+    protected class SyncAllRequired : Exception;
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "SyncAllRequired for consumer {ConsumerId}"
+    )]
+    private partial void LogSyncAllRequired(Guid consumerId);
 
     protected abstract bool AllConsumersQuerySupported { get; }
 
@@ -314,7 +404,15 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
     /// A dictionary where the key is the consumer  ID and the value is a dictionary.
     /// The inner dictionary is the same as <see cref="QueryStatuses"/>.
     /// </returns>
-    protected abstract ValueTask<Dictionary<string, Dictionary<string, SupportStatusData>>> QueryAllConsumersStatuses(
+    protected abstract ValueTask<IReadOnlyCollection<ConsumerResult>> QueryAllConsumersStatuses(
         SupportTargetEntity supportTarget
     );
+
+    protected class ConsumerResult
+    {
+        public required string ServiceUserId { get; init; }
+        public required string? RelationshipId { get; init; }
+
+        public required IReadOnlyDictionary<string, SupportStatusData> SupportPlanStatuses { get; init; }
+    }
 }
