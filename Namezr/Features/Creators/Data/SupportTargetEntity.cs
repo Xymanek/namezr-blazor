@@ -37,8 +37,6 @@ public class SupportTargetEntity
     public ThirdPartyToken? ServiceToken { get; set; }
     public long? ServiceTokenId { get; set; }
 
-    public Instant? LastAllConsumersSyncAt { get; set; }
-    
     public ICollection<SupportPlanInfoEntity>? SupportPlansInfos { get; set; }
     public ICollection<TargetConsumerEntity>? Consumers { get; set; }
 }

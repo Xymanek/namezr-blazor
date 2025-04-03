@@ -17,33 +17,36 @@ internal partial class DiscordConsumerStatusManager : ConsumerStatusManagerBase
     protected override bool IndividualQuerySupported => true;
 
     /// <inheritdoc/>
-    protected override async ValueTask<Dictionary<string, SupportStatusData>> QueryStatuses(
-        TargetConsumerEntity targetConsumer
-    )
+    protected override async ValueTask<ConsumerResult?> QueryStatuses(TargetConsumerEntity targetConsumer)
     {
         await using DiscordRestClient discordClient = await _discordApiProvider.GetDiscordApiForApp();
 
         RestGuildUser guildUser = await discordClient.GetGuildUserAsync(
             guildId: ulong.Parse(targetConsumer.SupportTarget.ServiceId),
-            id: ulong.Parse(targetConsumer.ServiceId)
+            id: ulong.Parse(targetConsumer.ServiceUserId)
         );
 
-        return guildUser.RoleIds.ToDictionary(roleId => roleId.ToString(), _ => new SupportStatusData
+        return new ConsumerResult
         {
-            IsActive = true,
+            ServiceUserId = targetConsumer.ServiceUserId,
+            RelationshipId = null, // There is no dedicated ID for "user in a specific guild"
 
-            // Discord role assignments never expire
-            ExpiresAt = null,
-            EnrolledAt = null
-        });
+            SupportPlanStatuses = guildUser.RoleIds.ToDictionary(roleId => roleId.ToString(), _ => new SupportStatusData
+            {
+                IsActive = true,
+
+                // Discord role assignments never expire
+                ExpiresAt = null,
+                EnrolledAt = null
+            }),
+        };
     }
 
     protected override bool AllConsumersQuerySupported => false;
 
-    protected override ValueTask<Dictionary<string, Dictionary<string, SupportStatusData>>>
-        QueryAllConsumersStatuses(
-            SupportTargetEntity supportTarget
-        )
+    protected override ValueTask<IReadOnlyCollection<ConsumerResult>> QueryAllConsumersStatuses(
+        SupportTargetEntity supportTarget
+    )
     {
         // TODO: can be supported
         throw new NotSupportedException();
