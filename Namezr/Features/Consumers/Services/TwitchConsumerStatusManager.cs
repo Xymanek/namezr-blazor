@@ -88,7 +88,8 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             {
                 response = await twitchApi.Helix.Subscriptions.GetBroadcasterSubscriptionsAsync(
                     broadcasterId: supportTarget.ServiceId,
-                    after: response?.Pagination.Cursor
+                    after: response?.Pagination.Cursor,
+                    first: 100 // max permitted in a single request
                 );
 
                 list.AddRange(response.Data);
@@ -106,7 +107,8 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             {
                 response = await twitchApi.Helix.Channels.GetChannelFollowersAsync(
                     broadcasterId: supportTarget.ServiceId,
-                    after: response?.Pagination.Cursor
+                    after: response?.Pagination.Cursor,
+                    first: 100 // max permitted in a single request
                 );
 
                 channelFollowers.AddRange(response.Data);
