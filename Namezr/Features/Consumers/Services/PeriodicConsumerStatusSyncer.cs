@@ -68,7 +68,8 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
         {
             try
             {
-                await managersPerService[supportTarget.ServiceType].ForceSyncAllConsumersStatus(supportTarget.Id);
+                await managersPerService[supportTarget.ServiceType]
+                    .ForceSyncAllConsumersStatusIfSupported(supportTarget.Id);
             }
             catch (Exception e)
             {

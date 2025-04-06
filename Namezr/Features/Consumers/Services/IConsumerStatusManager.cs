@@ -20,7 +20,7 @@ public interface IConsumerStatusManager
         Guid consumerId, UserStatusSyncEagerness eagerness
     );
 
-    ValueTask ForceSyncAllConsumersStatus(Guid supportTargetId);
+    Task ForceSyncAllConsumersStatusIfSupported(Guid supportTargetId);
 }
 
 [AutoConstructor]
@@ -132,6 +132,13 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         }
 
         await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
+    }
+
+    public async Task ForceSyncAllConsumersStatusIfSupported(Guid supportTargetId)
+    {
+        if (!AllConsumersQuerySupported) return;
+
+        await ForceSyncAllConsumersStatus(supportTargetId);
     }
 
     public async ValueTask ForceSyncAllConsumersStatus(Guid supportTargetId)
