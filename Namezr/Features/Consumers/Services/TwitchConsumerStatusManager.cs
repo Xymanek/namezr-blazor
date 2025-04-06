@@ -63,40 +63,14 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
         ITwitchAPI twitchApi = await _twitchApiProvider
             .GetTwitchApi(supportTarget.ServiceToken!);
 
-        // TODO: Query the API in parallel
-        
-        List<Subscription> subscriptions = [];
-        {
-            GetBroadcasterSubscriptionsResponse? response = null;
-            do
-            {
-                response = await twitchApi.Helix.Subscriptions.GetBroadcasterSubscriptionsAsync(
-                    broadcasterId: supportTarget.ServiceId,
-                    after: response?.Pagination.Cursor
-                );
+        // Query the API in parallel
+        Task<List<Subscription>> subscriptionsTask = FetchAllSubscriptions();
+        Task<List<ChannelFollower>> followersTask = FetchAllFollowers();
 
-                subscriptions.AddRange(response.Data);
-            } while (response is { Data.Length: > 0, Pagination.Cursor: not null });
-        }
-
-        List<ChannelFollower> followers = [];
-        {
-            GetChannelFollowersResponse? response = null;
-            do
-            {
-                response = await twitchApi.Helix.Channels.GetChannelFollowersAsync(
-                    broadcasterId: supportTarget.ServiceId,
-                    after: response?.Pagination.Cursor
-                );
-
-                followers.AddRange(response.Data);
-            } while (response is { Data.Length: > 0, Pagination.Cursor: not null });
-        }
-
-        Dictionary<string, Subscription> subscriptionsByUserId = subscriptions
+        Dictionary<string, Subscription> subscriptionsByUserId = (await subscriptionsTask)
             .ToDictionary(subscription => subscription.UserId);
 
-        Dictionary<string, ChannelFollower> followersByUserId = followers
+        Dictionary<string, ChannelFollower> followersByUserId = (await followersTask)
             .ToDictionary(follower => follower.UserId);
 
         return subscriptionsByUserId.Keys
@@ -104,6 +78,42 @@ internal partial class TwitchConsumerStatusManager : ConsumerStatusManagerBase
             .Select(userId => UserDataToConsumerResult(subscriptionsByUserId[userId], followersByUserId[userId]))
             .Where(x => x is not null)
             .ToArray()!;
+
+        async Task<List<Subscription>> FetchAllSubscriptions()
+        {
+            List<Subscription> list = [];
+            GetBroadcasterSubscriptionsResponse? response = null;
+
+            do
+            {
+                response = await twitchApi.Helix.Subscriptions.GetBroadcasterSubscriptionsAsync(
+                    broadcasterId: supportTarget.ServiceId,
+                    after: response?.Pagination.Cursor
+                );
+
+                list.AddRange(response.Data);
+            } while (response is { Data.Length: > 0, Pagination.Cursor: not null });
+
+            return list;
+        }
+
+        async Task<List<ChannelFollower>> FetchAllFollowers()
+        {
+            List<ChannelFollower> channelFollowers = [];
+            GetChannelFollowersResponse? response = null;
+
+            do
+            {
+                response = await twitchApi.Helix.Channels.GetChannelFollowersAsync(
+                    broadcasterId: supportTarget.ServiceId,
+                    after: response?.Pagination.Cursor
+                );
+
+                channelFollowers.AddRange(response.Data);
+            } while (response is { Data.Length: > 0, Pagination.Cursor: not null });
+
+            return channelFollowers;
+        }
     }
 
     private static ConsumerResult? UserDataToConsumerResult(Subscription? subscription, ChannelFollower? follower)
