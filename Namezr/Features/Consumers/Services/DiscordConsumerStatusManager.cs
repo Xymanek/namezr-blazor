@@ -1,4 +1,5 @@
-﻿using Discord.Rest;
+﻿using Discord;
+using Discord.Rest;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
 using Namezr.Features.Creators.Data;
@@ -31,9 +32,30 @@ internal partial class DiscordConsumerStatusManager : ConsumerStatusManagerBase
             return null;
         }
 
+        return GuildUserToConsumerResult(guildUser);
+    }
+
+    protected override bool AllConsumersQuerySupported => true;
+
+    protected override async ValueTask<IReadOnlyCollection<ConsumerResult>> QueryAllConsumersStatuses(
+        SupportTargetEntity supportTarget
+    )
+    {
+        await using DiscordRestClient discordClient = await _discordApiProvider.GetDiscordApiForApp();
+
+        RestGuild guild = await discordClient.GetGuildAsync(ulong.Parse(supportTarget.ServiceId));
+
+        return await guild.GetUsersAsync()
+            .Flatten()
+            .Select(GuildUserToConsumerResult)
+            .ToArrayAsync();
+    }
+
+    private static ConsumerResult GuildUserToConsumerResult(RestGuildUser guildUser)
+    {
         return new ConsumerResult
         {
-            ServiceUserId = targetConsumer.ServiceUserId,
+            ServiceUserId = guildUser.Id.ToString(),
             RelationshipId = null, // There is no dedicated ID for "user in a specific guild"
 
             SupportPlanStatuses = guildUser.RoleIds.ToDictionary(roleId => roleId.ToString(), _ => new SupportStatusData
@@ -45,15 +67,5 @@ internal partial class DiscordConsumerStatusManager : ConsumerStatusManagerBase
                 EnrolledAt = null
             }),
         };
-    }
-
-    protected override bool AllConsumersQuerySupported => false;
-
-    protected override ValueTask<IReadOnlyCollection<ConsumerResult>> QueryAllConsumersStatuses(
-        SupportTargetEntity supportTarget
-    )
-    {
-        // TODO: can be supported
-        throw new NotSupportedException();
     }
 }
