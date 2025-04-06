@@ -19,6 +19,8 @@ public interface IConsumerStatusManager
     Task<ICollection<UserSupportStatusEntry>> GetUserSupportStatuses(
         Guid consumerId, UserStatusSyncEagerness eagerness
     );
+
+    ValueTask ForceSyncAllConsumersStatus(Guid supportTargetId);
 }
 
 [AutoConstructor]
@@ -132,7 +134,7 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
     }
 
-    private async ValueTask ForceSyncAllConsumersStatus(Guid supportTargetId)
+    public async ValueTask ForceSyncAllConsumersStatus(Guid supportTargetId)
     {
         using Activity? activity = Diagnostics.ActivitySource.StartActivity()
             ?.AddTag("SupportTargetId", supportTargetId);

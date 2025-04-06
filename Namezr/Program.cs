@@ -10,6 +10,7 @@ using Namezr;
 using Namezr.Client;
 using Namezr.Components;
 using Namezr.Components.Account;
+using Namezr.Features.Consumers.Services;
 using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.ThirdParty.Cli;
@@ -64,6 +65,8 @@ builder.AddServiceDefaults();
 
 builder.Services.AddAppShared();
 builder.Services.AutoRegister();
+
+builder.Services.AddHostedService<PeriodicConsumerStatusSyncer>();
 
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
