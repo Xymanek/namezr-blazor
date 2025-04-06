@@ -21,10 +21,15 @@ internal partial class DiscordConsumerStatusManager : ConsumerStatusManagerBase
     {
         await using DiscordRestClient discordClient = await _discordApiProvider.GetDiscordApiForApp();
 
-        RestGuildUser guildUser = await discordClient.GetGuildUserAsync(
+        RestGuildUser? guildUser = await discordClient.GetGuildUserAsync(
             guildId: ulong.Parse(targetConsumer.SupportTarget.ServiceId),
             id: ulong.Parse(targetConsumer.ServiceUserId)
         );
+
+        if (guildUser is null)
+        {
+            return null;
+        }
 
         return new ConsumerResult
         {
