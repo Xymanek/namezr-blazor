@@ -17,6 +17,9 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Let the web stack, etc. initialize first
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+        
         while (!stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("Periodic consumer status sync starting");
