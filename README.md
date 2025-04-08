@@ -37,3 +37,9 @@ Example:
 ```
 
 + `ASPNETCORE_FORWARDEDHEADERS_ENABLED` = `true` for reverse proxy support (env var)
+
+# Third party setup
+
+## Discord
+
+* Requires `Server Members Intent` to be enabled
