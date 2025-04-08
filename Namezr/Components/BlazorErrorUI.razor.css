@@ -1,5 +1,6 @@
 ﻿#blazor-error-ui {
     color-scheme: light only;
+    color: black; /* Make it readable with the page being dark(/white text) by default */
     background: lightyellow;
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
