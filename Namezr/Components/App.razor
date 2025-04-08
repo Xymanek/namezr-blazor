@@ -1,4 +1,8 @@
-﻿@using Namezr.Client.Shared
+﻿@using System.Text.Json
+@using Namezr.Client
+@using Namezr.Client.Shared
+
+@inject IConfiguration Configuration
 
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
@@ -7,19 +11,25 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
-    
-    <link href="@Assets["_content/Havit.Blazor.Components.Web.Bootstrap/bootstrap.min.css"]" rel="stylesheet" />
-    
+
+    <script>
+        function @(ClientSentryBootstrap.FunctionName)() {
+            return @SentryDsnLiteral;
+        }
+    </script>
+
+    <link href="@Assets["_content/Havit.Blazor.Components.Web.Bootstrap/bootstrap.min.css"]" rel="stylesheet"/>
+
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["Namezr.styles.css"]"/>
-    
+
     <ImportMap/>
-    
+
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
-    
+
     <HeadOutlet/>
 </head>
 
@@ -27,11 +37,11 @@
 <Routes/>
 <script src="_framework/blazor.web.js"></script>
 @((MarkupString)HxSetup.RenderBootstrapJavaScriptReference())
-<WasmTrigger />
+<WasmTrigger/>
 
 @* Fancybox *@
 <script src="@Assets["lib/fancybox/5.0.36/fancybox.umd.js"]"></script>
-<link href="@Assets["lib/fancybox/5.0.36/fancybox.css"]" rel="stylesheet" />
+<link href="@Assets["lib/fancybox/5.0.36/fancybox.css"]" rel="stylesheet"/>
 <script>
     Fancybox.bind("[data-fancybox]", {
         // Causes a page refresh when closing the gallery
@@ -41,3 +51,19 @@
 </body>
 
 </html>
+
+@code {
+
+    private MarkupString SentryDsnLiteral
+    {
+        get
+        {
+            string? value = Configuration.GetValue<string?>("Sentry:PublicDsn");
+
+            // The case is safe since we are inlining the result as JS literal.
+            // And since JSON is a subset of JS literal, we are safe to not worry about escaping/escaping/etc.
+            return (MarkupString)JsonSerializer.Serialize(value);
+        }
+    }
+
+}

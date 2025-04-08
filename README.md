@@ -7,6 +7,7 @@ Example:
 ```json
 {
   "Sentry:Dsn": "...",
+  "Sentry:PublicDsn": "...",
   "ConnectionStrings": {
     "postgresdb": "Host=localhost;Port=5432;Database=namezr;Username=postgres;Password=postgres;Include Error Detail=true"
   },

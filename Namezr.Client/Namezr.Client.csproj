@@ -24,6 +24,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly"/>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" />
         <PackageReference Include="Riok.Mapperly" />
+        <PackageReference Include="Sentry.AspNetCore.Blazor.WebAssembly" />
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="vNext.BlazorComponents.FluentValidation" />
     </ItemGroup>

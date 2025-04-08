@@ -5,6 +5,8 @@ using vNext.BlazorComponents.FluentValidation;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
+builder.SetupSentry();
+
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
