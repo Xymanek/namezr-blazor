@@ -13,12 +13,20 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly ILogger<PeriodicConsumerStatusSyncer> _logger;
 
+    private static readonly TimeSpan StartupDelay = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan SyncInterval = TimeSpan.FromHours(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Let the web stack, etc. initialize first
-        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
+        _logger.LogInformation(
+            "Periodic consumer status sync - startup delay for {Duration} ms",
+            StartupDelay.TotalMilliseconds
+        );
+        await Task.Delay(StartupDelay, stoppingToken);
+
+        _logger.LogInformation("Periodic consumer status sync - startup delay complete");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -42,6 +50,8 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
                 "Periodic consumer status sync completed. Fully successful: {FullySuccessful}. Duration: {Duration} ms",
                 fullySuccessful, stopwatch.Elapsed.TotalMilliseconds
             );
+
+            stoppingToken.ThrowIfCancellationRequested();
 
             TimeSpan sleepTime = SyncInterval - stopwatch.Elapsed;
             if (sleepTime > TimeSpan.Zero)
