@@ -39,8 +39,8 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
             stopwatch.Stop();
 
             _logger.LogInformation(
-                "Periodic consumer status sync completed. Fully successful: {FullySuccessful}. Duration: {Duration}",
-                fullySuccessful, stopwatch.Elapsed
+                "Periodic consumer status sync completed. Fully successful: {FullySuccessful}. Duration: {Duration} ms",
+                fullySuccessful, stopwatch.Elapsed.TotalMilliseconds
             );
 
             TimeSpan sleepTime = SyncInterval - stopwatch.Elapsed;
