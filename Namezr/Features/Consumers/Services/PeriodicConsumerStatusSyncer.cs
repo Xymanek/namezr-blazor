@@ -19,15 +19,17 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
     {
         // Let the web stack, etc. initialize first
         await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-        
+
         while (!stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("Periodic consumer status sync starting");
 
             Stopwatch stopwatch = Stopwatch.StartNew();
+            bool fullySuccessful = false;
+
             try
             {
-                await DoSync(stoppingToken);
+                fullySuccessful = await DoSync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -35,8 +37,13 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
             }
 
             stopwatch.Stop();
-            TimeSpan sleepTime = SyncInterval - stopwatch.Elapsed;
 
+            _logger.LogInformation(
+                "Periodic consumer status sync completed. Fully successful: {FullySuccessful}. Duration: {Duration}",
+                fullySuccessful, stopwatch.Elapsed
+            );
+
+            TimeSpan sleepTime = SyncInterval - stopwatch.Elapsed;
             if (sleepTime > TimeSpan.Zero)
             {
                 _logger.LogInformation("Periodic consumer status sync sleeping for {SleepTime}", sleepTime);
@@ -52,7 +59,10 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
         }
     }
 
-    private async Task DoSync(CancellationToken ct)
+    /// <returns>
+    /// True if there were no exceptions (all targets were synced successfully).
+    /// </returns>
+    private async Task<bool> DoSync(CancellationToken ct)
     {
         // ReSharper disable once ExplicitCallerInfoArgument
         using var _ = Diagnostics.ActivitySource.StartActivity("PeriodicConsumerStatusSync");
@@ -67,6 +77,8 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
         SupportTargetEntity[] supportTargets = await dbContext.SupportTargets
             .ToArrayAsync(ct);
 
+        bool hadExceptions = false;
+
         foreach (SupportTargetEntity supportTarget in supportTargets)
         {
             try
@@ -76,6 +88,7 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
             }
             catch (Exception e)
             {
+                hadExceptions = true;
                 _logger.LogError(
                     e,
                     "Periodic consumer status sync failed for support target {SupportTargetId}",
@@ -83,5 +96,7 @@ public partial class PeriodicConsumerStatusSyncer : BackgroundService
                 );
             }
         }
+
+        return !hadExceptions;
     }
 }
