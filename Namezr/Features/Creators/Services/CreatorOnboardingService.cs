@@ -108,7 +108,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         using PatreonClient patreonApi = await _patreonApiProvider.GetPatreonApiForUser(userId);
         List<PotentialPatreonSupportTarget> targets = new();
 
-        await foreach (Campaign campaign in await patreonApi.GetCampaignsAsync(Includes.Tiers))
+        await foreach (Campaign campaign in await patreonApi.GetCampaignsAsync(Includes.Tiers | Includes.Creator))
         {
             // TODO: super suboptimal
             bool supportTargetAlreadyExists = await dbContext.SupportTargets
@@ -121,7 +121,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
                 ThirdPartyTokenId = userLogin.ThirdPartyTokenId,
 
                 CampaignId = campaign.Id,
-                Title = campaign.Vanity,
+                Title = campaign.Relationships.Creator.FullName,
                 Url = campaign.Url,
 
                 Tiers = campaign.Relationships.Tiers
