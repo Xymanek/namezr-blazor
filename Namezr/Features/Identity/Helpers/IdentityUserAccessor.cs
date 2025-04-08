@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Data;
 
-namespace Namezr.Components.Account;
+namespace Namezr.Features.Identity.Helpers;
 
 internal sealed class IdentityUserAccessor(
     UserManager<ApplicationUser> userManager,

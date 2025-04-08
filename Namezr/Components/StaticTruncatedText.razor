@@ -1,4 +1,9 @@
-﻿@if (Text is not null)
+﻿@* 
+    A version of <TruncatedText/> that does not add a tooltip if the text is truncated.
+    Perfect for use in never-interactable areas like page titles.
+*@
+
+@if (Text is not null)
 {
     @if (!IsTruncated)
     {

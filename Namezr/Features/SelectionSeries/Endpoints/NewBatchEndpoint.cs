@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires.Selection;
-using Namezr.Components.Account;
+using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.SelectionSeries.Services;
 using Namezr.Infrastructure.Data;

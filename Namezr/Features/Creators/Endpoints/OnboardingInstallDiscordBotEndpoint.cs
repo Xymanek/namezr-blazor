@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Namezr.Components.Account;
+using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Creators.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Discord;

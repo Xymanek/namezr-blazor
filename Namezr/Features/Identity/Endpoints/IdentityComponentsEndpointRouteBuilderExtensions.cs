@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using Namezr.Components.Account.Pages;
-using Namezr.Components.Account.Pages.Manage;
 using Namezr.Features.Identity.Data;
+using Namezr.Features.Identity.Pages;
+using Namezr.Features.Identity.Pages.Manage;
 
-namespace Namezr.Components.Account;
+namespace Namezr.Features.Identity.Endpoints;
 
 internal static class IdentityComponentsEndpointRouteBuilderExtensions
 {
-    // These endpoints are required by the Identity Razor components defined in the /Components/Account/Pages directory of this project.
+    // These endpoints are required by the Identity Razor components Pages directory of this feature.
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);

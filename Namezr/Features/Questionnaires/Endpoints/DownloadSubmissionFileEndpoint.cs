@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
-using Namezr.Components.Account;
+using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
