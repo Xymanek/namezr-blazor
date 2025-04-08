@@ -6,7 +6,6 @@
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
-@using Havit.Blazor.Components.Web.Bootstrap
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
 @using Namezr.Components.Account
@@ -18,6 +17,7 @@
 @using Namezr.Features.Files.Services
 @using Namezr.Features.Identity.Data
 @using Namezr.Features.Questionnaires.Services
+@using Namezr.Components
 
 @inject ApplicationDbContext DbContext
 @inject ISupportPlansService SupportPlansService
@@ -28,6 +28,11 @@
 
 @if (_versionEntity is not null)
 {
+    <PageTitle>
+        <StaticTruncatedText Text="@_versionEntity.Questionnaire.Title" MaxLength="25"/>
+        <CreatorPublicTitleSuffix Creator="_versionEntity.Questionnaire.Creator"/>
+    </PageTitle>
+
     <HxBreadcrumb>
         <HxBreadcrumbItem Text="Home" Href="/"/>
         <HxBreadcrumbItem Text="@_versionEntity.Questionnaire.Creator.DisplayName" Href="/"/>
@@ -101,7 +106,7 @@
     </HxCard>
 
     <div class="mb-2"></div>
-    
+
     @switch (_disabledReason)
     {
         case null:
@@ -112,7 +117,7 @@
                 Submissions are currently closed.
             </HxAlert>
             break;
-        
+
         case DisabledReason.NotLoggedIn:
             <HxAlert Color="ThemeColor.Warning">
                 Please log in to submit a response.
@@ -125,7 +130,7 @@
                 You are currently not eligible.
             </HxAlert>
             break;
-        
+
         case DisabledReason.AlreadyApproved:
             <HxAlert Color="ThemeColor.Secondary">
                 Your submission has already been approved and cannot be edited.

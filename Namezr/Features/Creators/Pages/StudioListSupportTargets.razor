@@ -7,10 +7,16 @@
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Client
 @using Namezr.Features.StudioCommon.Components
+@using Namezr.Components
 
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    Current support targets
+    <StudioTitleSuffix/>
+</PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>

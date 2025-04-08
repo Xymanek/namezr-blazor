@@ -2,10 +2,16 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Features.Creators.Components
+@using Namezr.Components
 
 @attribute [Authorize]
 
-<h3>New creator onboarding</h3>
+<PageTitle>
+    Creator onboarding
+    <PublicTitleSuffix/>
+</PageTitle>
+
+<h3>Creator onboarding</h3>
 
 <PotentialTargetSelector />
 

@@ -9,7 +9,10 @@
 @inject IUserStore<ApplicationUser> UserStore
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Manage your external logins</PageTitle>
+<PageTitle>
+    Manage your external logins
+    <PublicTitleSuffix/>
+</PageTitle>
 
 <StatusMessage/>
 @if (currentLogins?.Count > 0)

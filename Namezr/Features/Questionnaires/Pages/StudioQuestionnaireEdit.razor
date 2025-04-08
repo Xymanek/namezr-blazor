@@ -12,6 +12,7 @@
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Client
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -19,6 +20,12 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
+
+<PageTitle>
+    Edit |
+    <StaticTruncatedText Text="@_latestVersionEntity?.Questionnaire.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>

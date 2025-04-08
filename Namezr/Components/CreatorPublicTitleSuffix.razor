@@ -1,0 +1,13 @@
+@using Namezr.Features.Creators.Data
+
+|
+<StaticTruncatedText Text="@(Name ?? Creator?.DisplayName)" MaxLength="25" />
+<PublicTitleSuffix/>
+
+@code {
+    [Parameter]
+    public CreatorEntity? Creator { get; set; }
+
+    [Parameter]
+    public string? Name { get; set; }
+}

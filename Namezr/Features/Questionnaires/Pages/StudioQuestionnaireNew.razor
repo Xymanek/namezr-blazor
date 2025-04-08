@@ -9,12 +9,18 @@
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Client
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
+
+<PageTitle>
+    New questionnaires
+    <StudioTitleSuffix/>
+</PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>

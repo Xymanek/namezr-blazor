@@ -8,11 +8,17 @@
 @using Namezr.Infrastructure.Data
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    Questionnaires
+    <StudioTitleSuffix/>
+</PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>

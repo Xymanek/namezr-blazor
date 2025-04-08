@@ -4,10 +4,16 @@
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+@using Namezr.Components
 
 @inject ApplicationDbContext DbContext
 
-<h3>PublicCreatorsList</h3>
+<PageTitle>
+    Creators
+    <PublicTitleSuffix/>
+</PageTitle>
+
+<h3>Creators</h3>
 
 @foreach (CreatorEntity creator in _creators)
 {

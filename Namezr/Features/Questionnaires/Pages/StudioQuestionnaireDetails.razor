@@ -14,6 +14,7 @@
 @using Namezr.Client
 @using Namezr.Features.Questionnaires.Components
 @using Namezr.Client.Shared
+@using Namezr.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -21,6 +22,11 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
+
+<PageTitle>
+    <StaticTruncatedText Text="@_questionnaireVersion?.Questionnaire.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>

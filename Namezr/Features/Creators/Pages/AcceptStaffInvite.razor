@@ -7,6 +7,7 @@
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Identity.Data
 @using Namezr.Infrastructure.Data
+@using Namezr.Components
 
 @attribute [Authorize]
 
@@ -14,7 +15,12 @@
 @inject NavigationManager NavigationManager
 @inject IdentityUserAccessor UserAccessor
 
-<h3>AcceptStaffInvite</h3>
+<PageTitle>
+    Staff invite
+    <PublicTitleSuffix/>
+</PageTitle>
+
+<h3>Staff invite</h3>
 
 @_failReason
 
