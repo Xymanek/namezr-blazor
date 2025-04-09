@@ -58,7 +58,7 @@
     {
         get
         {
-            string? value = Configuration.GetValue<string?>("Sentry:PublicDsn");
+            string? value = Configuration.GetValue<string?>("Sentry:ClientDsn");
 
             // The case is safe since we are inlining the result as JS literal.
             // And since JSON is a subset of JS literal, we are safe to not worry about escaping/escaping/etc.
