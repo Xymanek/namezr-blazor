@@ -233,6 +233,8 @@ builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
 builder.Services.AddOptions<FilesOptions>()
     .BindConfiguration(FilesOptions.SectionPath);
 
+builder.Services.AddMemoryCache();
+
 if (builder.Environment.IsDevelopment())
 {
     // bind from configuration (appsettings.json, etc)
