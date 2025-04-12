@@ -118,6 +118,12 @@
             .Include(login => login.ThirdPartyToken)
             .ToArrayAsync(HttpContext.RequestAborted);
 
+        // TODO: maybe streaming rendering is the correct approach here?
+        CancellationTokenSource loginContextCts = CancellationTokenSource.CreateLinkedTokenSource(
+            HttpContext.RequestAborted
+        );
+        loginContextCts.CancelAfter(TimeSpan.FromSeconds(2));
+
         currentLogins = await userLogins
             .Select(async login =>
             {
@@ -128,7 +134,8 @@
                     try
                     {
                         return await providers[login.LoginProvider]
-                            .GetLoginContextAsync(login, HttpContext.RequestAborted);
+                            .GetLoginContextAsync(login, loginContextCts.Token)
+                            .DiscardWhenCancelled(loginContextCts.Token);
                     }
                     catch (Exception e)
                     {
