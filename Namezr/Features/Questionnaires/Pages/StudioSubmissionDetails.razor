@@ -14,7 +14,12 @@
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Features.Questionnaires.Components
 @using Namezr.Client.Shared
+@using Namezr.Client.Types
 @using Namezr.Features.Identity.Helpers
+@using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Consumers.Services
+@using Namezr.Features.Eligibility.Data
+@using Namezr.Features.Creators.Services
 @using Namezr.Components
 
 @attribute [Authorize]
@@ -25,6 +30,8 @@
 @inject NavigationManager NavigationManager
 @inject IdentityUserAccessor UserAccessor
 @inject IClock Clock
+@inject IEligibilityService EligibilityService
+@inject ISupportPlansService SupportPlansService
 
 @if (_submission is not null)
 {
@@ -33,7 +40,7 @@
         <StaticTruncatedText Text="@_submission.Version.Questionnaire.Title" MaxLength="25"/>
         <StudioTitleSuffix/>
     </PageTitle>
-    
+
     <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
         <HxBreadcrumb>
             <QuestionnaireBreadcrumbs
@@ -51,7 +58,7 @@
             />
         </HxBreadcrumb>
     </SectionContent>
-    
+
     <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
         Submission details
     </SectionContent>
@@ -177,6 +184,108 @@
     </table>
 }
 
+@if (_submission != null && _eligibilityResult is not null)
+{
+    <HxCard>
+        <HeaderTemplate>
+            <div class="d-flex flex-row align-items-center gap-3">
+                <span>
+                    Eligibility
+                </span>
+
+                @if (!_eligibilityResult.Any)
+                {
+                    <span class="badge bg-danger">Ineligible</span>
+                }
+                else
+                {
+                    <span class="badge bg-success">Eligible</span>
+                    <span class="badge bg-primary">
+                        Weight: @_eligibilityResult.Modifier
+                    </span>
+                }
+            </div>
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Support plan type</th>
+                    <th>Support plan</th>
+                    <th>Priority group</th>
+                    <th>Priority modifier</th>
+                    <th style="width: 1%; white-space: nowrap;">Eligible</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                @foreach (
+                    EligibilityOptionEntity option in
+                    _submission.Version.Questionnaire.EligibilityConfiguration.Options!
+                )
+                {
+                    EligibilityPlan? eligibilityPlan = _eligibilityPlans.GetValueOrDefault(option.PlanId);
+
+                    <tr>
+                        <td>
+                            @switch (eligibilityPlan?.Type)
+                            {
+                                case null:
+                                    <i>Unknown</i>
+                                    break;
+
+                                case EligibilityType.Virtual:
+                                    <span>Virtual</span>
+                                    break;
+
+                                case EligibilityType.SupportPlan:
+                                    <span>@eligibilityPlan.SupportPlan?.ServiceType</span>
+                                    break;
+
+                                default:
+                                    throw new UnreachableException();
+                            }
+                        </td>
+                        <td>
+                            @switch (eligibilityPlan?.Type)
+                            {
+                                case null:
+                                    <i>Unknown</i>
+                                    break;
+
+                                case EligibilityType.Virtual:
+                                    <span>@eligibilityPlan.VirtualEligibilityType</span>
+                                    break;
+
+                                case EligibilityType.SupportPlan:
+                                    <span>@eligibilityPlan.SupportPlan?.DisplayName</span>
+                                    break;
+
+                                default:
+                                    throw new UnreachableException();
+                            }
+                        </td>
+                        <td>@option.PriorityGroup</td>
+                        <td>@option.PriorityModifier</td>
+                        <td style="width: 1%; white-space: nowrap; text-align: right;">
+                            @if (_eligibilityResult.EligiblePlanIds.Contains(option.PlanId))
+                            {
+                                <span class="badge bg-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">No</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </BodyTemplate>
+    </HxCard>
+}
+
 @code {
 
     [CascadingParameter]
@@ -195,6 +304,8 @@
     public Guid SubmissionId { get; set; }
 
     private QuestionnaireSubmissionEntity? _submission;
+    private EligibilityResult? _eligibilityResult;
+    private Dictionary<EligibilityPlanId, EligibilityPlan> _eligibilityPlans = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -205,11 +316,26 @@
         _submission = await dbContext.QuestionnaireSubmissions
             .AsNoTracking()
             .AsSplitQuery()
-            .Include(x => x.Version.Questionnaire)
+            .Include(x => x.Version.Questionnaire.EligibilityConfiguration)
+            .ThenInclude(x => x.Options!)
             .Include(x => x.Version.Fields!).ThenInclude(x => x.Field)
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
+
+        // TODO: 404 if not found
+
+        _eligibilityPlans = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                await SupportPlansService.GetSupportPlans(_submission!.Version.Questionnaire.CreatorId)
+            )
+            .ToDictionary(plan => plan.Id);
+
+        _eligibilityResult = await EligibilityService.ClassifyEligibility(
+            _submission!.User.Id,
+            _submission.Version.Questionnaire.EligibilityConfiguration,
+            UserStatusSyncEagerness.MissingStatusOnly
+        );
     }
 
     private async Task HandleGrantApproval()
