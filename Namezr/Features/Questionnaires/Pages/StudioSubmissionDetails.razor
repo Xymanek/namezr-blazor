@@ -108,14 +108,7 @@
             <th>Is approved</th>
             <td>
                 <div class="d-flex justify-content-between align-items-center gap-3">
-                    @if (_submission.ApprovedAt is not null)
-                    {
-                        <div>Yes</div>
-                    }
-                    else
-                    {
-                        <div>No</div>
-                    }
+                    <YesNoBadge Value="@(_submission.ApprovedAt is not null)"/>
                 </div>
             </td>
         </tr>
@@ -214,7 +207,7 @@
                     <th>Support plan type</th>
                     <th>Support plan</th>
                     <th>Priority group</th>
-                    <th>Priority modifier</th>
+                    <th>Weight</th>
                     <th style="width: 1%; white-space: nowrap;">Eligible</th>
                 </tr>
                 </thead>
@@ -269,14 +262,7 @@
                         <td>@option.PriorityGroup</td>
                         <td>@option.PriorityModifier</td>
                         <td style="width: 1%; white-space: nowrap; text-align: right;">
-                            @if (_eligibilityResult.EligiblePlanIds.Contains(option.PlanId))
-                            {
-                                <span class="badge bg-success">Yes</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">No</span>
-                            }
+                            <YesNoBadge Value="@(_eligibilityResult.EligiblePlanIds.Contains(option.PlanId))"/>
                         </td>
                     </tr>
                 }

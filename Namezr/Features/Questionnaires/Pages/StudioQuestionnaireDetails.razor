@@ -78,7 +78,7 @@
         <tr>
             <th>Support plan</th>
             <th>Priority group</th>
-            <th>Priority modifier</th>
+            <th>Weight</th>
         </tr>
         </thead>
 
@@ -176,7 +176,9 @@
                 <td>
                     <RelativeTime Value="submission.SubmittedAt.ToDateTimeOffset()"/>
                 </td>
-                <td>@(submission.ApprovedAt != null ? "Yes" : "No")</td>
+                <td>
+                    <YesNoBadge Value="@(submission.ApprovedAt != null)"/>
+                </td>
                 <td>@submission.VersionId</td>
                 <td>
                     <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions/@submission.Id.NoHyphens()"
