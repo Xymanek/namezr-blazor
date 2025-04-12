@@ -19,6 +19,7 @@ using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 using Namezr.Infrastructure.Discord;
 using Namezr.Infrastructure.Http;
+using Namezr.Infrastructure.OAuth;
 using Namezr.Infrastructure.Twitch;
 using Namezr.Infrastructure.Twitch.MockServer;
 using NodaTime;
@@ -166,9 +167,11 @@ builder.Services.AddAuthentication().AddGoogle(options =>
     options.ClientSecret =
         builder.Configuration["Google:ClientSecret"] ?? throw new Exception("Missing Google:ClientSecret");
 
-    // Tokens are not persisted currently
-    // options.SaveTokens = true;
+    options.SaveTokens = true;
+    options.AccessType = "offline";
 });
+
+builder.Services.AddSingleton(typeof(IOAuthTokenRefresher<>), typeof(OAuthTokenRefresher<>));
 
 // AddOAuth() call since we replace the auth handler
 builder.Services.AddAuthentication()
@@ -232,6 +235,8 @@ builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
 
 builder.Services.AddOptions<FilesOptions>()
     .BindConfiguration(FilesOptions.SectionPath);
+
+builder.Services.AddMemoryCache();
 
 if (builder.Environment.IsDevelopment())
 {

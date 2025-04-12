@@ -28,6 +28,7 @@
         <PackageReference Include="Discord.Net.Rest" />
         <PackageReference Include="EntityFrameworkCore.Exceptions.PostgreSQL" />
         <PackageReference Include="FluentValidation" />
+        <PackageReference Include="Google.Apis.PeopleService.v1" />
         <PackageReference Include="Immediate.Apis" />
         <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
