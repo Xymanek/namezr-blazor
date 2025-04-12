@@ -29,11 +29,13 @@ internal abstract partial class CachingLoginContextProviderBase : ILoginContextP
 
     public abstract string Provider { get; }
 
-    public async Task<LoginContext> GetLoginContextAsync(ApplicationUserLogin userLogin,
-        CancellationToken ct = default)
+    public async Task<LoginContext> GetLoginContextAsync(
+        ApplicationUserLogin userLogin,
+        CancellationToken ct = default
+    )
     {
         LoginContext? value = await _cache.GetOrCreateAsync<LoginContext>(
-            $"LoginContextProvider__{Provider}__{userLogin}",
+            $"LoginContextProvider__{Provider}__{userLogin.ProviderKey}",
             _ => FetchLoginContextAsync(userLogin, ct),
             new MemoryCacheEntryOptions
             {
