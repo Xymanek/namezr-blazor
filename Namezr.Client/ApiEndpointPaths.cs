@@ -12,4 +12,6 @@ public static class ApiEndpointPaths
 
     public const string FilesUpload = "/api/files/upload";
     public const string FilesDownloadNew = "/api/files/download-new";
+    
+    public const string CreatorsLogoDownload = "/api/creators/logo-download";
 }

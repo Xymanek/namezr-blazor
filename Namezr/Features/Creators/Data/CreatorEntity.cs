@@ -7,13 +7,17 @@ public class CreatorEntity
 {
     public Guid Id { get; set; }
 
-    [MaxLength(100)]
+    [MaxLength(MaxDisplayNameLength)]
     public required string DisplayName { get; set; }
-    
-    // TODO: Banner & small image
+
+    public Guid? LogoFileId { get; set; }
+
+    // TODO: Banner?
 
     public ICollection<SupportTargetEntity>? SupportTargets { get; set; }
     public ICollection<CreatorStaffEntity>? Staff { get; set; }
-    
+
     public ICollection<QuestionnaireEntity>? Questionnaires { get; set; }
+    
+    public const int MaxDisplayNameLength = 100;
 }

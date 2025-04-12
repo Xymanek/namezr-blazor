@@ -45,12 +45,16 @@
 
         <HxSidebarItem Text="Configuration" Icon="BootstrapIcon.GearFill">
             <HxSidebarItem
-                Text="Staff"
-                Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/staff")
+                Text="Profile"
+                Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/profile")
             />
             <HxSidebarItem
                 Text="Support targets"
                 Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/targets")
+            />
+            <HxSidebarItem
+                Text="Staff"
+                Href=@($"studio/{CurrentCreatorId?.NoHyphens()}/config/staff")
             />
         </HxSidebarItem>
     </ItemsTemplate>

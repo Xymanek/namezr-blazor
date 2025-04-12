@@ -1,0 +1,127 @@
+﻿@page "/studio/{creatorId:guid}/config/profile"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Infrastructure.Data
+@using Namezr.Components
+@using Namezr.Features.StudioCommon.Components
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Creators.Models
+@using vNext.BlazorComponents.FluentValidation
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>
+    Creator profile
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <ConfigurationBreadcrumbItems CreatorId="CreatorId"/>
+
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/config/profile")
+            Text="Profile"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Creator profile
+</SectionContent>
+
+<HxCard>
+    <BodyTemplate>
+        <EditForm Model="FormModel" OnValidSubmit="HandleValidSubmit" FormName="update-creator-profile">
+            <FluentValidationValidator/>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <HxInputText
+                        Label="Display name"
+                        @bind-Value="FormModel.DisplayName"
+                    />
+                </div>
+
+                <div class="col-lg-6">
+                    <strong>Logo</strong>
+
+                    @* TODO: current *@
+
+                    @*<HxInputFile
+                        @bind-Value="FormModel.LogoReplacement"
+                    />*@
+                </div>
+            </div>
+
+            <HxSubmit
+                Text="Save"
+                Color="ThemeColor.Primary"
+            />
+        </EditForm>
+    </BodyTemplate>
+</HxCard>
+
+@code {
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [SupplyParameterFromForm]
+    private CreatorProfileFromModel FormModel { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        bool populateForm = false;
+
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (FormModel is null)
+        {
+            populateForm = true;
+            FormModel = new CreatorProfileFromModel();
+        }
+
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        if (populateForm)
+        {
+            await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            CreatorEntity creator = await dbContext.Creators
+                .SingleAsync(x => x.Id == CreatorId);
+
+            FormModel.DisplayName = creator.DisplayName;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        CreatorEntity creator = await dbContext.Creators
+            .AsTracking()
+            .SingleAsync(x => x.Id == CreatorId);
+
+        creator.DisplayName = FormModel.DisplayName;
+
+        await dbContext.SaveChangesAsync();
+        
+        // Reload the page with new info and to avoid the "do you want to resubmit form"
+        // prompt if user manually tries to refresh the page
+        NavigationManager.Refresh();
+        
+        // TODO: success message
+    }
+
+}
