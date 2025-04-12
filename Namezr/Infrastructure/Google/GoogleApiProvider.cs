@@ -16,6 +16,7 @@ internal interface IGoogleApiProvider
 }
 
 [AutoConstructor]
+[RegisterSingleton]
 internal partial class GoogleApiProvider : IGoogleApiProvider
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
