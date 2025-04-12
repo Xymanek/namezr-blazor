@@ -31,7 +31,11 @@ internal abstract partial class OAuthLoginHandler : ILoginProviderHandler
         ApplicationUserLogin userLogin = await dbContext.UserLogins
             .AsTracking()
             .Include(x => x.ThirdPartyToken)
-            .SingleAsync(x => x.UserId == signInInfo.User.Id && x.LoginProvider == LoginProvider);
+            .SingleAsync(x =>
+                x.UserId == signInInfo.User.Id &&
+                x.LoginProvider == LoginProvider &&
+                x.ProviderKey == signInInfo.ExternalLoginInfo.ProviderKey
+            );
 
         AugmentUserLogin(signInInfo, userLogin);
 
