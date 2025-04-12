@@ -38,10 +38,10 @@
                     {
                         @if (context.ImageUrl is not null)
                         {
-                            <img 
-                                src="@context.ImageUrl" 
-                                width="32" 
-                                height="32" 
+                            <img
+                                src="@context.ImageUrl"
+                                width="32"
+                                height="32"
                                 alt="@context.DisplayName profile picture"
                                 class="rounded-circle me-2"
                             />
@@ -57,16 +57,19 @@
                 <td style="width: 1%; white-space: nowrap;" class="px-3">
                     @if (showRemoveButton)
                     {
-                        <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync"
-                              method="post">
+                        <form
+                            @formname="@($"remove-login-{login.LoginProvider}-{login.ProviderKey}")"
+                            @onsubmit="OnSubmitAsync"
+                            method="post"
+                        >
                             <AntiforgeryToken/>
-                                <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
-                                <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
-                                <HxSubmit
-                                    Color="ThemeColor.Danger"
-                                    Icon="BootstrapIcon.Trash"
-                                    title="Remove"
-                                />
+                            <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
+                            <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
+                            <HxSubmit
+                                Color="ThemeColor.Danger"
+                                Icon="BootstrapIcon.Trash"
+                                title="Remove"
+                            />
                         </form>
                     }
                     else
@@ -79,7 +82,7 @@
         </tbody>
     </table>
 }
-@if (otherLogins?.Count > 0)
+@if (newLoginSchemes?.Count > 0)
 {
     <h4>Add another service to log in.</h4>
     <hr/>
@@ -87,7 +90,7 @@
         <AntiforgeryToken/>
         <div>
             <p>
-                @foreach (var provider in otherLogins)
+                @foreach (var provider in newLoginSchemes)
                 {
                     <button type="submit" class="btn btn-primary" name="Provider" value="@provider.Name"
                             title="Log in using your @provider.DisplayName account">
@@ -103,7 +106,7 @@
     public const string LinkLoginCallbackAction = "LinkLoginCallback";
 
     private ApplicationUser user = default!;
-    private IList<AuthenticationScheme>? otherLogins;
+    private IList<AuthenticationScheme>? newLoginSchemes;
     private bool showRemoveButton;
     private (ApplicationUserLogin login, LoginContext? context)[]? currentLogins;
 
@@ -163,8 +166,7 @@
             })
             .WhenAll();
 
-        otherLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync())
-            .Where(auth => currentLogins.All(ul => auth.Name != ul.login.LoginProvider))
+        newLoginSchemes = (await SignInManager.GetExternalAuthenticationSchemesAsync())
             .ToList();
 
         // string? passwordHash = null;
