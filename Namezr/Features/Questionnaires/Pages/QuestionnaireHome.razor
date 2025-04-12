@@ -3,6 +3,7 @@
 @using System.Collections.Immutable
 @using System.Diagnostics
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
@@ -39,7 +40,21 @@
         <HxBreadcrumbItem Text="Questionnaires" Href="/"/>
     </HxBreadcrumb>
 
-    <h3>@_versionEntity?.Questionnaire.Title</h3>
+    <div class="d-flex flex-row gap-4">
+        @if (_versionEntity.Questionnaire.Creator.LogoFileId is not null)
+        {
+            <img
+                src="@($"{ApiEndpointPaths.CreatorsLogoDownload}?creatorId={_versionEntity.Questionnaire.CreatorId}")"
+                alt="Creator logo"
+                style="max-width: 250px; max-height: 250px;"
+            />
+        }
+
+        <div>
+            <strong>@_versionEntity.Questionnaire.Creator.DisplayName</strong>
+            <h3>@_versionEntity?.Questionnaire.Title</h3>
+        </div>
+    </div>
 
     <div>
         <pre>@_versionEntity?.Questionnaire.Description</pre>
