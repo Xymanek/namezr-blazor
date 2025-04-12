@@ -1,5 +1,6 @@
 ﻿@page "/Account/Manage/ExternalLogins"
 
+@using System.Drawing
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
@@ -35,27 +36,37 @@
                 <td>
                     @if (context is not null)
                     {
-                        @context.DisplayName
+                        @if (context.ImageUrl is not null)
+                        {
+                            <img 
+                                src="@context.ImageUrl" 
+                                width="32" 
+                                height="32" 
+                                alt="@context.DisplayName profile picture"
+                                class="rounded-circle me-2"
+                            />
+                        }
+
+                        <span>@context.DisplayName</span>
                     }
                     else
                     {
                         <em>Failed to load</em>
                     }
                 </td>
-                <td>
+                <td style="width: 1%; white-space: nowrap;" class="px-3">
                     @if (showRemoveButton)
                     {
                         <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync"
                               method="post">
                             <AntiforgeryToken/>
-                            <div>
                                 <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
                                 <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
-                                <button type="submit" class="btn btn-primary"
-                                        title="Remove this @login.ProviderDisplayName login from your account">
-                                    Remove
-                                </button>
-                            </div>
+                                <HxSubmit
+                                    Color="ThemeColor.Danger"
+                                    Icon="BootstrapIcon.Trash"
+                                    title="Remove"
+                                />
                         </form>
                     }
                     else
@@ -114,8 +125,10 @@
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         ApplicationUserLogin[] userLogins = await dbContext.UserLogins
-            .Where(login => login.UserId == user.Id)
             .Include(login => login.ThirdPartyToken)
+            .Where(login => login.UserId == user.Id)
+            .OrderBy(login => login.LoginProvider)
+            .ThenBy(login => login.ProviderKey)
             .ToArrayAsync(HttpContext.RequestAborted);
 
         // TODO: maybe streaming rendering is the correct approach here?
