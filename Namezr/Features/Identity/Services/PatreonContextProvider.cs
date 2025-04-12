@@ -1,4 +1,6 @@
 ﻿using AspNet.Security.OAuth.Patreon;
+using CommunityToolkit.Diagnostics;
+using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Patreon;
 using Patreon.Net;
 using Patreon.Net.Models;
@@ -13,9 +15,14 @@ internal partial class PatreonContextProvider : CachingLoginContextProviderBase
 
     public override string Provider => PatreonAuthenticationDefaults.AuthenticationScheme;
 
-    protected override async Task<LoginContext> FetchLoginContextAsync(string providerKey, CancellationToken ct)
+    protected override async Task<LoginContext> FetchLoginContextAsync(
+        ApplicationUserLogin userLogin,
+        CancellationToken ct
+    )
     {
-        PatreonClient patreonApi = _patreonApiProvider.GetPatreonApi(null! /* TODO */);
+        Guard.IsNotNull(userLogin.ThirdPartyToken);
+
+        PatreonClient patreonApi = _patreonApiProvider.GetPatreonApi(userLogin.ThirdPartyToken);
         User user = await patreonApi.GetIdentityAsync();
 
         return new LoginContext

@@ -1,4 +1,6 @@
 ﻿using AspNet.Security.OAuth.Twitch;
+using CommunityToolkit.Diagnostics;
+using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Twitch;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 using TwitchLib.Api.Interfaces;
@@ -13,11 +15,16 @@ internal partial class TwitchContextProvider : CachingLoginContextProviderBase
 
     public override string Provider => TwitchAuthenticationDefaults.AuthenticationScheme;
 
-    protected override async Task<LoginContext> FetchLoginContextAsync(string providerKey, CancellationToken ct)
+    protected override async Task<LoginContext> FetchLoginContextAsync(
+        ApplicationUserLogin userLogin,
+        CancellationToken ct
+    )
     {
-        ITwitchAPI twitchApi = await _twitchApiProvider.GetTwitchApi(null! /* TODO */);
+        Guard.IsNotNull(userLogin.ThirdPartyToken);
+        
+        ITwitchAPI twitchApi = await _twitchApiProvider.GetTwitchApi(userLogin.ThirdPartyToken);
 
-        GetUsersResponse response = await twitchApi.Helix.Users.GetUsersAsync(ids: [providerKey]);
+        GetUsersResponse response = await twitchApi.Helix.Users.GetUsersAsync(ids: [userLogin.ProviderKey]);
         User user = response.Users.Single();
 
         return new LoginContext

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
+using Namezr.Features.Identity.Data;
 
 namespace Namezr.Features.Identity.Services;
 
@@ -8,8 +9,11 @@ internal interface ILoginContextProvider
 {
     string Provider { get; }
 
-    // TODO: pass application login with loaded third party token
-    Task<LoginContext> GetLoginContextAsync(string providerKey, CancellationToken ct = default);
+    /// <param name="userLogin">
+    /// Must Have <see cref="ApplicationUserLogin.ThirdPartyToken"/> loaded
+    /// </param>
+    /// <param name="ct"></param>
+    Task<LoginContext> GetLoginContextAsync(ApplicationUserLogin userLogin, CancellationToken ct = default);
 }
 
 internal record LoginContext
@@ -25,11 +29,12 @@ internal abstract partial class CachingLoginContextProviderBase : ILoginContextP
 
     public abstract string Provider { get; }
 
-    public async Task<LoginContext> GetLoginContextAsync(string providerKey, CancellationToken ct = default)
+    public async Task<LoginContext> GetLoginContextAsync(ApplicationUserLogin userLogin,
+        CancellationToken ct = default)
     {
         LoginContext? value = await _cache.GetOrCreateAsync<LoginContext>(
-            $"LoginContextProvider__{Provider}__{providerKey}",
-            _ => FetchLoginContextAsync(providerKey, ct),
+            $"LoginContextProvider__{Provider}__{userLogin}",
+            _ => FetchLoginContextAsync(userLogin, ct),
             new MemoryCacheEntryOptions
             {
                 // TODO: make configurable
@@ -41,5 +46,5 @@ internal abstract partial class CachingLoginContextProviderBase : ILoginContextP
         return value;
     }
 
-    protected abstract Task<LoginContext> FetchLoginContextAsync(string providerKey, CancellationToken ct);
+    protected abstract Task<LoginContext> FetchLoginContextAsync(ApplicationUserLogin userLogin, CancellationToken ct);
 }

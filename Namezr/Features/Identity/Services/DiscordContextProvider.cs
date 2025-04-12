@@ -1,5 +1,6 @@
 ﻿using AspNet.Security.OAuth.Discord;
 using Discord.Rest;
+using Namezr.Features.Identity.Data;
 using Namezr.Infrastructure.Discord;
 
 namespace Namezr.Features.Identity.Services;
@@ -15,11 +16,14 @@ internal partial class DiscordContextProvider
 
     public override string Provider => DiscordAuthenticationDefaults.AuthenticationScheme;
 
-    protected override async Task<LoginContext> FetchLoginContextAsync(string providerKey, CancellationToken ct)
+    protected override async Task<LoginContext> FetchLoginContextAsync(
+        ApplicationUserLogin userLogin,
+        CancellationToken ct
+    )
     {
         await using DiscordRestClient client = await _apiProvider.GetDiscordApiForApp();
 
-        RestUser user = await client.GetUserAsync(ulong.Parse(providerKey));
+        RestUser user = await client.GetUserAsync(ulong.Parse(userLogin.ProviderKey));
 
         return new LoginContext
         {
