@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.Components.Forms;
 using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Creators.Models;
@@ -8,7 +7,7 @@ public class CreatorProfileFromModel
 {
     public string DisplayName { get; set; } = string.Empty;
 
-    public IBrowserFile? LogoReplacement { get; set; }
+    public IFormFile? LogoReplacement { get; set; }
 
     [RegisterSingleton(typeof(IValidator<CreatorProfileFromModel>))]
     public class Validator : AbstractValidator<CreatorProfileFromModel>

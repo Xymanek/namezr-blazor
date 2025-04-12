@@ -10,12 +10,14 @@
 @using Namezr.Client
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Creators.Models
+@using Namezr.Features.Files.Helpers
 @using vNext.BlazorComponents.FluentValidation
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ILogoStorageHelper LogoStorageHelper
 @inject NavigationManager NavigationManager
 
 <PageTitle>
@@ -40,7 +42,12 @@
 
 <HxCard>
     <BodyTemplate>
-        <EditForm Model="FormModel" OnValidSubmit="HandleValidSubmit" FormName="update-creator-profile">
+        <EditForm
+            Model="FormModel"
+            enctype="multipart/form-data"
+            OnValidSubmit="HandleValidSubmit"
+            FormName="update-creator-profile"
+        >
             <FluentValidationValidator/>
 
             <div class="row">
@@ -52,13 +59,30 @@
                 </div>
 
                 <div class="col-lg-6">
-                    <strong>Logo</strong>
+                    <div class="d-flex flex-column gap-3">
+                        <strong>Logo</strong>
 
-                    @* TODO: current *@
+                        @if (_creator?.LogoFileId is null)
+                        {
+                            <em>Currently no logo</em>
+                        }
+                        else
+                        {
+                            <img
+                                src="@($"{ApiEndpointPaths.CreatorsLogoDownload}?creatorId={_creator.Id}")"
+                                alt="Logo"
+                                class="me-2"
+                                style="max-width: 250px; max-height: 250px;"
+                            />
 
-                    @*<HxInputFile
-                        @bind-Value="FormModel.LogoReplacement"
-                    />*@
+                            <strong>New logo</strong>
+                        }
+
+                        <InputFile
+                            class="form-control"
+                            name="@($"{nameof(FormModel)}.{nameof(FormModel.LogoReplacement)}")"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -73,6 +97,9 @@
 @code {
 
     [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [CascadingParameter]
     public required IStudioPageContext StudioContext { get; set; }
 
     [Parameter]
@@ -80,6 +107,8 @@
 
     [SupplyParameterFromForm]
     private CreatorProfileFromModel FormModel { get; set; } = null!;
+
+    private CreatorEntity? _creator;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,33 +123,42 @@
 
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _creator = await dbContext.Creators
+            .SingleAsync(x => x.Id == CreatorId);
+
         if (populateForm)
         {
-            await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
-
-            CreatorEntity creator = await dbContext.Creators
-                .SingleAsync(x => x.Id == CreatorId);
-
-            FormModel.DisplayName = creator.DisplayName;
+            FormModel.DisplayName = _creator.DisplayName;
         }
     }
 
     private async Task HandleValidSubmit()
     {
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+        CancellationToken ct = HttpContext.RequestAborted;
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync(ct);
 
         CreatorEntity creator = await dbContext.Creators
             .AsTracking()
-            .SingleAsync(x => x.Id == CreatorId);
+            .SingleAsync(x => x.Id == CreatorId, cancellationToken: ct);
 
         creator.DisplayName = FormModel.DisplayName;
 
-        await dbContext.SaveChangesAsync();
-        
+        if (FormModel.LogoReplacement is not null)
+        {
+            creator.LogoFileId = await LogoStorageHelper.MaybeResizeAndStoreLogo(
+                FormModel.LogoReplacement.OpenReadStream(),
+                ct
+            );
+        }
+
+        await dbContext.SaveChangesAsync(ct);
+
         // Reload the page with new info and to avoid the "do you want to resubmit form"
         // prompt if user manually tries to refresh the page
         NavigationManager.Refresh();
-        
+
         // TODO: success message
     }
 

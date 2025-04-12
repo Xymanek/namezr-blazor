@@ -42,6 +42,7 @@
         <PackageReference Include="Patreon.Net" />
         <PackageReference Include="Sentry.AspNetCore" />
         <PackageReference Include="Sentry.OpenTelemetry" />
+        <PackageReference Include="SkiaSharp" />
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>
