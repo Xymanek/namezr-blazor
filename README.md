@@ -44,3 +44,7 @@ Example:
 ## Discord
 
 * Requires `Server Members Intent` to be enabled
+
+## Google
+
+* Requires `People API` to be enabled
