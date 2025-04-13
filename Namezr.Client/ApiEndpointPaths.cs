@@ -14,4 +14,5 @@ public static class ApiEndpointPaths
     public const string FilesDownloadNew = "/api/files/download-new";
     
     public const string CreatorsLogoDownload = "/api/creators/logo-download";
+    public const string SupportTargetsLogoDownload = "/api/support-targets/logo-download";
 }
