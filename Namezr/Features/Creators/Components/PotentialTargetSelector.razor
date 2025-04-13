@@ -17,13 +17,6 @@
     </HxAlert>
 }
 
-<div>
-    Selected target: @SelectedTargetType
-</div>
-<div>
-    Selected id: @SelectedTargetId
-</div>
-
 @if (_selectedTarget == null)
 {
     <div>Options:</div>
@@ -35,24 +28,86 @@
                 @switch (target)
                 {
                     case PotentialTwitchSupportTarget twitchTarget:
-                        <div>Twitch</div>
-                        <div>@twitchTarget.UserTwitchId</div>
-                        <div>@twitchTarget.TwitchDisplayName</div>
-                        <div>@twitchTarget.TwitchProfileUrl</div>
-                        <div>@twitchTarget.BroadcasterType</div>
+                        <div class="row">
+                            <div class="col-lg-10">
+                                <div>
+                                    <strong>Twitch</strong>
+                                </div>
+                                <div>ID: @twitchTarget.UserTwitchId</div>
+                                <div>Display name: @twitchTarget.TwitchDisplayName</div>
+                                <div>Broadcaster type: @twitchTarget.BroadcasterType</div>
+                            </div>
+
+                            @if (target.LogoUrl is not null)
+                            {
+                                <div class="col-lg-2">
+                                    <img
+                                        src="@target.LogoUrl"
+                                        alt="Logo"
+                                        class="img-fluid"
+                                    />
+                                </div>
+                            }
+                        </div>
                         break;
 
                     case PotentialPatreonSupportTarget patreonTarget:
-                        <div>Patreon</div>
-                        <div>@patreonTarget.CampaignId</div>
-                        <div>@patreonTarget.Title</div>
-                        <div>@patreonTarget.Url</div>
-                        <div>Tiers: @string.Join(", ", patreonTarget.Tiers)</div>
+                        <div class="row">
+                            <div class="col-lg-10">
+                                <div>
+                                    <strong>Patreon</strong>
+                                </div>
+                                <div>Campaign ID: @patreonTarget.CampaignId</div>
+                                <div>Title: @patreonTarget.Title</div>
+                                <div>URL: @patreonTarget.Url</div>
+                                <div>Pledge URL: @patreonTarget.JoinUrl</div>
+                                <div>Tiers: @string.Join(", ", patreonTarget.Tiers)</div>
+                            </div>
+
+                            @if (target.LogoUrl is not null)
+                            {
+                                <div class="col-lg-2">
+                                    <img
+                                        src="@target.LogoUrl"
+                                        alt="Logo"
+                                        class="img-fluid"
+                                    />
+                                </div>
+                            }
+                        </div>
                         break;
 
                     case PotentialDiscordSupportTarget discordTarget:
-                        <div>Discord</div>
-                        <div>@discordTarget.GuildName</div>
+                        <div class="row">
+                            <div class="col-lg-10">
+                                <div>
+                                    <strong>Discord</strong>
+                                </div>
+                                <div>Server name: @discordTarget.GuildName</div>
+
+                                @if (!discordTarget.BotInstallRequired)
+                                {
+                                    @if (discordTarget.JoinUrl is not null)
+                                    {
+                                        <div>Join URL: @discordTarget.JoinUrl</div>
+                                    }
+
+                                    <div>Roles: @string.Join(", ", discordTarget.RoleNames)</div>
+                                }
+                            </div>
+
+                            @if (target.LogoUrl is not null)
+                            {
+                                <div class="col-lg-2">
+                                    <img
+                                        src="@target.LogoUrl"
+                                        alt="Logo"
+                                        class="img-fluid"
+                                    />
+                                </div>
+                            }
+                        </div>
+
 
                         if (discordTarget.BotInstallRequired)
                         {
@@ -73,10 +128,6 @@
                                     Text="Install bot"
                                 />
                             </form>
-                        }
-                        else
-                        {
-                            <div>Roles: @string.Join(", ", discordTarget.RoleNames)</div>
                         }
 
                         break;
@@ -102,21 +153,65 @@
 }
 else
 {
-    <EditForm Model="Model" method="post" OnValidSubmit="OnValidSubmit" FormName="new-creator-info">
-        <FluentValidationValidator/>
+    <HxCard>
+        <BodyTemplate>
+            <div>
+                Selected target: @SelectedTargetType
+            </div>
+            <div>
+                Selected id: @SelectedTargetId
+            </div>
 
-        <HxInputText
-            Label="Creator name"
-            @bind-Value="Model!.CreatorName"
-        />
+            <EditForm
+                Model="Model" method="post"
+                OnValidSubmit="OnValidSubmit"
+                FormName="new-creator-info"
+            >
+                <FluentValidationValidator/>
 
-        <HxSubmit
-            Text="Submit"
-            Color="ThemeColor.Primary"
-        />
-    </EditForm>
+                <div class="row">
+                    <div class="col-lg-9">
+                        <HxInputText
+                            Label="Creator name"
+                            @bind-Value="Model!.CreatorName"
+                        />
+                    </div>
+
+                    <div class="col-lg-3">
+                        <div class="mb-2">
+                            <strong>Logo</strong>
+                        </div>
+
+                        @if (_selectedTarget.LogoUrl is null)
+                        {
+                            <div>No logo</div>
+                        }
+                        else
+                        {
+                            <img
+                                src="@_selectedTarget.LogoUrl"
+                                alt="Logo"
+                                class="img-fluid"
+                            />
+                        }
+                    </div>
+                </div>
+
+                @if (CreatorId is null)
+                {
+                    <HxAlert Color="ThemeColor.Info">
+                        You will be able to update these values at any time after completing the onboarding process
+                    </HxAlert>
+                }
+
+                <HxSubmit
+                    Text="Submit"
+                    Color="ThemeColor.Primary"
+                />
+            </EditForm>
+        </BodyTemplate>
+    </HxCard>
 }
-
 
 @code {
     private IReadOnlyList<PotentialSupportTarget> _targets = [];
@@ -142,7 +237,7 @@ else
     /// </summary>
     [Parameter]
     public Guid? CreatorId { get; set; }
-    
+
     private ApplicationUser _currentUser = null!;
 
     protected override async Task OnInitializedAsync()

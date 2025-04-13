@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Namezr.Client.Types;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Creators.Pages;
+using Namezr.Features.Files.Helpers;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.ThirdParty.Data;
 using Namezr.Infrastructure.Data;
@@ -43,9 +44,14 @@ internal interface ICreatorOnboardingService
 internal partial class CreatorOnboardingService : ICreatorOnboardingService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly ILogger<CreatorOnboardingService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogoStorageHelper _logoStorageHelper;
+
     private readonly IPatreonApiProvider _patreonApiProvider;
     private readonly IDiscordApiProvider _discordApiProvider;
     private readonly ITwitchApiProvider _twitchApiProvider;
+
 
     public async Task<IReadOnlyList<PotentialSupportTarget>> GetPotentialSupportTargets(Guid userId)
     {
@@ -89,8 +95,9 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
             ThirdPartyTokenId = userLogin.ThirdPartyTokenId,
             UserTwitchId = userTwitchId,
             TwitchDisplayName = userInfo.DisplayName,
-            TwitchProfileUrl = userInfo.ProfileImageUrl,
             BroadcasterType = userInfo.BroadcasterType,
+            TwitchLogin = userInfo.Login,
+            LogoUrl = userInfo.ProfileImageUrl,
         };
     }
 
@@ -122,7 +129,10 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
 
                 CampaignId = campaign.Id,
                 Title = campaign.Relationships.Creator.FullName,
+                LogoUrl = campaign.ImageSmallUrl,
+
                 Url = campaign.Url,
+                PledgeUrl = campaign.PledgeUrl,
 
                 Tiers = campaign.Relationships.Tiers
                     .Select(x => x.Title)
@@ -155,7 +165,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         List<PotentialDiscordSupportTarget> targets = new();
         await foreach (RestUserGuild? guild in discordUserClient.GetGuildSummariesAsync().Flatten())
         {
-            // Use must have ability to add bots
+            // User must have ability to add bots
             if (!guild.Permissions.ManageGuild) continue;
 
             string guildId = guild.Permissions.ToString();
@@ -167,9 +177,12 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
             if (supportTargetAlreadyExists) continue;
 
             string[]? roleNames = null;
+            string? vanityUrlCode = null;
 
             if (appJoinedGuilds.TryGetValue(guild.Id, out RestGuild? appJoinedGuild))
             {
+                vanityUrlCode = appJoinedGuild.VanityURLCode;
+
                 roleNames = appJoinedGuild.Roles
                     .Select(x => x.Name)
                     .ToArray();
@@ -182,6 +195,8 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
 
                 GuildId = guild.Id,
                 GuildName = guild.Name,
+                LogoUrl = guild.IconUrl,
+                VanityUrlCode = vanityUrlCode,
 
                 BotInstallRequired = roleNames == null,
                 RoleNames = roleNames ?? [],
@@ -255,6 +270,29 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         ApplicationUser targetOwner
     )
     {
+        // TODO
+        CancellationToken ct = CancellationToken.None;
+
+        Guid? logoFileId = null;
+        if (initialSupportTarget.LogoUrl is not null)
+        {
+            try
+            {
+                using HttpClient httpClient = _httpClientFactory.CreateClient();
+
+                Stream originalLogoStream = await httpClient.GetStreamAsync(initialSupportTarget.LogoUrl, ct);
+
+                logoFileId = await _logoStorageHelper.MaybeResizeAndStoreLogo(
+                    originalLogoStream,
+                    ct
+                );
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to download and store logo from {logoUrl}", initialSupportTarget.LogoUrl);
+            }
+        }
+
         SupportTargetEntity supportTarget = new()
         {
             ServiceType = initialSupportTarget.ServiceType,
@@ -262,11 +300,31 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
 
             OwningStaffMemberId = targetOwner.Id,
             ServiceTokenId = initialSupportTarget.ThirdPartyTokenId,
+
+            DisplayName = initialSupportTarget.DisplayName[
+                ..Math.Min(initialSupportTarget.DisplayName.Length, SupportTargetEntity.MaxDisplayNameLength)
+            ],
+            LogoFileId = logoFileId,
+
+            HomeUrl = UrlOrNullIfTooLong(initialSupportTarget.HomeUrl, SupportTargetEntity.MaxJoinUrlLength),
+            JoinUrl = UrlOrNullIfTooLong(initialSupportTarget.JoinUrl, SupportTargetEntity.MaxJoinUrlLength),
         };
 
         await PopulateSupportTarget(supportTarget, initialSupportTarget);
 
         return supportTarget;
+    }
+
+    private string? UrlOrNullIfTooLong(string? url, int maxLength)
+    {
+        // Null remains null
+        if (url is null) return null;
+
+        // Shorter URLs are fine
+        if (url.Length <= maxLength) return url;
+
+        _logger.LogWarning("URL too long, replacing with null: {url}", url);
+        return null;
     }
 
     private async ValueTask PopulateSupportTarget(
