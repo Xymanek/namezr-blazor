@@ -1,0 +1,39 @@
+﻿@using System.Diagnostics
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Data
+
+@if (SupportTarget is not null)
+{
+    <div class="d-flex flex-row align-items-center gap-2">
+        @switch (SupportTarget.ServiceType)
+        {
+            case SupportServiceType.Twitch:
+                <HxIcon Icon="@BootstrapIcon.Twitch"/>
+                break;
+
+            case SupportServiceType.Patreon:
+                <img
+                    src="/static-images/patreon/logo_symbol_white.svg"
+                    alt="Patreon logo"
+                    style="max-width: 1rem; max-height: 1rem;"
+                />
+                break;
+
+            case SupportServiceType.Discord:
+                <HxIcon Icon="@BootstrapIcon.Discord"/>
+                break;
+
+            default:
+                throw new UnreachableException();
+        }
+
+        <div class="flex-grow-1">
+            @(SupportTarget.DisplayName ?? SupportTarget.ServiceType.ToString())
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public SupportTargetEntity? SupportTarget { get; set; }
+}
