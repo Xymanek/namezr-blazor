@@ -10,7 +10,7 @@ namespace Namezr.Features.Creators.Data;
 
 /// <summary>
 /// A place were people supporters can spend money.
-/// E.g. twitch channel, patreon campaign, youtube channel, BuyMeACoffee page, etc.
+/// E.g. Twitch channel, Patreon campaign, YouTube channel, BuyMeACoffee page, etc.
 /// </summary>
 public class SupportTargetEntity
 {
@@ -24,20 +24,42 @@ public class SupportTargetEntity
     /// Prevents staff member from being removed from the creator.
     /// </summary>
     public ApplicationUser OwningStaffMember { get; set; } = null!;
+
     public Guid OwningStaffMemberId { get; set; }
 
     public CreatorStaffEntity StaffEntry { get; set; } = null!;
-    
+
     public required SupportServiceType ServiceType { get; set; }
-    
+
     [MaxLength(150)]
     public required string ServiceId { get; set; }
 
     public ThirdPartyToken? ServiceToken { get; set; }
     public long? ServiceTokenId { get; set; }
 
+    public Guid? LogoFileId { get; set; }
+
+    [MaxLength(MaxDisplayNameLength)]
+    public string? DisplayName { get; set; }
+
+    /// <summary>
+    /// The default/home URL to visit the support target.
+    /// </summary>
+    [MaxLength(MaxJoinUrlLength)]
+    public string? HomeUrl { get; set; }
+
+    /// <summary>
+    /// The call-to-action URL
+    /// (displayed when a user lacks a support plan that's associated with this target).
+    /// </summary>
+    [MaxLength(MaxJoinUrlLength)]
+    public string? JoinUrl { get; set; }
+
     public ICollection<SupportPlanInfoEntity>? SupportPlansInfos { get; set; }
     public ICollection<TargetConsumerEntity>? Consumers { get; set; }
+
+    public const int MaxDisplayNameLength = 200;
+    public const int MaxJoinUrlLength = 200;
 }
 
 internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<SupportTargetEntity>
@@ -46,12 +68,12 @@ internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<Suppo
     {
         // Do not permit multiple creators to share same donations
         builder.HasAlternateKey(x => new { x.ServiceType, x.ServiceId });
-        
+
         // Do not permit creator connected to more than one "profile" per service
         // Otherwise there is a possibility of different creators using same account
         // and thus not being charged separately
         builder.HasAlternateKey(x => new { x.CreatorId, x.ServiceType });
-        
+
         builder.HasOne(x => x.StaffEntry)
             .WithMany(x => x.OwnedSupportTargets)
             // TODO: still generates duplicate columns
@@ -59,4 +81,3 @@ internal class SupportTargetEntityConfiguration : IEntityTypeConfiguration<Suppo
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
-

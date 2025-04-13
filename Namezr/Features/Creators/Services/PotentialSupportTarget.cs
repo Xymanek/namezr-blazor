@@ -10,6 +10,12 @@ internal abstract record PotentialSupportTarget
 
     public abstract string DisplayName { get; }
     public string? LogoUrl { get; init; }
+
+    /// <summary>
+    /// The default/home URL to visit the support target.
+    /// </summary>
+    public abstract string? HomeUrl { get; }
+
     public abstract string? JoinUrl { get; }
 
     public required long? ThirdPartyTokenId { get; init; }
@@ -32,6 +38,8 @@ internal record PotentialTwitchSupportTarget : PotentialSupportTarget
     /// </summary>
     public required string TwitchLogin { get; init; }
 
+    public override string? HomeUrl => $"https://www.twitch.tv/{TwitchLogin}";
+
     public override string? JoinUrl => null;
 }
 
@@ -48,6 +56,7 @@ internal record PotentialPatreonSupportTarget : PotentialSupportTarget
     public required string Url { get; init; }
     public required string PledgeUrl { get; init; }
 
+    public override string HomeUrl => Url;
     public override string JoinUrl => PatreonHelpers.GetFullPatreonUrl(PledgeUrl);
 
     public required IReadOnlyList<string> Tiers { get; init; }
@@ -64,6 +73,8 @@ internal record PotentialDiscordSupportTarget : PotentialSupportTarget
     public required string GuildName { get; init; }
 
     public required string? VanityUrlCode { get; init; }
+
+    public override string? HomeUrl => null;
 
     public override string? JoinUrl
         => VanityUrlCode is null ? null : $"https://discord.gg/{VanityUrlCode}";

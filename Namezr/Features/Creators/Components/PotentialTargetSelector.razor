@@ -17,13 +17,6 @@
     </HxAlert>
 }
 
-<div>
-    Selected target: @SelectedTargetType
-</div>
-<div>
-    Selected id: @SelectedTargetId
-</div>
-
 @if (_selectedTarget == null)
 {
     <div>Options:</div>
@@ -160,21 +153,65 @@
 }
 else
 {
-    <EditForm Model="Model" method="post" OnValidSubmit="OnValidSubmit" FormName="new-creator-info">
-        <FluentValidationValidator/>
+    <HxCard>
+        <BodyTemplate>
+            <div>
+                Selected target: @SelectedTargetType
+            </div>
+            <div>
+                Selected id: @SelectedTargetId
+            </div>
 
-        <HxInputText
-            Label="Creator name"
-            @bind-Value="Model!.CreatorName"
-        />
+            <EditForm
+                Model="Model" method="post"
+                OnValidSubmit="OnValidSubmit"
+                FormName="new-creator-info"
+            >
+                <FluentValidationValidator/>
 
-        <HxSubmit
-            Text="Submit"
-            Color="ThemeColor.Primary"
-        />
-    </EditForm>
+                <div class="row">
+                    <div class="col-lg-9">
+                        <HxInputText
+                            Label="Creator name"
+                            @bind-Value="Model!.CreatorName"
+                        />
+                    </div>
+
+                    <div class="col-lg-3">
+                        <div class="mb-2">
+                            <strong>Logo</strong>
+                        </div>
+
+                        @if (_selectedTarget.LogoUrl is null)
+                        {
+                            <div>No logo</div>
+                        }
+                        else
+                        {
+                            <img
+                                src="@_selectedTarget.LogoUrl"
+                                alt="Logo"
+                                class="img-fluid"
+                            />
+                        }
+                    </div>
+                </div>
+
+                @if (CreatorId is null)
+                {
+                    <HxAlert Color="ThemeColor.Info">
+                        You will be able to update these values at any time after completing the onboarding process
+                    </HxAlert>
+                }
+
+                <HxSubmit
+                    Text="Submit"
+                    Color="ThemeColor.Primary"
+                />
+            </EditForm>
+        </BodyTemplate>
+    </HxCard>
 }
-
 
 @code {
     private IReadOnlyList<PotentialSupportTarget> _targets = [];
