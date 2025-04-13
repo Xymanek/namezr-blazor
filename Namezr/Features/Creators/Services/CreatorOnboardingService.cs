@@ -89,8 +89,9 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
             ThirdPartyTokenId = userLogin.ThirdPartyTokenId,
             UserTwitchId = userTwitchId,
             TwitchDisplayName = userInfo.DisplayName,
-            TwitchProfileUrl = userInfo.ProfileImageUrl,
             BroadcasterType = userInfo.BroadcasterType,
+            TwitchLogin = userInfo.Login,
+            LogoUrl = userInfo.ProfileImageUrl,
         };
     }
 
@@ -122,7 +123,10 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
 
                 CampaignId = campaign.Id,
                 Title = campaign.Relationships.Creator.FullName,
+                LogoUrl = campaign.ImageSmallUrl,
+
                 Url = campaign.Url,
+                PledgeUrl = campaign.PledgeUrl,
 
                 Tiers = campaign.Relationships.Tiers
                     .Select(x => x.Title)
@@ -155,7 +159,7 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
         List<PotentialDiscordSupportTarget> targets = new();
         await foreach (RestUserGuild? guild in discordUserClient.GetGuildSummariesAsync().Flatten())
         {
-            // Use must have ability to add bots
+            // User must have ability to add bots
             if (!guild.Permissions.ManageGuild) continue;
 
             string guildId = guild.Permissions.ToString();
@@ -167,9 +171,12 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
             if (supportTargetAlreadyExists) continue;
 
             string[]? roleNames = null;
+            string? vanityUrlCode = null;
 
             if (appJoinedGuilds.TryGetValue(guild.Id, out RestGuild? appJoinedGuild))
             {
+                vanityUrlCode = appJoinedGuild.VanityURLCode;
+
                 roleNames = appJoinedGuild.Roles
                     .Select(x => x.Name)
                     .ToArray();
@@ -182,6 +189,8 @@ internal partial class CreatorOnboardingService : ICreatorOnboardingService
 
                 GuildId = guild.Id,
                 GuildName = guild.Name,
+                LogoUrl = guild.IconUrl,
+                VanityUrlCode = vanityUrlCode,
 
                 BotInstallRequired = roleNames == null,
                 RoleNames = roleNames ?? [],
