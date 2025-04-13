@@ -15,7 +15,7 @@ internal static class SupportServiceToAuthMap
         return userAuthSchemes.Contains(authScheme);
     }
 
-    private static string ServiceTypeToAuthScheme(SupportServiceType serviceType)
+    public static string ServiceTypeToAuthScheme(SupportServiceType serviceType)
     {
         return serviceType switch
         {

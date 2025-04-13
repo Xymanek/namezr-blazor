@@ -28,6 +28,7 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IFieldValueSerializer FieldValueSerializer
 @inject IFileUploadTicketHelper FileUploadTicketHelper
+@inject NavigationManager NavigationManager
 
 @if (_versionEntity is not null)
 {
@@ -148,12 +149,21 @@
                         {
                             @if (_disabledReason == DisabledReason.NotLoggedIn)
                             {
-                                /* TODO: direct redirect to challenge */
-                                <a
-                                    href="/Account/Login" class="btn btn-primary"
-                                >
-                                    Login to use your status
-                                </a>
+                                <form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
+                                    <div>
+                                        <AntiforgeryToken/>
+                                        <input type="hidden" name="ReturnUrl" value="@NavigationManager.Uri"/>
+                                        
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary"
+                                            name="provider"
+                                            value="@SupportServiceToAuthMap.ServiceTypeToAuthScheme(supportTarget.ServiceType)"
+                                        >
+                                            Login to use your status
+                                        </button>
+                                    </div>
+                                </form>
                             }
                             else if (grouping.All(option => !_eligiblePlanIds.Contains(option.PlanId)))
                             {
@@ -166,19 +176,19 @@
                                 )
                                 {
                                     // User is logged in but has not linked account with this service
-                                    
+
                                     /* TODO: direct redirect to challenge */
-                                    <NavLink
+                                    <a
                                         href="/Account/Manage/ExternalLogins" class="btn btn-primary"
                                     >
                                         Link account to use your status
-                                    </NavLink>
+                                    </a>
                                 }
                                 else if (supportTarget.JoinUrl is not null || supportTarget.HomeUrl is not null)
                                 {
                                     // User is logged in and has linked account with this service.
                                     // Present the option to join the support target
-                                    
+
                                     <a
                                         href="@(supportTarget.JoinUrl ?? supportTarget.HomeUrl)"
                                         target="_blank"
