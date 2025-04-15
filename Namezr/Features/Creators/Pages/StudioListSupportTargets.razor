@@ -46,6 +46,23 @@
 </SectionContent>
 
 <div class="d-flex flex-column gap-3">
+    <HxCard>
+        <BodyTemplate>
+            <HxCardText>
+                <strong>Support targets</strong> are places were your supporters can spend money or otherwise
+                be marked as supporting you. Examples:
+                Twitch channel, Patreon campaign, YouTube channel, BuyMeACoffee page, Discord server, etc.
+            </HxCardText>
+            
+            <HxCardText>
+                <strong>Support plans</strong> are individual ways to support you. Examples:
+                Twitch follower or subscriber tier, Patreon tier, Discord role, etc.
+                Each support plan belongs to a specific support target.
+            </HxCardText>
+        </BodyTemplate>
+    </HxCard>
+    
+    
     @foreach (SupportTargetEntity supportTarget in _supportTargets)
     {
         <HxCard>
@@ -77,7 +94,6 @@
                                 Join URL: <a href="@supportTarget.JoinUrl">@supportTarget.JoinUrl</a>
                             </HxCardText>
                         }
-
 
                         @{
                             SupportPlan[] supportPlans = _supportPlans?[supportTarget.Id].ToArray() ?? [];
