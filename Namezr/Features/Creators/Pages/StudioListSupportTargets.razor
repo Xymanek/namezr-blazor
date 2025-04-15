@@ -6,12 +6,15 @@
 @using Namezr.Infrastructure.Data
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Client
+@using Namezr.Client.Types
 @using Namezr.Features.StudioCommon.Components
 @using Namezr.Components
+@using Namezr.Features.Creators.Services
 
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
 
 <PageTitle>
     Current support targets
@@ -74,6 +77,27 @@
                                 Join URL: <a href="@supportTarget.JoinUrl">@supportTarget.JoinUrl</a>
                             </HxCardText>
                         }
+
+
+                        @{
+                            SupportPlan[] supportPlans = _supportPlans?[supportTarget.Id].ToArray() ?? [];
+                        }
+
+                        @if (supportPlans.Any())
+                        {
+                            <HxCardText>
+                                Support plans:
+                            </HxCardText>
+
+                            <ul>
+                                @foreach (SupportPlan supportPlan in supportPlans)
+                                {
+                                    <li>
+                                        @supportPlan.DisplayName
+                                    </li>
+                                }
+                            </ul>
+                        }
                     </div>
 
                     @if (supportTarget.LogoFileId is not null)
@@ -104,6 +128,7 @@
     public Guid CreatorId { get; set; }
 
     private SupportTargetEntity[] _supportTargets = [];
+    private ILookup<Guid, SupportPlan>? _supportPlans;
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,9 +136,17 @@
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        _supportTargets = await dbContext.SupportTargets
+        // Query in parallel
+        
+        Task<SupportTargetEntity[]> supportTargetsTask = dbContext.SupportTargets
             .Where(t => t.CreatorId == CreatorId)
             .ToArrayAsync(HttpContext.RequestAborted);
+
+        Task<IEnumerable<SupportPlan>> supportPlansTask = SupportPlansService.GetSupportPlans(CreatorId);
+
+        _supportTargets = await supportTargetsTask;
+        _supportPlans = (await supportPlansTask)
+            .ToLookup(s => s.Id.SupportTargetId);
     }
 
 }
