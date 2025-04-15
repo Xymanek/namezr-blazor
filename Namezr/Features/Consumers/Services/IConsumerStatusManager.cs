@@ -13,9 +13,6 @@ public interface IConsumerStatusManager
 {
     SupportServiceType ServiceType { get; }
 
-    // TODO: some services do not support on demand status querying
-    Task SyncConsumerStatus(Guid consumerId);
-
     Task<ICollection<UserSupportStatusEntry>> GetUserSupportStatuses(
         Guid consumerId, UserStatusSyncEagerness eagerness
     );
@@ -221,29 +218,6 @@ internal abstract partial class ConsumerStatusManagerBase : IConsumerStatusManag
         }
 
         await dbContext.SaveChangesAsync();
-    }
-
-    public async Task SyncConsumerStatus(Guid consumerId)
-    {
-        try
-        {
-            await DoSyncIndividualConsumer(consumerId);
-        }
-        catch (SyncAllRequired)
-        {
-            LogSyncAllRequired(consumerId);
-            await ForceAllSyncByConsumerId(consumerId);
-        }
-    }
-
-    private async Task ForceAllSyncByConsumerId(Guid consumerId)
-    {
-        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
-
-        TargetConsumerEntity consumer = await dbContext.TargetConsumers
-            .SingleAsync(x => x.Id == consumerId);
-
-        await ForceSyncAllConsumersStatus(consumer.SupportTargetId);
     }
 
     private async Task DoSyncIndividualConsumer(Guid consumerId)

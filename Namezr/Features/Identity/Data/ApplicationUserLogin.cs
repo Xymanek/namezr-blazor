@@ -8,6 +8,8 @@ namespace Namezr.Features.Identity.Data;
 [EntityTypeConfiguration(typeof(ApplicationUserLoginConfiguration))]
 public class ApplicationUserLogin : IdentityUserLogin<Guid>
 {
+    public ApplicationUser User { get; set; } = null!;
+
     public ThirdPartyToken? ThirdPartyToken { get; set; }
     public long? ThirdPartyTokenId { get; set; }
 }
