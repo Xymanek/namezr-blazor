@@ -26,6 +26,7 @@
         <PackageReference Include="AutoRegisterInject" />
         <PackageReference Include="CommunityToolkit.Diagnostics" />
         <PackageReference Include="Discord.Net.Rest" />
+        <PackageReference Include="DistributedLock.Postgres" />
         <PackageReference Include="EntityFrameworkCore.Exceptions.PostgreSQL" />
         <PackageReference Include="FluentValidation" />
         <PackageReference Include="Google.Apis.PeopleService.v1" />

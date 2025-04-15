@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
+using Medallion.Threading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
@@ -31,6 +32,7 @@ internal partial class SubmissionSaveEndpoint
         IHttpContextAccessor httpContextAccessor,
         IdentityUserAccessor userAccessor,
         IClock clock,
+        IDistributedLockProvider distributedLockProvider,
         IFieldValueSerializer fieldValueSerializer,
         ApplicationDbContext dbContext,
         IFileUploadTicketHelper fileTicketHelper,
@@ -92,6 +94,12 @@ internal partial class SubmissionSaveEndpoint
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
         ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+
+        // Ensure 1 submission per ques per user, even in race conditions.
+        await using var _ = await distributedLockProvider.AcquireLockAsync(
+            GetLockName(questionnaireVersion.QuestionnaireId, currentUser.Id),
+            cancellationToken: ct
+        );
 
         QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
             .AsTracking()
@@ -254,5 +262,10 @@ internal partial class SubmissionSaveEndpoint
             RuleFor(x => x.Values)
                 .SetValidator(fieldsValidator);
         }
+    }
+
+    private static string GetLockName(Guid questionnaireId, Guid userId)
+    {
+        return $"namezr_questionnaire-submission-save_{questionnaireId}_{userId}";
     }
 }

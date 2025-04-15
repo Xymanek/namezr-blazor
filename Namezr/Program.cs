@@ -1,6 +1,8 @@
 using AspireRunner.AspNetCore;
 using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Twitch;
+using Medallion.Threading;
+using Medallion.Threading.Postgres;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -232,6 +234,10 @@ builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
     )
 );
 #pragma warning restore EF1001
+
+builder.Services.AddSingleton<IDistributedLockProvider>(_ => new PostgresDistributedSynchronizationProvider(
+    builder.Configuration.GetConnectionString("postgresdb")!
+));
 
 builder.Services.AddOptions<FilesOptions>()
     .BindConfiguration(FilesOptions.SectionPath);
