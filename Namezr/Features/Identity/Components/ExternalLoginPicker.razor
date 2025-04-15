@@ -1,36 +1,34 @@
 ﻿@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Identity
-@using Namezr.Features.Identity.Data
-@using Namezr.Features.Identity.Helpers
 
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IdentityRedirectManager RedirectManager
+<form class="form-horizontal" action="@ActionUrl" method="post">
+    <AntiforgeryToken/>
+    <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
 
-<form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
-    <div>
-        <AntiforgeryToken/>
-        <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
-        @foreach (var provider in externalLogins)
-        {
-            <p>
+    <div class="d-flex justify-content-center">
+        <div class="d-flex flex-column align-items-stretch flex-grow-1 gap-2" style="max-width: 20rem;">
+            @foreach (AuthenticationScheme provider in ExternalLogins)
+            {
                 <button
-                    type="submit" class="btn btn-primary" name="provider" value="@provider.Name"
-                    title="Log in using your @provider.DisplayName account">
+                    type="submit" class="btn btn-outline-light" name="provider" value="@provider.Name"
+                    title="Log in using your @provider.DisplayName account"
+                >
+                    <AuthSchemeLogo Scheme="provider"/>
                     @provider.DisplayName
                 </button>
-            </p>
-        }
+            }
+        </div>
     </div>
 </form>
 
 @code {
-    private AuthenticationScheme[] externalLogins = [];
 
-    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [Parameter]
+    public string ActionUrl { get; set; } = string.Empty;
 
-    protected override async Task OnInitializedAsync()
-    {
-        externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
-    }
+    [Parameter]
+    public ICollection<AuthenticationScheme> ExternalLogins { get; set; } = [];
+
+    [Parameter]
+    public string? ReturnUrl { get; set; }
 
 }

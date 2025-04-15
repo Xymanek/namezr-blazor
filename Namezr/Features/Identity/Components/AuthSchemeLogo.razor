@@ -1,0 +1,33 @@
+﻿@using AspNet.Security.OAuth.Discord
+@using AspNet.Security.OAuth.Patreon
+@using AspNet.Security.OAuth.Twitch
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Google
+
+@switch (Scheme?.Name)
+{
+    case TwitchAuthenticationDefaults.AuthenticationScheme:
+        <HxIcon Icon="@BootstrapIcon.Twitch"/>
+        break;
+
+    case GoogleDefaults.AuthenticationScheme:
+        <HxIcon Icon="@BootstrapIcon.Google"/>
+        break;
+
+    case DiscordAuthenticationDefaults.AuthenticationScheme:
+        <HxIcon Icon="@BootstrapIcon.Discord"/>
+        break;
+
+    case PatreonAuthenticationDefaults.AuthenticationScheme:
+        <img
+            src="/static-images/patreon/logo_symbol_white.svg"
+            alt="Patreon logo"
+            style="max-width: 1rem; max-height: 1rem;"
+        />
+        break;
+}
+
+@code {
+    [Parameter]
+    public AuthenticationScheme? Scheme { get; set; }
+}

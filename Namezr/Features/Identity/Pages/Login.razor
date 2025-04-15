@@ -2,27 +2,40 @@
 
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using Namezr.Features.Identity.Data
 @using Namezr.Features.Identity.Helpers
 
 @inject ILogger<Login> Logger
 @inject IdentityRedirectManager RedirectManager
 @inject IdentityUserAccessor UserAccessor
+@inject SignInManager<ApplicationUser> SignInManager
 
 <PageTitle>
-    Log in
+    Login
     <PublicTitleSuffix/>
 </PageTitle>
 
-<h1>Log in</h1>
+<div class="d-flex justify-content-center my-5">
+    <h1>Login</h1>
+</div>
 
-<StatusMessage />
+<StatusMessage/>
 
-<ExternalLoginPicker/>
+<ExternalLoginPicker
+    ActionUrl="Account/PerformExternalLogin"
+    ExternalLogins="_externalLogins"
+    ReturnUrl="ReturnUrl"
+/>
 
 @code {
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
-    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private AuthenticationScheme[] _externalLogins = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -34,10 +47,12 @@
                 Logger.LogTrace("User is already logged in, skipping login flow");
                 RedirectManager.RedirectTo(ReturnUrl);
             }
-            
+
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
+
+        _externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
     }
 
 }
