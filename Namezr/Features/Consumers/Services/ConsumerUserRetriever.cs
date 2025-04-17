@@ -8,15 +8,9 @@ using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Consumers.Services;
 
-public interface IConsumerUserRetriever
+public static class ConsumerUserRetriever
 {
-    IQueryable<ConsumerUser> BuildConsumerUsersQuery(ApplicationDbContext dbContext);
-}
-
-[RegisterSingleton]
-public class ConsumerUserRetriever : IConsumerUserRetriever
-{
-    public IQueryable<ConsumerUser> BuildConsumerUsersQuery(ApplicationDbContext dbContext)
+    public static IQueryable<ConsumerUser> BuildConsumerUsersQuery(ApplicationDbContext dbContext)
     {
         IQueryable<LoginConsumerEquivalent> equivalents = BuildConsumerEquivalentQuery(dbContext.UserLogins);
 

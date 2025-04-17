@@ -1,31 +1,43 @@
 ﻿@page "/my-creators"
 
-@using AspNet.Security.OAuth.Discord
-@using AspNet.Security.OAuth.Patreon
-@using AspNet.Security.OAuth.Twitch
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@using Namezr.Client.Types
 @using Namezr.Features.Consumers.Services
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Identity.Data
 @using Namezr.Features.Identity.Helpers
+@using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
+@using Namezr.Components
 
 @attribute [Authorize]
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IdentityUserAccessor UserAccessor
-@inject IConsumerUserRetriever ConsumerUserRetriever
 
-<h3>MyCreators</h3>
+<PageTitle>
+    My creators
+    <PublicTitleSuffix/>
+</PageTitle>
 
-<ul>
-    @foreach (CreatorEntity creator in _creators)
-    {
-        <li>@creator.DisplayName</li>
-    }
-</ul>
+
+<h2>MyCreators</h2>
+
+@foreach (CreatorEntity creator in _creators)
+{
+    <h3>@creator.DisplayName</h3>
+
+    <ul>
+        @foreach (QuestionnaireEntity questionnaire in creator.Questionnaires!)
+        {
+            <li>
+                <a href="/questionnaires/@questionnaire.Id.ToString("N")">
+                    @questionnaire.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
 
 @code {
     private CreatorEntity[] _creators = [];
@@ -39,26 +51,7 @@
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        // TODO: a lot of this is testing code, needs to be removed
-
-        IQueryable<ApplicationUserLogin> loginsQuery = dbContext.UserLogins
-            .Where(x => x.UserId == user.Id);
-
-        IQueryable<LoginConsumerEquivalent> consumerEquivalentQuery = GetConsumerMap(loginsQuery);
-
-        _creators = await dbContext.TargetConsumers
-            .Where(consumer => consumer.SupportStatuses!.Any(status => status.IsActive))
-            .Where(consumer => consumerEquivalentQuery.Any(equivalent =>
-                equivalent.ServiceType == consumer.SupportTarget.ServiceType &&
-                equivalent.ServiceUserId == consumer.ServiceUserId
-            ))
-            .Select(consumer => consumer.SupportTarget.Creator)
-            .Distinct()
-            .Include(creator => creator.Questionnaires)
-            .AsSplitQuery()
-            .ToArrayAsync(HttpContext.RequestAborted);
-
-        var creators2 = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
+        _creators = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
             .Where(tuple => tuple.UserLogin.UserId == user.Id)
             .Where(tuple => tuple.Consumer.SupportStatuses!.Any(status => status.IsActive))
             .Select(tuple => tuple.Consumer.SupportTarget.Creator)
@@ -66,65 +59,6 @@
             .Include(creator => creator.Questionnaires)
             .AsSplitQuery()
             .ToArrayAsync(HttpContext.RequestAborted);
-
-        //
-
-        CreatorEntity creator = await dbContext.Creators.FirstAsync();
-
-        IQueryable<LoginConsumerEquivalent> allConsumerUsers = GetConsumerMap(dbContext.UserLogins);
-
-        ApplicationUser[] creatorUsers = await dbContext.TargetConsumers
-            .Where(consumer => consumer.SupportTarget.CreatorId == creator.Id)
-            .Where(consumer => consumer.SupportStatuses!.Any(status => status.IsActive))
-            .Join(
-                allConsumerUsers,
-                consumer => new { consumer.ServiceUserId, consumer.SupportTarget.ServiceType },
-                equivalent => new { equivalent.ServiceUserId, equivalent.ServiceType },
-                (consumer, equivalent) => new
-                {
-                    Consumer = consumer,
-                    equivalent.UserLogin,
-                }
-            )
-            .Select(arg => arg.UserLogin.User)
-            .Distinct()
-            .ToArrayAsync(HttpContext.RequestAborted);
-
-        var creatorUsers2 = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
-            .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == creator.Id)
-            .Where(tuple => tuple.Consumer.SupportStatuses!.Any(status => status.IsActive))
-            .Select(tuple => tuple.UserLogin.User)
-            .Distinct()
-            .ToArrayAsync(HttpContext.RequestAborted);
-    }
-
-    private static IQueryable<LoginConsumerEquivalent> GetConsumerMap(IQueryable<ApplicationUserLogin> loginQuery)
-    {
-        return loginQuery
-            .Select(login => new LoginConsumerEquivalent
-            {
-                ServiceType = login.LoginProvider == TwitchAuthenticationDefaults.AuthenticationScheme
-                    ? SupportServiceType.Twitch
-                    : login.LoginProvider == PatreonAuthenticationDefaults.AuthenticationScheme
-                        ? SupportServiceType.Patreon
-                        : login.LoginProvider == DiscordAuthenticationDefaults.AuthenticationScheme
-                            ? SupportServiceType.Discord
-                            : (SupportServiceType)(-1),
-
-                ServiceUserId = login.ProviderKey,
-
-                ApplicationUserId = login.UserId,
-                UserLogin = login,
-            });
-    }
-
-    private class LoginConsumerEquivalent
-    {
-        public required SupportServiceType ServiceType { get; init; }
-        public required string ServiceUserId { get; init; }
-
-        public required Guid ApplicationUserId { get; init; }
-        public required ApplicationUserLogin UserLogin { get; init; }
     }
 
 }
