@@ -5,6 +5,7 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 @using Namezr.Components
+@using Namezr.Features.Creators.Models
 
 @inject ApplicationDbContext DbContext
 
@@ -37,6 +38,7 @@
     protected override async Task OnInitializedAsync()
     {
         _creators = await DbContext.Creators
+            .Where(x => x.Visibility == CreatorVisibility.Public)
             .Include(x => x.Questionnaires)
             .AsSplitQuery()
             .ToArrayAsync();

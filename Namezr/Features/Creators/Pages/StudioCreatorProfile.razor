@@ -53,8 +53,16 @@
             <div class="row">
                 <div class="col-lg-6">
                     <HxInputText
+                        CssClass="mb-2"
                         Label="Display name"
                         @bind-Value="FormModel.DisplayName"
+                    />
+                    <HxSelect
+                        Label="Visibility"
+                        Data="@((CreatorVisibility[])Enum.GetValues(typeof(CreatorVisibility)))"
+                        Nullable="false"
+                        Hint="Unlisted hides from the public listing; can still be accessed directly (e.g. via a shared link)."
+                        @bind-Value="FormModel.Visibility"
                     />
                 </div>
 
@@ -131,6 +139,7 @@
         if (populateForm)
         {
             FormModel.DisplayName = _creator.DisplayName;
+            FormModel.Visibility = _creator.Visibility;
         }
     }
 
@@ -144,6 +153,7 @@
             .SingleAsync(x => x.Id == CreatorId, cancellationToken: ct);
 
         creator.DisplayName = FormModel.DisplayName;
+        creator.Visibility = FormModel.Visibility;
 
         if (FormModel.LogoReplacement is not null)
         {

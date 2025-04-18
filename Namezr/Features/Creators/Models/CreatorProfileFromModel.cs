@@ -6,6 +6,7 @@ namespace Namezr.Features.Creators.Models;
 public class CreatorProfileFromModel
 {
     public string DisplayName { get; set; } = string.Empty;
+    public CreatorVisibility Visibility { get; set; }
 
     public IFormFile? LogoReplacement { get; set; }
 
@@ -20,4 +21,11 @@ public class CreatorProfileFromModel
                 .MaximumLength(CreatorEntity.MaxDisplayNameLength);
         }
     }
+}
+
+// Underlying values are persisted in the database and thus must never change
+public enum CreatorVisibility
+{
+    Public = 0,
+    Unlisted = 1,
 }
