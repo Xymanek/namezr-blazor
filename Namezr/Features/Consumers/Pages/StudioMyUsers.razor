@@ -1,0 +1,145 @@
+﻿@page "/studio/{creatorId:guid}/supporters/users"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Components
+@using Namezr.Features.Consumers.Services
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Identity.Data
+@using Namezr.Client.Shared
+@using Namezr.Features.StudioCommon.Components
+
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    Supporters
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <StudioHomeBreadcrumb CreatorId="CreatorId"/>
+        
+        <HxBreadcrumbItem
+            Href=@($"studio/{CreatorId.NoHyphens()}/supporters/users")
+            Text="Supporters"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Supporters
+</SectionContent>
+
+<HxCard CssClass="mb-3">
+    <BodyTemplate>
+        <HxCardText>
+            Supporters are users who have registered on Namezr and have at least one active link
+            with any of your <a href="/studio/@CreatorId.NoHyphens()/config/targets">support targets</a>.
+        </HxCardText>
+    </BodyTemplate>
+</HxCard>
+
+<HxCard>
+    <BodyTemplate>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Username</th>
+
+                @foreach (SupportTargetEntity supportTarget in _supportTargets.Values)
+                {
+                    /* TODO: this should be service logo + display name */
+                    <th>@supportTarget.ServiceType</th>
+                }
+
+                @*<th>
+                    <span class="visually-hidden">Actions</span>
+                </th>*@
+            </tr>
+            </thead>
+
+            <tbody>
+            @foreach (RetrievedUser userTuple in _userTuples)
+            {
+                <tr style="vertical-align: center">
+                    <td>@userTuple.User.UserName</td>
+
+                    @foreach (SupportTargetEntity supportTarget in _supportTargets.Values)
+                    {
+                        <td>
+                            <YesNoBadge
+                                Value="userTuple.ActiveSupportTargetsIds.Contains(supportTarget.Id)"
+                            />
+                        </td>
+                    }
+
+                    @*<td style="width: 1px">
+                        <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{userTuple.User.Id.NoHyphens()}")"
+                           class="btn btn-primary btn-sm"
+                           title="View user details"
+                        >
+                            <HxIcon Icon="BootstrapIcon.EyeFill"/>
+                        </a>
+                    </td>*@
+                </tr>
+            }
+            </tbody>
+        </table>
+    </BodyTemplate>
+</HxCard>
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    private Dictionary<Guid, SupportTargetEntity> _supportTargets = [];
+    private RetrievedUser[] _userTuples = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        SupportTargetEntity[] supportTargets = await dbContext.SupportTargets
+            .Where(target => target.CreatorId == CreatorId)
+            .OrderBy(supportTarget => supportTarget.Id)
+            .ToArrayAsync(HttpContext.RequestAborted);
+
+        _supportTargets = supportTargets.ToDictionary(supportTarget => supportTarget.Id);
+
+        _userTuples = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
+            .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == CreatorId)
+            .GroupBy(tuple => tuple.UserLogin.User)
+            .Select(group => new RetrievedUser
+            {
+                User = group.Key,
+                ActiveSupportTargetsIds = group
+                    .Select(tuple => tuple.Consumer.SupportTargetId)
+                    .Distinct()
+                    .ToArray()
+            })
+            .OrderBy(tuple => tuple.User.UserName)
+            .ToArrayAsync(HttpContext.RequestAborted);
+    }
+
+    public record RetrievedUser
+    {
+        public required ApplicationUser User { get; init; }
+        public required Guid[] ActiveSupportTargetsIds { get; init; }
+    }
+
+}
