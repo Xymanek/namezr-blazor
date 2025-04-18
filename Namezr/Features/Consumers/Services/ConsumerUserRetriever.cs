@@ -1,6 +1,7 @@
 ﻿using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Patreon;
 using AspNet.Security.OAuth.Twitch;
+using LinqKit;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Data;
 using Namezr.Features.Identity.Data;
@@ -54,6 +55,26 @@ public static class ConsumerUserRetriever
         public required string ServiceUserId { get; init; }
 
         public required ApplicationUserLogin UserLogin { get; init; }
+    }
+
+    /// <summary>
+    /// Used to include users who are currently participating in your activities (e.g. questionnaires)
+    /// but do not have an active link. This can happen if a user has removed their link
+    /// or the creator configured a non-support-plan eligibility option, e.g.
+    /// <see cref="F:Namezr.Client.Types.VirtualEligibilityType.NoSupportPlanAtAll"/>.
+    /// </summary>
+    public static IQueryable<ApplicationUser> GetParticipatingUsers(
+        Guid creatorId,
+        IQueryable<ApplicationUser> users
+    )
+    {
+        ExpressionStarter<ApplicationUser> filter = PredicateBuilder.New<ApplicationUser>();
+
+        filter = filter.Or(user => user.Submissions!.Any(submission =>
+            submission.Version.Questionnaire.CreatorId == creatorId
+        ));
+
+        return users.Where(filter);
     }
 }
 

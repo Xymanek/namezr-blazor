@@ -39,6 +39,16 @@ public partial class SupportPlansService : ISupportPlansService
                     Id = new SupportPlanFullId
                     {
                         SupportTargetId = supportTarget.Id,
+                        SupportPlanId = TwitchSupportPlansIds.Follower,
+                    },
+                    ServiceType = SupportServiceType.Twitch,
+                    DisplayName = "Follower",
+                };
+                yield return new SupportPlan
+                {
+                    Id = new SupportPlanFullId
+                    {
+                        SupportTargetId = supportTarget.Id,
                         SupportPlanId = TwitchSupportPlansIds.Tier1,
                     },
                     ServiceType = SupportServiceType.Twitch,
@@ -63,16 +73,6 @@ public partial class SupportPlansService : ISupportPlansService
                     },
                     ServiceType = SupportServiceType.Twitch,
                     DisplayName = "Tier 3",
-                };
-                yield return new SupportPlan
-                {
-                    Id = new SupportPlanFullId
-                    {
-                        SupportTargetId = supportTarget.Id,
-                        SupportPlanId = TwitchSupportPlansIds.Follower,
-                    },
-                    ServiceType = SupportServiceType.Twitch,
-                    DisplayName = "Follower",
                 };
 
                 break;

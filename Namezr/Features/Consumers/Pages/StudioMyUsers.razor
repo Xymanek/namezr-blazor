@@ -24,7 +24,7 @@
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
         <StudioHomeBreadcrumb CreatorId="CreatorId"/>
-        
+
         <HxBreadcrumbItem
             Href=@($"studio/{CreatorId.NoHyphens()}/supporters/users")
             Text="Supporters"
@@ -41,6 +41,11 @@
         <HxCardText>
             Supporters are users who have registered on Namezr and have at least one active link
             with any of your <a href="/studio/@CreatorId.NoHyphens()/config/targets">support targets</a>.
+        </HxCardText>
+        <HxCardText>
+            Also included are users who are currently participating in your activities (e.g. questionnaires)
+            but do not have an active link. This can happen if a user has removed their link
+            or you configured a non-support-plan eligibility option.
         </HxCardText>
     </BodyTemplate>
 </HxCard>
@@ -65,7 +70,7 @@
             </thead>
 
             <tbody>
-            @foreach (RetrievedUser userTuple in _userTuples)
+            @foreach (RetrievedUser userTuple in _userTuples.OrderBy(tuple => tuple.User.UserName))
             {
                 <tr style="vertical-align: center">
                     <td>@userTuple.User.UserName</td>
@@ -106,7 +111,7 @@
     public Guid CreatorId { get; set; }
 
     private Dictionary<Guid, SupportTargetEntity> _supportTargets = [];
-    private RetrievedUser[] _userTuples = [];
+    private List<RetrievedUser> _userTuples = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,10 +126,9 @@
 
         _supportTargets = supportTargets.ToDictionary(supportTarget => supportTarget.Id);
 
-        // TODO: need to also include users who have participated but do not have an active link,
-        // e.g. link was removed or VirtualEligibilityType.NoSupportPlanAtAll
         _userTuples = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
             .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == CreatorId)
+            .Where(tuple => tuple.Consumer.SupportStatuses!.Any(status => status.IsActive))
             .GroupBy(tuple => tuple.UserLogin.User)
             .Select(group => new RetrievedUser
             {
@@ -134,8 +138,27 @@
                     .Distinct()
                     .ToArray()
             })
-            .OrderBy(tuple => tuple.User.UserName)
-            .ToArrayAsync(HttpContext.RequestAborted);
+            .ToListAsync(HttpContext.RequestAborted);
+
+        IEnumerable<Guid> includedUserIds = _userTuples
+            .Select(tuple => tuple.User.Id)
+            .ToArray();
+
+        ApplicationUser[] participatingNonActiveConsumerUsers = await ConsumerUserRetriever
+            .GetParticipatingUsers(
+                CreatorId,
+                dbContext.Users.Where(user => !includedUserIds.Contains(user.Id))
+            )
+            .ToArrayAsync();
+
+        foreach (ApplicationUser user in participatingNonActiveConsumerUsers)
+        {
+            _userTuples.Add(new RetrievedUser
+            {
+                User = user,
+                ActiveSupportTargetsIds = [],
+            });
+        }
     }
 
     private record RetrievedUser

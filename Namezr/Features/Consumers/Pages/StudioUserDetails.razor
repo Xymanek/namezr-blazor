@@ -64,26 +64,31 @@
             @* Delay instantiating (and thus loading service info) UserLoginsTable until we have the logins loaded *@
             @if (_associatedLogins != null)
             {
-                <UserLoginsTable
-                    Logins="_associatedLogins"
-                    ShowRemove="false"
-                />
+                @if (_associatedLogins.Length > 0)
+                {
+                    <UserLoginsTable
+                        Logins="_associatedLogins"
+                        ShowRemove="false"/>
+                }
+                else
+                {
+                    <HxCardText>
+                        <em>None found</em>
+                    </HxCardText>
+                }
             }
 
-            <p>
-                <i>
-                    Note: only connections associated with your
-                    <a href="/studio/@CreatorId.NoHyphens()/config/targets">support targets</a>
-                    are shown. User may have other connections.
-                </i>
-            </p>
-
+            <HxAlert Color="ThemeColor.Info">
+                Note: only connections actively associated with your
+                <a href="/studio/@CreatorId.NoHyphens()/config/targets">support targets</a>
+                are shown. User may have other connections.
+            </HxAlert>
         </BodyTemplate>
     </HxCard>
 
     <HxCard>
         <HeaderTemplate>
-            Support status
+            Status
         </HeaderTemplate>
         <BodyTemplate>
             <table class="table table-hover">
@@ -189,13 +194,21 @@
             UserId, CreatorId, UserStatusSyncEagerness.Default
         );
 
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
         if (_activeSupportPlans.Count == 0)
         {
-            // TODO: 404
-            throw new InvalidOperationException("User has no active support plans");
-        }
+            bool isParticipating = await ConsumerUserRetriever
+                .GetParticipatingUsers(CreatorId, dbContext.Users)
+                .Where(user => user.Id == UserId)
+                .AnyAsync();
 
-        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+            if (!isParticipating)
+            {
+                // TODO: 404
+                throw new InvalidOperationException("User has no active support plans and is not participating");
+            }
+        }
 
         _user = await dbContext.Users
             .Where(user => user.Id == UserId)
@@ -218,6 +231,9 @@
         _associatedLogins = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
             .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == CreatorId)
             .Where(tuple => tuple.UserLogin.UserId == UserId)
+            // TODO (optimization): we already have _activeSupportPlans loaded/calculated,
+            // can unburden the DB from this lookup. The DB might also not match the above values
+            .Where(tuple => tuple.Consumer.SupportStatuses!.Any(status => status.IsActive))
             .Select(tuple => tuple.UserLogin)
             .Distinct()
             .Include(login => login.ThirdPartyToken)
