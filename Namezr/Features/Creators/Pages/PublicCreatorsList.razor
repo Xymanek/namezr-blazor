@@ -1,6 +1,7 @@
 ﻿@page "/PublicCreatorsList"
 
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
@@ -18,8 +19,10 @@
 
 @foreach (CreatorEntity creator in _creators)
 {
-    <h3>@creator.DisplayName</h3>
-    
+    <a href="@($"/creators/{creator.Id.NoHyphens()}")">
+        <h3>@creator.DisplayName</h3>
+    </a>
+
     <ul>
         @foreach (QuestionnaireEntity questionnaire in creator.Questionnaires!)
         {

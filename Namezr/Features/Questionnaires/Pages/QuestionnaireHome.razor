@@ -54,7 +54,9 @@
         }
 
         <div>
-            <strong>@_versionEntity.Questionnaire.Creator.DisplayName</strong>
+            <a href="@($"/creators/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}")">
+                <strong>@_versionEntity.Questionnaire.Creator.DisplayName</strong>
+            </a>
             <h3>@_versionEntity?.Questionnaire.Title</h3>
         </div>
     </div>

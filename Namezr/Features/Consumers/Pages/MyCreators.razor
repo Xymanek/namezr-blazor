@@ -2,6 +2,7 @@
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Features.Consumers.Services
 @using Namezr.Features.Creators.Data
 @using Namezr.Features.Identity.Data
@@ -20,12 +21,13 @@
     <PublicTitleSuffix/>
 </PageTitle>
 
-
 <h2>MyCreators</h2>
 
 @foreach (CreatorEntity creator in _creators)
 {
-    <h3>@creator.DisplayName</h3>
+    <a href="@($"/creators/{creator.Id.NoHyphens()}")">
+        <h3>@creator.DisplayName</h3>
+    </a>
 
     <ul>
         @foreach (QuestionnaireEntity questionnaire in creator.Questionnaires!)

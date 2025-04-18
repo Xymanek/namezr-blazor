@@ -1,0 +1,85 @@
+﻿@page "/creators/{creatorId:guid}"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client
+@using Namezr.Features.Creators.Data
+@using Namezr.Infrastructure.Data
+@using Namezr.Components
+@using Namezr.Features.Questionnaires.Components
+@using Namezr.Features.Questionnaires.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@if (_creator is not null)
+{
+    <PageTitle>
+        <StaticTruncatedText
+            Text="@_creator.DisplayName"
+            MaxLength="30"
+        />
+        <PublicTitleSuffix/>
+    </PageTitle>
+
+    <div class="row mb-3">
+        <div class="col-lg-10">
+            <h2>@_creator.DisplayName</h2>
+            
+            @foreach (SupportTargetEntity supportTarget in _creator.SupportTargets!)
+            {
+                <SupportTargetEligibilityHeader
+                    SupportTarget="@supportTarget"
+                />
+            }
+        </div>
+
+        @if (_creator.LogoFileId != null)
+        {
+            <div class="col-lg-2">
+                <img
+                    src="@($"{ApiEndpointPaths.CreatorsLogoDownload}?creatorId={CreatorId}")"
+                    alt="Creator logo"
+                    class="img-fluid rounded-circle"
+                />
+            </div>
+        }
+    </div>
+
+    foreach (QuestionnaireEntity questionnaire in _creator.Questionnaires!)
+    {
+        <HxCard CssClass="mb-2">
+            <BodyTemplate>
+                <HxCardTitle>
+                    <a href="@($"/questionnaires/{questionnaire.Id.NoHyphens()}")">
+                        @questionnaire.Title
+                    </a>
+                </HxCardTitle>
+                <HxCardText>@questionnaire.Description</HxCardText>
+            </BodyTemplate>
+        </HxCard>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    private CreatorEntity? _creator;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _creator = await dbContext.Creators
+            .Include(c => c.SupportTargets)
+            .Include(c => c.Questionnaires)
+            .FirstOrDefaultAsync(c => c.Id == CreatorId);
+
+        if (_creator is null)
+        {
+            // TODO: 404
+            throw new InvalidOperationException($"Creator with ID {CreatorId} not found.");
+        }
+    }
+
+}
