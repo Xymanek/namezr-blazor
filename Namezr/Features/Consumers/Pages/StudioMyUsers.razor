@@ -58,9 +58,9 @@
                     <th>@supportTarget.ServiceType</th>
                 }
 
-                @*<th>
+                <th>
                     <span class="visually-hidden">Actions</span>
-                </th>*@
+                </th>
             </tr>
             </thead>
 
@@ -79,14 +79,14 @@
                         </td>
                     }
 
-                    @*<td style="width: 1px">
+                    <td style="width: 1px">
                         <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{userTuple.User.Id.NoHyphens()}")"
                            class="btn btn-primary btn-sm"
                            title="View user details"
                         >
                             <HxIcon Icon="BootstrapIcon.EyeFill"/>
                         </a>
-                    </td>*@
+                    </td>
                 </tr>
             }
             </tbody>
@@ -121,6 +121,8 @@
 
         _supportTargets = supportTargets.ToDictionary(supportTarget => supportTarget.Id);
 
+        // TODO: need to also include users who have participated but do not have an active link,
+        // e.g. link was removed or VirtualEligibilityType.NoSupportPlanAtAll
         _userTuples = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
             .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == CreatorId)
             .GroupBy(tuple => tuple.UserLogin.User)
@@ -136,7 +138,7 @@
             .ToArrayAsync(HttpContext.RequestAborted);
     }
 
-    public record RetrievedUser
+    private record RetrievedUser
     {
         public required ApplicationUser User { get; init; }
         public required Guid[] ActiveSupportTargetsIds { get; init; }

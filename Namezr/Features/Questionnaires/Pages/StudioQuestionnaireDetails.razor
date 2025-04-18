@@ -172,7 +172,11 @@
             /* TODO: pagination */
 
             <tr>
-                <td>@submission.User.UserName</td>
+                <td>
+                    <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{submission.User.Id.NoHyphens()}")">
+                        @submission.User.UserName
+                    </a>
+                </td>
                 <td>
                     <RelativeTime Value="submission.SubmittedAt.ToDateTimeOffset()"/>
                 </td>

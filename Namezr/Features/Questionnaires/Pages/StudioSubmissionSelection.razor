@@ -92,7 +92,11 @@
                         {
                             QuestionnaireSubmissionEntity submission = (QuestionnaireSubmissionEntity)picked.Candidate;
 
-                            <td>@submission.User.UserName</td>
+                            <td>
+                                <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{submission.User.Id.NoHyphens()}")">
+                                    @submission.User.UserName
+                                </a>
+                            </td>
                             <td>@submission.Id</td>
                             <td>
                                 <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@submission.Id.NoHyphens()"
@@ -169,7 +173,11 @@
     @foreach (SelectionUserDataEntity userData in GetUserDataSorted())
     {
         <tr>
-            <td>@userData.User.UserName</td>
+            <td>
+                <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{userData.User.Id.NoHyphens()}")">
+                    @userData.User.UserName
+                </a>
+            </td>
             <td>@userData.LatestModifier</td>
             <td>
                 @* 

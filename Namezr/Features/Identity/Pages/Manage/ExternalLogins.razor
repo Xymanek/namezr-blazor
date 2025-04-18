@@ -1,21 +1,16 @@
 ﻿@page "/Account/Manage/ExternalLogins"
 
-@using System.Drawing
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Features.Identity.Data
 @using Namezr.Features.Identity.Helpers
-@using Namezr.Features.Identity.Services
-@using Namezr.Helpers
 @using Namezr.Infrastructure.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
-@inject IEnumerable<ILoginContextProvider> LoginContextProviders
-@inject ILogger<ExternalLogins> Logger
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 
@@ -25,64 +20,36 @@
 </PageTitle>
 
 <StatusMessage/>
-@if (currentLogins?.Length > 0)
+
+@if (_currentLogins.Length > 0)
 {
     <h3>Registered Logins</h3>
-    <table class="table">
-        <tbody>
-        @foreach ((ApplicationUserLogin login, LoginContext? context) in currentLogins)
-        {
-            <tr>
-                <td>@login.ProviderDisplayName</td>
-                <td>
-                    @if (context is not null)
-                    {
-                        @if (context.ImageUrl is not null)
-                        {
-                            <img
-                                src="@context.ImageUrl"
-                                width="32"
-                                height="32"
-                                alt="@context.DisplayName profile picture"
-                                class="rounded-circle me-2"
-                            />
-                        }
 
-                        <span>@context.DisplayName</span>
-                    }
-                    else
-                    {
-                        <em>Failed to load</em>
-                    }
-                </td>
-                <td style="width: 1%; white-space: nowrap;" class="px-3">
-                    @if (showRemoveButton)
-                    {
-                        <form
-                            @formname="@($"remove-login-{login.LoginProvider}-{login.ProviderKey}")"
-                            @onsubmit="OnSubmitAsync"
-                            method="post"
-                        >
-                            <AntiforgeryToken/>
-                            <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
-                            <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
-                            <HxSubmit
-                                Color="ThemeColor.Danger"
-                                Icon="BootstrapIcon.Trash"
-                                title="Remove"
-                            />
-                        </form>
-                    }
-                    else
-                    {
-                        @: &nbsp;
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <UserLoginsTable
+        Logins="_currentLogins"
+        ShowRemove="showRemoveButton"
+    >
+        <RemoveCellTemplate>
+            <form
+                @formname="@($"remove-login-{context.LoginProvider}-{context.ProviderKey}")"
+                @onsubmit="OnSubmitAsync"
+                method="post"
+            >
+                <AntiforgeryToken/>
+
+                <input type="hidden" name="@nameof(LoginProvider)" value="@context.LoginProvider"/>
+                <input type="hidden" name="@nameof(ProviderKey)" value="@context.ProviderKey"/>
+
+                <HxSubmit
+                    Color="ThemeColor.Danger"
+                    Icon="BootstrapIcon.Trash"
+                    title="Remove"
+                />
+            </form>
+        </RemoveCellTemplate>
+    </UserLoginsTable>
 }
+
 @if (newLoginSchemes?.Count > 0)
 {
     <h4>Add another service to log in.</h4>
@@ -100,7 +67,7 @@
     private ApplicationUser user = default!;
     private IList<AuthenticationScheme>? newLoginSchemes;
     private bool showRemoveButton;
-    private (ApplicationUserLogin login, LoginContext? context)[]? currentLogins;
+    private ApplicationUserLogin[] _currentLogins = [];
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -114,49 +81,14 @@
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
 
-        Dictionary<string, ILoginContextProvider> providers
-            = LoginContextProviders.ToDictionary(x => x.Provider);
-
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        ApplicationUserLogin[] userLogins = await dbContext.UserLogins
+        _currentLogins = await dbContext.UserLogins
             .Include(login => login.ThirdPartyToken)
             .Where(login => login.UserId == user.Id)
             .OrderBy(login => login.LoginProvider)
             .ThenBy(login => login.ProviderKey)
             .ToArrayAsync(HttpContext.RequestAborted);
-
-        // TODO: maybe streaming rendering is the correct approach here?
-        CancellationTokenSource loginContextCts = CancellationTokenSource.CreateLinkedTokenSource(
-            HttpContext.RequestAborted
-        );
-        loginContextCts.CancelAfter(TimeSpan.FromSeconds(2));
-
-        currentLogins = await userLogins
-            .Select(async login =>
-            {
-                return (login, context: await DoGet());
-
-                async Task<LoginContext?> DoGet()
-                {
-                    try
-                    {
-                        return await providers[login.LoginProvider]
-                            .GetLoginContextAsync(login, loginContextCts.Token)
-                            .DiscardWhenCancelled(loginContextCts.Token);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(
-                            e,
-                            "Failed to get login context. Provider: {provider}. Key: {providerKey}",
-                            login.LoginProvider, login.ProviderKey
-                        );
-                        return null;
-                    }
-                }
-            })
-            .WhenAll();
 
         newLoginSchemes = (await SignInManager.GetExternalAuthenticationSchemesAsync())
             .ToList();
@@ -167,7 +99,7 @@
         //     passwordHash = await userPasswordStore.GetPasswordHashAsync(user, HttpContext.RequestAborted);
         // }
 
-        showRemoveButton = /*passwordHash is not null ||*/ currentLogins.Length > 1;
+        showRemoveButton = /*passwordHash is not null ||*/ _currentLogins.Length > 1;
 
         if (HttpMethods.IsGet(HttpContext.Request.Method) && Action == LinkLoginCallbackAction)
         {

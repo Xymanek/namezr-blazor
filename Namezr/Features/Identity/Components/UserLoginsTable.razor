@@ -1,0 +1,103 @@
+﻿@using Namezr.Features.Identity.Data
+@using Namezr.Features.Identity.Services
+@using Namezr.Helpers
+
+@inject IEnumerable<ILoginContextProvider> LoginContextProviders
+@inject ILogger<UserLoginsTable> Logger
+
+<table class="table">
+    <tbody>
+    @foreach ((ApplicationUserLogin login, LoginContext? context) in _loginsWithContext)
+    {
+        <tr>
+            <td>@login.ProviderDisplayName</td>
+            <td>
+                @if (context is not null)
+                {
+                    @if (context.ImageUrl is not null)
+                    {
+                        <img
+                            src="@context.ImageUrl"
+                            width="32"
+                            height="32"
+                            alt="@context.DisplayName profile picture"
+                            class="rounded-circle me-2"
+                        />
+                    }
+
+                    <span>@context.DisplayName</span>
+                }
+                else
+                {
+                    <em>Failed to load</em>
+                }
+            </td>
+            
+            @if (ShowRemove)
+            {
+                <td style="width: 1%; white-space: nowrap;" class="px-3">
+                    @RemoveCellTemplate?.Invoke(login)
+                </td>
+            }
+        </tr>
+    }
+    </tbody>
+</table>
+
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+    
+    [Parameter]
+    public IList<ApplicationUserLogin> Logins { get; set; } = [];
+
+    [Parameter]
+    public bool ShowRemove { get; set; }
+
+    [Parameter]
+    public RenderFragment<ApplicationUserLogin>? RemoveCellTemplate { get; set; }
+
+    private (ApplicationUserLogin login, LoginContext? context)[] _loginsWithContext = [];
+    
+    protected override async Task OnInitializedAsync()
+    {
+        Dictionary<string, ILoginContextProvider> providers
+            = LoginContextProviders.ToDictionary(x => x.Provider);
+        
+        // TODO: maybe streaming rendering is the correct approach here?
+        CancellationTokenSource loginContextCts = CancellationTokenSource.CreateLinkedTokenSource(
+            HttpContext.RequestAborted
+        );
+        loginContextCts.CancelAfter(TimeSpan.FromSeconds(2));
+        
+        _loginsWithContext = await Logins
+            .Select(async login =>
+            {
+                return (login, context: await DoGet());
+
+                async Task<LoginContext?> DoGet()
+                {
+                    try
+                    {
+                        return await providers[login.LoginProvider]
+                            .GetLoginContextAsync(login, loginContextCts.Token)
+                            .DiscardWhenCancelled(loginContextCts.Token);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(
+                            e,
+                            "Failed to get login context. Provider: {provider}. Key: {providerKey}",
+                            login.LoginProvider, login.ProviderKey
+                        );
+                        return null;
+                    }
+                }
+            })
+            .WhenAll();
+        
+    }
+
+}

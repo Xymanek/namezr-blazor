@@ -1,0 +1,228 @@
+﻿@page "/studio/{creatorId:guid}/supporters/users/{userId:guid}"
+
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Components
+@using Namezr.Features.Consumers.Services
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Identity.Data
+@using Namezr.Client.Shared
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Features.StudioCommon.Components
+@using Namezr.Features.Identity.Components
+
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
+@inject IConsumerStatusService ConsumerStatusService
+
+@if (_user != null)
+{
+    <PageTitle>
+        <StaticTruncatedText Text="@(_user.UserName)" MaxLength="25"/>
+        | Supporters
+        <StudioTitleSuffix/>
+    </PageTitle>
+
+    <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+        <HxBreadcrumb>
+            <StudioHomeBreadcrumb CreatorId="CreatorId"/>
+
+            <HxBreadcrumbItem
+                Href=@($"studio/{CreatorId.NoHyphens()}/supporters/users")
+                Text="Supporters"
+            />
+
+            <HxBreadcrumbItem
+                Href=@($"studio/{CreatorId.NoHyphens()}/supporters/users/{UserId.NoHyphens()}")>
+                <TruncatedText
+                    Text="@_user.UserName"
+                    MaxLength="30"
+                />
+
+            </HxBreadcrumbItem>
+        </HxBreadcrumb>
+    </SectionContent>
+
+    <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+        @_user.UserName
+    </SectionContent>
+}
+
+<div class="d-flex flex-column gap-3">
+    <HxCard>
+        <HeaderTemplate>
+            Connections
+        </HeaderTemplate>
+        <BodyTemplate>
+            @* Delay instantiating (and thus loading service info) UserLoginsTable until we have the logins loaded *@
+            @if (_associatedLogins != null)
+            {
+                <UserLoginsTable
+                    Logins="_associatedLogins"
+                    ShowRemove="false"
+                />
+            }
+
+            <p>
+                <i>
+                    Note: only connections associated with your
+                    <a href="/studio/@CreatorId.NoHyphens()/config/targets">support targets</a>
+                    are shown. User may have other connections.
+                </i>
+            </p>
+
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
+            Support status
+        </HeaderTemplate>
+        <BodyTemplate>
+            <table class="table table-hover">
+                <tbody>
+                @foreach (SupportTargetEntity supportTarget in _supportTargets.Values)
+                {
+                    <tr>
+                        @* TODO: this should be service logo + display name *@
+                        <th colspan="2">@supportTarget.ServiceType</th>
+                    </tr>
+
+                    @foreach (SupportPlan supportPlan in _supportPlans)
+                    {
+                        if (supportPlan.Id.SupportTargetId != supportTarget.Id) { continue; }
+
+                        <tr>
+                            <td>
+                                @supportPlan.DisplayName
+                            </td>
+
+                            <td>
+                                <YesNoBadge Value="_activeSupportPlans.Contains(supportPlan.Id)"/>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
+            Participation
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Activity</th>
+                    <th>
+                        <span class="visually-hidden">Actions</span>
+                    </th>
+                </tr>
+                </thead>
+
+                <tbody>
+                @foreach (QuestionnaireSubmissionEntity submission in _submissions)
+                {
+                    <tr>
+                        <td>Questionnaire submission</td>
+                        <td>
+                            <a href="@($"/studio/{CreatorId.NoHyphens()}/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}")">
+                                <TruncatedText
+                                    Text="@submission.Version.Questionnaire.Title"
+                                    MaxLength="30"/>
+                            </a>
+                        </td>
+                        <td style="width: 1%">
+                            <a href="@($"/studio/{CreatorId.NoHyphens()}/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}/submissions/{submission.Id.NoHyphens()}")"
+                               class="btn btn-primary btn-sm"
+                               title="View submission details">
+                                <HxIcon Icon="BootstrapIcon.EyeFill"/>
+                            </a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </BodyTemplate>
+    </HxCard>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid UserId { get; set; }
+
+    private Dictionary<Guid, SupportTargetEntity> _supportTargets = [];
+    private ApplicationUser? _user;
+    private SupportPlan[] _supportPlans = [];
+    private IReadOnlySet<SupportPlanFullId> _activeSupportPlans = new HashSet<SupportPlanFullId>();
+    private QuestionnaireSubmissionEntity[] _submissions = [];
+    private ApplicationUserLogin[]? _associatedLogins;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        _supportPlans = (await SupportPlansService.GetSupportPlans(CreatorId)).ToArray();
+        _activeSupportPlans = await ConsumerStatusService.GetUserActiveSupportPlans(
+            UserId, CreatorId, UserStatusSyncEagerness.Default
+        );
+
+        if (_activeSupportPlans.Count == 0)
+        {
+            // TODO: 404
+            throw new InvalidOperationException("User has no active support plans");
+        }
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _user = await dbContext.Users
+            .Where(user => user.Id == UserId)
+            .SingleAsync();
+
+        SupportTargetEntity[] supportTargets = await dbContext.SupportTargets
+            .Where(target => target.CreatorId == CreatorId)
+            .OrderBy(supportTarget => supportTarget.Id)
+            .ToArrayAsync(HttpContext.RequestAborted);
+
+        _supportTargets = supportTargets.ToDictionary(supportTarget => supportTarget.Id);
+
+        _submissions = await dbContext.QuestionnaireSubmissions
+            .Where(submission => submission.UserId == UserId)
+            .Where(submission => submission.Version.Questionnaire.CreatorId == CreatorId)
+            .OrderBy(submission => submission.Id)
+            .Include(submission => submission.Version.Questionnaire)
+            .ToArrayAsync(HttpContext.RequestAborted);
+
+        _associatedLogins = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)
+            .Where(tuple => tuple.Consumer.SupportTarget.CreatorId == CreatorId)
+            .Where(tuple => tuple.UserLogin.UserId == UserId)
+            .Select(tuple => tuple.UserLogin)
+            .Distinct()
+            .Include(login => login.ThirdPartyToken)
+            .ToArrayAsync(HttpContext.RequestAborted);
+    }
+
+
+}

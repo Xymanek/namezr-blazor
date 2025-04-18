@@ -89,7 +89,11 @@
     <table class="table table-striped">
         <tr>
             <th>User</th>
-            <td>@_submission.User.UserName</td>
+            <td>
+                <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{_submission.User.Id.NoHyphens()}")">
+                    @_submission.User.UserName
+                </a>
+            </td>
         </tr>
 
         <tr>
