@@ -15,6 +15,7 @@
 @using Namezr.Features.Questionnaires.Components
 @using Namezr.Client.Shared
 @using Namezr.Components
+@using Namezr.Client.Studio.Questionnaires
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -24,23 +25,23 @@
 @inject IEligibilityService EligibilityService
 
 <PageTitle>
-    <StaticTruncatedText Text="@_questionnaireVersion?.Questionnaire.Title" MaxLength="25"/>
+    <StaticTruncatedText Text="@_questionnaire?.Title" MaxLength="25"/>
     <StudioTitleSuffix/>
 </PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        @if (_questionnaireVersion is not null)
+        @if (_questionnaire is not null)
         {
             <QuestionnaireBreadcrumbs
-                Questionnaire="_questionnaireVersion.Questionnaire"
+                Questionnaire="_questionnaire"
             />
         }
     </HxBreadcrumb>
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-    @_questionnaireVersion?.Questionnaire.Title
+    @_questionnaire?.Title
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
@@ -56,18 +57,18 @@
     </a>
 </SectionContent>
 
-@if (_questionnaireVersion is not null)
+@if (_questionnaire is not null)
 {
     /* TODO: nice labels */
     <table class="table table-striped">
         <tr>
             <th>Approval mode</th>
-            <td>@_questionnaireVersion.Questionnaire.ApprovalMode</td>
+            <td>@_questionnaire.ApprovalMode</td>
         </tr>
 
         <tr>
             <th>Submission open mode</th>
-            <td>@_questionnaireVersion.Questionnaire.SubmissionOpenMode</td>
+            <td>@_questionnaire.SubmissionOpenMode</td>
         </tr>
     </table>
 
@@ -83,7 +84,7 @@
         </thead>
 
         <tbody>
-        @foreach (EligibilityOptionEntity option in _questionnaireVersion.Questionnaire.EligibilityConfiguration.Options!)
+        @foreach (EligibilityOptionEntity option in _questionnaire.EligibilityConfiguration.Options!)
         {
             <tr>
                 <td>
@@ -119,36 +120,9 @@
 
     <hr class="my-4"/>
 
-    /* TODO: version selector */
-    <h4>Fields</h4>
-
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Title</th>
-            <th>Type</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        @foreach (QuestionnaireFieldConfigurationEntity field in _questionnaireVersion.Fields!)
-        {
-            <tr>
-                <td>@field.Title</td>
-                <td>@field.Field.Type</td>
-            </tr>
-
-            @if (!string.IsNullOrWhiteSpace(field.Description))
-            {
-                <tr>
-                    <td colspan="2">
-                        <pre>@field.Description</pre>
-                    </td>
-                </tr>
-            }
-        }
-        </tbody>
-    </table>
+    <QuestionnaireFieldsOverview
+        Versions="QuestionnaireEntityToFormMapper.MapToOverview(_questionnaire.Versions ?? [])"
+    />
 
     <hr class="my-4"/>
 
@@ -207,7 +181,7 @@
     [Parameter]
     public Guid Id { get; set; }
 
-    private QuestionnaireVersionEntity? _questionnaireVersion;
+    private QuestionnaireEntity? _questionnaire;
     private QuestionnaireSubmissionEntity[] _submissions = [];
     private Dictionary<EligibilityPlanId, EligibilityPlan>? EligibilityDescriptors { get; set; }
 
@@ -217,13 +191,13 @@
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        _questionnaireVersion = await dbContext.QuestionnaireVersions
+        _questionnaire = await dbContext.Questionnaires
             .AsNoTracking()
             .AsSplitQuery()
-            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(q => q.Questionnaire.Id == Id && q.Questionnaire.CreatorId == CreatorId);
+            .Where(q => q.Id == Id && q.CreatorId == CreatorId)
+            .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
+            .Include(x => x.Versions!).ThenInclude(x => x.Fields!).ThenInclude(x => x.Field)
+            .FirstOrDefaultAsync();
 
         _submissions = await dbContext.QuestionnaireSubmissions
             .Include(s => s.User)

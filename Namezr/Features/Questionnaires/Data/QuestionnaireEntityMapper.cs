@@ -1,5 +1,7 @@
-﻿using Namezr.Client.Studio.Questionnaires.Edit;
+﻿using Namezr.Client.Studio.Questionnaires;
+using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Eligibility.Data;
+using NodaTime;
 using Riok.Mapperly.Abstractions;
 
 namespace Namezr.Features.Questionnaires.Data;
@@ -51,6 +53,13 @@ public static partial class QuestionnaireEntityToFormMapper
     [MapperIgnoreSource(nameof(QuestionnaireFieldConfigurationEntity.Order))]
     [MapNestedProperties(nameof(QuestionnaireFieldConfigurationEntity.Field))]
     private static partial QuestionnaireFieldEditModel MapToEditModel(QuestionnaireFieldConfigurationEntity source);
+
+    public static partial VersionOverviewModel[] MapToOverview(IEnumerable<QuestionnaireVersionEntity> source);
+
+    private static DateTimeOffset Map(Instant source)
+    {
+        return source.ToDateTimeOffset();
+    }
 }
 
 /// <summary>

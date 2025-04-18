@@ -1,0 +1,72 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Studio.Questionnaires.Edit
+
+<div class="d-flex justify-content-between align-items-centre gap-3">
+    <h4>Fields</h4>
+
+    <HxTooltip
+        Text="@HintText"
+    >
+        <HxSelect
+            Data="@_versionsOrdered"
+            Nullable="false"
+            @bind-Value="@_selectedVersionId"
+            ValueSelector="version => version.Id"
+            TextSelector="@(version => version.CreatedAt.ToString("dd/MM/yyyy HH:mm"))"
+        />
+    </HxTooltip>
+</div>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Title</th>
+        <th>Type</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    @foreach (QuestionnaireFieldEditModel field in SelectedVersion?.Fields ?? [])
+    {
+        <tr>
+            <td>@field.Title</td>
+            <td>@field.Type</td>
+        </tr>
+
+        @if (!string.IsNullOrWhiteSpace(field.Description))
+        {
+            <tr>
+                <td colspan="2">
+                    <pre>@field.Description</pre>
+                </td>
+            </tr>
+        }
+    }
+    </tbody>
+</table>
+
+@code {
+
+    [Parameter]
+    public VersionOverviewModel[] Versions { get; set; } = [];
+
+    private VersionOverviewModel[] _versionsOrdered = [];
+
+    private Guid? _selectedVersionId;
+
+    private VersionOverviewModel? SelectedVersion => Versions.SingleOrDefault(x => x.Id == _selectedVersionId);
+
+    protected override void OnParametersSet()
+    {
+        _versionsOrdered = Versions.OrderByDescending(x => x.CreatedAt).ToArray();
+
+        _selectedVersionId ??= _versionsOrdered.FirstOrDefault()?.Id;
+    }
+
+    private const string HintText =
+        "Every time you edit a questionnaire, you create a new version. " +
+        "Submissions that were created before your edit will still be linked " +
+        "to the original version of the questionnaire, ensuring that no information is lost";
+
+}
