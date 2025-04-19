@@ -11,11 +11,13 @@
 @using Namezr.Features.Polls.Components
 @using Namezr.Client.Shared
 @using Namezr.Features.Eligibility.Components
+@using Namezr.Features.Polls.Services
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IPollResultsRetriever PollResultsRetriever
 
 <PageTitle>
     <StaticTruncatedText Text="@_poll?.Title" MaxLength="25"/>
@@ -97,11 +99,13 @@
                     @option.Title
                     @* TODO: if description is set, some kind of hover/click to popup display *@
                 </td>
-                <td>0</td>
+                <td>
+                    @_optionResults?.GetValueOrDefault(option.Id)?.VotesCount ?? 0
+                </td>
                 <td>
                     <HxProgressBar
-                        Value="50"
-                        Label="50%"
+                        Value="GetWeightedRatio(option.Id)"
+                        Label="@($"{GetWeightedRatio(option.Id):P2}%")"
                     />
                 </td>
             </tr>
@@ -122,6 +126,7 @@
     public Guid Id { get; set; }
 
     private PollEntity? _poll;
+    private IReadOnlyDictionary<Guid, PollOptionResult>? _optionResults;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,9 +142,18 @@
             .Include(x => x.Options)
             .FirstOrDefaultAsync();
 
-        // TODO: 404 if not found
-        
-        // TODO: stats
+        if (_poll is null)
+        {
+            // TODO: 404
+            throw new Exception("Poll not found");
+        }
+
+        _optionResults = await PollResultsRetriever.CalculatePerOptionStats(Id);
+    }
+
+    private float GetWeightedRatio(Guid optionId)
+    {
+        return (float)(_optionResults?.GetValueOrDefault(optionId)?.WeightedRatio ?? 0);
     }
 
 }
