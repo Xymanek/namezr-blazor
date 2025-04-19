@@ -1,0 +1,101 @@
+﻿@page "/studio/{creatorId:guid}/polls/{id:guid}/edit"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Studio.Polls.Edit
+@using Namezr.Client.Types
+@using Namezr.Components.Layout
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Polls.Data
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Polls.Components
+@using Namezr.Components
+@using Namezr.Features.Polls.Mappers
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
+
+<PageTitle>
+    Edit |
+    <StaticTruncatedText Text="@_pollEntity?.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_pollEntity is not null)
+        {
+            <PollBreadcrumbs Poll="_pollEntity"/>
+            <HxBreadcrumbItem
+                Href=@($"studio/{CreatorId.NoHyphens()}/polls/{_pollEntity.Id.NoHyphens()}/edit")
+                Text="Edit"
+            />
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Edit poll
+</SectionContent>
+
+@if (InitialModel is not null && EligibilityDescriptors is not null)
+{
+    <PollEditor
+        CreatorId="CreatorId"
+        PollId="Id"
+        InitialModel="InitialModel"
+        EligibilityDescriptors="EligibilityDescriptors"
+    />
+}
+
+@code {
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private PollEntity? _pollEntity;
+    private PollEditModel? InitialModel { get; set; }
+    private List<EligibilityPlan>? EligibilityDescriptors { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _pollEntity = await dbContext.Polls
+            .AsNoTracking()
+            .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
+            .Include(x => x.Options)
+            .FirstOrDefaultAsync(poll => poll.Id == Id && poll.CreatorId == CreatorId);
+
+        if (_pollEntity == null)
+        {
+            // TODO: 404
+            throw new Exception("Poll not found");
+        }
+
+        InitialModel = _pollEntity.MapToEditModel();
+
+        EligibilityDescriptors = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                // TODO: in parallel
+                await SupportPlansService.GetSupportPlans(CreatorId)
+            )
+            .ToList();
+    }
+
+}

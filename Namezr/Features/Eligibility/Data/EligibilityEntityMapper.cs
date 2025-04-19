@@ -45,4 +45,15 @@ public static partial class EligibilityEntityMapper
 
     [MapperIgnoreTarget(nameof(EligibilityOptionEntity.Id))]
     private static partial EligibilityOptionEntity Map(EligibilityOptionEditModel model, int order);
+
+    public static List<EligibilityOptionEditModel> MapToEditModel(ICollection<EligibilityOptionEntity> source)
+    {
+        return source
+            .OrderBy(x => x.Order)
+            .Select(MapToEditModel)
+            .ToList();
+    }
+
+    [MapperRequiredMapping(RequiredMappingStrategy.Target)]
+    private static partial EligibilityOptionEditModel MapToEditModel(EligibilityOptionEntity o);
 }

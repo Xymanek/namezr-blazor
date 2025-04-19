@@ -28,10 +28,8 @@ public static partial class QuestionnaireEntityToFormMapper
             questionnaireVersion.Questionnaire.EligibilityConfiguration.Options
             ?? throw new InvalidOperationException();
 
-        return MapToEditModel(options);
+        return EligibilityEntityMapper.MapToEditModel(options);
     }
-
-    private static partial List<EligibilityOptionEditModel> MapToEditModel(ICollection<EligibilityOptionEntity> o);
 
     [UserMapping(Default = true)]
     private static List<QuestionnaireFieldEditModel> MapToEditModel(
