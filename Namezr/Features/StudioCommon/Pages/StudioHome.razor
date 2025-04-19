@@ -6,6 +6,7 @@
 @using Namezr.Client
 @using Namezr.Features.StudioCommon.Components
 @using Namezr.Components
+@using Namezr.Features.Polls.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -41,25 +42,24 @@
 
     <HxCard>
         <BodyTemplate>
-            <a href="/studio/@CreatorId.NoHyphens()/raffles">
-                <HxCardTitle>Raffles</HxCardTitle>
+            <a href="/studio/@CreatorId.NoHyphens()/polls">
+                <HxCardTitle>Polls</HxCardTitle>
             </a>
 
             <HxCardText>
-                Randomly pick from your supporters. Individual supporters can only opt-in/out.
+                <PollsExplanationText/>
             </HxCardText>
         </BodyTemplate>
     </HxCard>
 
     <HxCard>
         <BodyTemplate>
-            <a href="/studio/@CreatorId.NoHyphens()/polls">
-                <HxCardTitle>Polls</HxCardTitle>
+            <a href="/studio/@CreatorId.NoHyphens()/raffles">
+                <HxCardTitle>Raffles</HxCardTitle>
             </a>
 
             <HxCardText>
-                Supporters choose from predetermined options.
-                Higher tier supporters' votes automatically having more impact
+                Randomly pick from your supporters. Individual supporters can only opt-in/out.
             </HxCardText>
         </BodyTemplate>
     </HxCard>

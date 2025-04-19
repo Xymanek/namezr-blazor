@@ -1,0 +1,14 @@
+﻿@using Namezr.Client
+@using Namezr.Features.StudioCommon.Components
+
+<StudioHomeBreadcrumb CreatorId="CreatorId"/>
+
+<HxBreadcrumbItem
+    Href=@($"studio/{CreatorId.NoHyphens()}/polls")
+    Text="Polls"
+/>
+
+@code {
+    [Parameter]
+    public Guid CreatorId { get; set; }
+}

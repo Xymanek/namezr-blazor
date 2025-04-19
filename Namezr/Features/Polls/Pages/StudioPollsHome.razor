@@ -1,0 +1,94 @@
+﻿@page "/studio/{creatorId:guid}/polls"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Infrastructure.Data
+@using Namezr.Components
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Polls.Components
+@using Namezr.Features.Polls.Data
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    Polls
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <PollsBreadcrumbs CreatorId="CreatorId"/>
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Polls
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/polls/new"
+        class="btn btn-success">
+        Create
+    </a>
+</SectionContent>
+
+<HxCard>
+    <BodyTemplate>
+        <HxCardText>
+            <PollsExplanationText/>
+        </HxCardText>
+    </BodyTemplate>
+</HxCard>
+
+@if (_polls.Length > 0)
+{
+    /*
+        TODO:
+        - description
+        - number of choices
+        - top 3 options preview?
+     */
+    <ul>
+        @foreach (PollEntity poll in _polls)
+        {
+            <li>
+                <a href="/studio/@CreatorId.NoHyphens()/polls/@poll.Id.NoHyphens()">
+                    @poll.Title
+                </a>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No polls yet.</p>
+}
+
+@code {
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    private PollEntity[] _polls = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _polls = await dbContext.Polls
+            .Where(q => q.CreatorId == CreatorId)
+            .ToArrayAsync();
+    }
+
+}
