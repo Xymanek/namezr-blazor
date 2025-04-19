@@ -42,6 +42,10 @@ public class PollEditModel
             RuleFor(x => x.Options)
                 .NotEmpty();
 
+            RuleFor(x => x.Options)
+                .Must(options => options.Select(x => x.Title.Trim()).Distinct().Count() == options.Count)
+                .WithMessage("Duplicate options are not allowed");
+
             RuleForEach(x => x.Options)
                 .SetValidator(fieldValidator);
 

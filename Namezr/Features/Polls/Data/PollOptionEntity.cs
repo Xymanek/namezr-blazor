@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Polls.Edit;
 
 namespace Namezr.Features.Polls.Data;
@@ -28,4 +30,12 @@ public class PollOptionEntity
     /// </para>
     /// </summary>
     public required bool WasUserAdded { get; init; }
+}
+
+internal class PollOptionEntityConfiguration : IEntityTypeConfiguration<PollOptionEntity>
+{
+    public void Configure(EntityTypeBuilder<PollOptionEntity> builder)
+    {
+        builder.HasIndex(option => new { option.PollId, option.Title });
+    }
 }

@@ -7,6 +7,8 @@ using Riok.Mapperly.Abstractions;
 
 namespace Namezr.Features.Polls.Mappers;
 
+// TODO: add somewhere logic to trim whitespace and replace extra strings with nulls
+
 [Mapper]
 public static partial class PollFormToEntityMapper
 {
