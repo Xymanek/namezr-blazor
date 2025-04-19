@@ -25,6 +25,7 @@ public class PollEntity
     /// Must not be changed after the initial creation.
     /// </para>
     /// </summary>
+    // TODO: convert to an enum. E.g. creator can see who voted but not what they voted, public can see who voted, etc.
     public required bool IsAnonymous { get; init; }
 
     public required bool IsOpen { get; set; }

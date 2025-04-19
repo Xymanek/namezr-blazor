@@ -1,0 +1,22 @@
+﻿@using Namezr.Client
+@using Namezr.Client.Shared
+@using Namezr.Features.Polls.Data
+
+<PollsBreadcrumbs CreatorId="Poll.CreatorId"/>
+
+<HxBreadcrumbItem
+    Href=@($"studio/{Poll.CreatorId.NoHyphens()}/polls/{Poll.Id.NoHyphens()}")>
+
+    @* TODO: no underline when truncated *@
+    <TruncatedText
+        Text="@Poll.Title"
+        MaxLength="30"
+    />
+</HxBreadcrumbItem>
+
+@code {
+
+    [Parameter]
+    public required PollEntity Poll { get; set; }
+
+}

@@ -1,0 +1,80 @@
+﻿@using System.Diagnostics
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Data
+@using Namezr.Features.Eligibility.Services
+
+@inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Support plan</th>
+        <th>Priority group</th>
+        <th>Weight</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    @foreach (EligibilityOptionEntity option in Configuration?.Options ?? [])
+    {
+        <tr>
+            <td>
+                @if (EligibilityDescriptors is not null)
+                {
+                    EligibilityPlan? eligibilityPlan = EligibilityDescriptors.GetValueOrDefault(option.PlanId);
+
+                    @switch (eligibilityPlan?.Type)
+                    {
+                        case null:
+                            <i>Unknown</i>
+                            break;
+
+                        case EligibilityType.SupportPlan:
+                            <span>@eligibilityPlan.SupportPlan?.DisplayName</span>
+                            break;
+
+                        case EligibilityType.Virtual:
+                            <span>@eligibilityPlan.VirtualEligibilityType</span>
+                            break;
+
+                        default:
+                            throw new UnreachableException();
+                    }
+                }
+            </td>
+            <td>@option.PriorityGroup</td>
+            <td>@option.PriorityModifier</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+
+    /// <remarks>
+    /// Can be fetched from <see cref="Configuration"/> but too much hassle,
+    /// especially when all consumers already have the value ready.
+    /// </remarks>
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    /// <summary>
+    /// Must have <see cref="EligibilityConfigurationEntity.Options"/> loaded.
+    /// </summary>
+    [Parameter]
+    public EligibilityConfigurationEntity? Configuration { get; set; }
+
+    private Dictionary<EligibilityPlanId, EligibilityPlan>? EligibilityDescriptors { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        IEnumerable<SupportPlan> supportPlans = await SupportPlansService.GetSupportPlans(CreatorId);
+
+        EligibilityDescriptors = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(supportPlans)
+            .ToDictionary(plan => plan.Id);
+    }
+
+}

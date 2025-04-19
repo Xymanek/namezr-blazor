@@ -1,14 +1,9 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{id:guid}"
 
-@using System.Diagnostics
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@using Namezr.Client.Types
 @using Namezr.Components.Layout
-@using Namezr.Features.Creators.Services
-@using Namezr.Features.Eligibility.Data
-@using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 @using Namezr.Client
@@ -16,13 +11,12 @@
 @using Namezr.Client.Shared
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
+@using Namezr.Features.Eligibility.Components
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ISupportPlansService SupportPlansService
-@inject IEligibilityService EligibilityService
 
 <PageTitle>
     <StaticTruncatedText Text="@_questionnaire?.Title" MaxLength="25"/>
@@ -57,6 +51,8 @@
     </a>
 </SectionContent>
 
+@* TODO: description somewhere *@
+
 @if (_questionnaire is not null)
 {
     /* TODO: nice labels */
@@ -74,49 +70,10 @@
 
     <h4>Eligibility</h4>
 
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Support plan</th>
-            <th>Priority group</th>
-            <th>Weight</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        @foreach (EligibilityOptionEntity option in _questionnaire.EligibilityConfiguration.Options!)
-        {
-            <tr>
-                <td>
-                    @if (EligibilityDescriptors is not null)
-                    {
-                        EligibilityPlan? eligibilityPlan = EligibilityDescriptors.GetValueOrDefault(option.PlanId);
-
-                        @switch (eligibilityPlan?.Type)
-                        {
-                            case null:
-                                <i>Unknown</i>
-                                break;
-
-                            case EligibilityType.SupportPlan:
-                                <span>@eligibilityPlan.SupportPlan?.DisplayName</span>
-                                break;
-
-                            case EligibilityType.Virtual:
-                                <span>@eligibilityPlan.VirtualEligibilityType</span>
-                                break;
-
-                            default:
-                                throw new UnreachableException();
-                        }
-                    }
-                </td>
-                <td>@option.PriorityGroup</td>
-                <td>@option.PriorityModifier</td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <StudioEligibilityTable
+        CreatorId="CreatorId"
+        Configuration="_questionnaire.EligibilityConfiguration"
+    />
 
     <hr class="my-4"/>
 
@@ -127,7 +84,6 @@
     <hr class="my-4"/>
 
     <h4>Submissions</h4>
-
 
     <table class="table table-striped">
         <thead>
@@ -183,7 +139,6 @@
 
     private QuestionnaireEntity? _questionnaire;
     private QuestionnaireSubmissionEntity[] _submissions = [];
-    private Dictionary<EligibilityPlanId, EligibilityPlan>? EligibilityDescriptors { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,17 +154,12 @@
             .Include(x => x.Versions!).ThenInclude(x => x.Fields!).ThenInclude(x => x.Field)
             .FirstOrDefaultAsync();
 
+        // TODO: 404 if not found
+
         _submissions = await dbContext.QuestionnaireSubmissions
             .Include(s => s.User)
             .Where(s => s.Version.QuestionnaireId == Id)
             .ToArrayAsync();
-
-        EligibilityDescriptors = EligibilityService
-            .GetEligibilityDescriptorsFromAllSupportPlans(
-                // TODO: in parallel
-                await SupportPlansService.GetSupportPlans(CreatorId)
-            )
-            .ToDictionary(plan => plan.Id);
     }
 
 }

@@ -1,0 +1,145 @@
+﻿@page "/studio/{creatorId:guid}/polls/{id:guid}"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Components.Layout
+@using Namezr.Components
+@using Namezr.Features.Polls.Data
+@using Namezr.Infrastructure.Data
+@using Microsoft.AspNetCore.Components.Sections
+@using Namezr.Client
+@using Namezr.Features.Polls.Components
+@using Namezr.Client.Shared
+@using Namezr.Features.Eligibility.Components
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    <StaticTruncatedText Text="@_poll?.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        @if (_poll is not null)
+        {
+            <PollBreadcrumbs Poll="_poll"/>
+        }
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    @_poll?.Title
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    <a
+        href="/studio/@CreatorId.NoHyphens()/polls/@Id.NoHyphens()/edit"
+        class="btn btn-primary"
+    >
+        Edit
+    </a>
+</SectionContent>
+
+@if (_poll is not null)
+{
+    <table class="table table-striped">
+        <tr>
+            <th>Anonymous</th>
+            <td>
+                <YesNoBadge Value="@(_poll.IsAnonymous)"/>
+            </td>
+        </tr>
+
+        <tr>
+            <th>Open</th>
+            <td>
+                <YesNoBadge Value="@(_poll.IsOpen)"/>
+            </td>
+        </tr>
+
+        <tr>
+            <th>Users can add options</th>
+            <td>
+                <YesNoBadge Value="@(_poll.AllowUsersToAddOptions)"/>
+            </td>
+        </tr>
+    </table>
+
+    <h4>Eligibility</h4>
+
+    <StudioEligibilityTable
+        CreatorId="CreatorId"
+        Configuration="_poll.EligibilityConfiguration"
+    />
+
+    <hr class="my-4"/>
+
+    <h4>Options</h4>
+
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Option</th>
+            <th>Vote count</th>
+            <th>Weighted</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @foreach (PollOptionEntity option in _poll.Options!.OrderBy(x => x.Order))
+        {
+            <tr>
+                <td>
+                    @option.Title
+                    @* TODO: if description is set, some kind of hover/click to popup display *@
+                </td>
+                <td>0</td>
+                <td>
+                    <HxProgressBar
+                        Value="50"
+                        Label="50%"
+                    />
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private PollEntity? _poll;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _poll = await dbContext.Polls
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(poll => poll.Id == Id && poll.CreatorId == CreatorId)
+            .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
+            .Include(x => x.Options)
+            .FirstOrDefaultAsync();
+
+        // TODO: 404 if not found
+        
+        // TODO: stats
+    }
+
+}
