@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Namezr.Client.Studio.Polls.Edit;
 using Namezr.Features.Creators.Data;
 using Namezr.Features.Eligibility.Data;
 
@@ -11,10 +12,10 @@ public class PollEntity
     public CreatorEntity Creator { get; set; } = null!;
     public Guid CreatorId { get; set; }
 
-    [MaxLength(MaxTitleLength)]
+    [MaxLength(PollEditModel.TitleMaxLength)]
     public required string Title { get; set; }
 
-    [MaxLength(MaxDescriptionLength)]
+    [MaxLength(PollEditModel.DescriptionMaxLength)]
     public required string Description { get; set; }
 
     /// <summary>
@@ -43,7 +44,4 @@ public class PollEntity
     public Guid OptionsSetVersionMarker { get; set; } = Guid.NewGuid();
 
     public ICollection<PollOptionEntity>? Options { get; set; }
-
-    public const int MaxTitleLength = 50;
-    public const int MaxDescriptionLength = 500;
 }

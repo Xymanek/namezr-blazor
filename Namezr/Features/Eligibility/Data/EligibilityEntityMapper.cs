@@ -1,4 +1,4 @@
-﻿using Namezr.Client.Studio.Questionnaires.Edit;
+﻿using Namezr.Client.Studio.Eligibility.Edit;
 using Namezr.Client.Types;
 using Riok.Mapperly.Abstractions;
 using SuperLinq;

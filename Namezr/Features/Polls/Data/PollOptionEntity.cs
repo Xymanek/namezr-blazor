@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Namezr.Client.Studio.Polls.Edit;
 
 namespace Namezr.Features.Polls.Data;
 
@@ -9,10 +10,10 @@ public class PollOptionEntity
     public PollEntity Poll { get; set; } = null!;
     public Guid PollId { get; set; }
 
-    [MaxLength(MaxTitleLength)]
+    [MaxLength(PollOptionEditModel.TitleMaxLength)]
     public required string Title { get; set; }
 
-    [MaxLength(MaxDescriptionLength)]
+    [MaxLength(PollOptionEditModel.DescriptionMaxLength)]
     public required string Description { get; set; }
 
     public required int Order { get; set; }
@@ -27,7 +28,4 @@ public class PollOptionEntity
     /// </para>
     /// </summary>
     public required bool WasUserAdded { get; init; }
-
-    public const int MaxTitleLength = 30;
-    public const int MaxDescriptionLength = 500;
 }

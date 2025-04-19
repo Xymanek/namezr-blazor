@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Namezr.Client.Types;
+using Namezr.Client.Studio.Eligibility.Edit;
 
 namespace Namezr.Client.Studio.Questionnaires.Edit;
 
@@ -56,35 +56,9 @@ public class QuestionnaireEditModel
     public const int DescriptionMaxLength = 1000;
 }
 
-public class EligibilityOptionEditModel
-{
-    public EligibilityPlanId? PlanId { get; set; }
-
-    public string PriorityGroup { get; set; } = string.Empty;
-    public decimal PriorityModifier { get; set; } = 1; // TODO: rename: Weight
-
-    [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
-    internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>
-    {
-        public Validator()
-        {
-            RuleFor(x => x.PlanId)
-                .NotNull();
-
-            RuleFor(x => x.PriorityGroup)
-                .MaximumLength(PriorityGroupMaxLength);
-
-            RuleFor(x => x.PriorityModifier)
-                .GreaterThan(0);
-        }
-    }
-
-    public const int PriorityGroupMaxLength = 50;
-}
-
 public class QuestionnaireFieldEditModel
 {
-    public required Guid Id { get; set; }
+    public required Guid Id { get; init; }
 
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

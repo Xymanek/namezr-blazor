@@ -15,4 +15,7 @@ public static class ApiEndpointPaths
     
     public const string CreatorsLogoDownload = "/api/creators/logo-download";
     public const string SupportTargetsLogoDownload = "/api/support-targets/logo-download";
+    
+    public const string PollsNew = "/api/polls/new";
+    public const string PollsUpdate = "/api/polls/update";
 }

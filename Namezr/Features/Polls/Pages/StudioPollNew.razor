@@ -1,15 +1,15 @@
-﻿@page "/studio/{creatorId:guid}/questionnaires/new"
+﻿@page "/studio/{creatorId:guid}/polls/new"
 
 @using Microsoft.AspNetCore.Authorization
-@using Namezr.Client.Studio.Questionnaires.Edit
-@using Namezr.Client.Types
 @using Namezr.Components.Layout
-@using Namezr.Features.Creators.Services
 @using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Creators.Services
+@using Namezr.Components
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Client
-@using Namezr.Features.Questionnaires.Components
-@using Namezr.Components
+@using Namezr.Client.Types
+@using Namezr.Features.Polls.Components
+@using Namezr.Client.Studio.Polls.Edit
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -18,27 +18,27 @@
 @inject IEligibilityService EligibilityService
 
 <PageTitle>
-    New questionnaire
+    New poll
     <StudioTitleSuffix/>
 </PageTitle>
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <QuestionnairesBreadcrumbs CreatorId="CreatorId"/>
+        <PollsBreadcrumbs CreatorId="CreatorId"/>
         <HxBreadcrumbItem
-            Href=@($"studio/{CreatorId.NoHyphens()}/questionnaires/new")
+            Href=@($"studio/{CreatorId.NoHyphens()}/polls/new")
             Text="New"
         />
     </HxBreadcrumb>
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-    New questionnaire
+    New poll
 </SectionContent>
 
 @if (EligibilityDescriptors is not null)
 {
-    <QuestionnaireEditor
+    <PollEditor
         CreatorId="CreatorId"
         InitialModel="InitialModel"
         EligibilityDescriptors="EligibilityDescriptors"
@@ -53,7 +53,7 @@
     [Parameter]
     public Guid CreatorId { get; set; }
 
-    private QuestionnaireEditModel InitialModel { get; } = new();
+    private PollEditModel InitialModel { get; } = new();
 
     private List<EligibilityPlan>? EligibilityDescriptors { get; set; }
 

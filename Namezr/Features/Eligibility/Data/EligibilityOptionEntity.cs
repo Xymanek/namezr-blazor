@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Namezr.Client.Studio.Questionnaires.Edit;
+using Namezr.Client.Studio.Eligibility.Edit;
 using Namezr.Client.Types;
 
 namespace Namezr.Features.Eligibility.Data;

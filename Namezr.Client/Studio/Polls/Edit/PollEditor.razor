@@ -1,0 +1,229 @@
+﻿@using Namezr.Client.Infra
+@using Namezr.Client.Types
+@using vNext.BlazorComponents.FluentValidation
+@using Namezr.Client.Studio.Eligibility.Edit
+
+@rendermode InteractiveWebAssembly
+
+@inject ISpaHttpClientProvider HttpClientProvider
+@inject IHxMessengerService HxMessenger
+
+<EditForm
+    Model="Model"
+    OnValidSubmit="HandleValidSubmit"
+    OnInvalidSubmit="HandleInvalidSubmit"
+>
+    <FluentValidationValidator/>
+
+    <HxCard>
+        <BodyTemplate>
+            <HxInputText
+                Label="Title"
+                @bind-Value="Model.Title"
+            />
+            <HxInputTextArea
+                Label="Description"
+                @bind-Value="Model.Description"
+            />
+            
+            <div class="row">
+                <HxCheckbox
+                    CssClass="col"
+                    Label="Is open"
+                    @bind-Value="Model.IsOpen"
+                />
+                <HxCheckbox
+                    CssClass="col"
+                    Label="Is anonymous"
+                    @bind-Value="Model.IsAnonymous"
+                />
+                <HxCheckbox
+                    CssClass="col"
+                    Label="Can users add options"
+                    @bind-Value="Model.AllowUsersToAddOptions"
+                />
+            </div>
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
+            <div class="row">
+                <div class="col-11">
+                    <h3>Eligibility</h3>
+                </div>
+                <div class="col-1 text-right">
+                    <HxButton
+                        Icon="@BootstrapIcon.Plus"
+                        Color="ThemeColor.Success"
+                        Tooltip="Add"
+                        OnClick="() => Model.EligibilityOptions.Add(new())"
+                    />
+                </div>
+            </div>
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <div>
+                <HxValidationMessage
+                    For="@(() => Model.EligibilityOptions)"
+                />
+            </div>
+
+            @for (int i = 0; i < Model.EligibilityOptions.Count; i++)
+            {
+                int optionIndex = i;
+
+                <EligibilityOptionEditor
+                    EligibilityDescriptors="EligibilityDescriptors"
+                    @bind-Value="Model.EligibilityOptions[optionIndex]"
+                    CanRemove="Model.EligibilityOptions.Count > 1"
+                    OnRemove="() => Model.EligibilityOptions.RemoveAt(optionIndex)"
+                />
+            }
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
+            <div class="row">
+                <div class="col-11">
+                    <h3>Options</h3>
+                </div>
+                <div class="col-1 text-right">
+                    <HxButton
+                        Icon="@BootstrapIcon.Plus"
+                        Color="ThemeColor.Success"
+                        Tooltip="Add"
+                        OnClick="Model.AddBlankOption"
+                    />
+                </div>
+            </div>
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            @for (int i = 0; i < Model.Options.Count; i++)
+            {
+                int optionIndex = i;
+
+                <PollOptionEditor
+                    @bind-Value="Model.Options[optionIndex]"
+                    CanMoveUp="optionIndex > 0"
+                    OnMoveUp="() => MoveOption(optionIndex, -1)"
+                    CanMoveDown="optionIndex + 1 < Model.Options.Count"
+                    OnMoveDown="() => MoveOption(optionIndex, +1)"
+                    CanRemove="Model.Options.Count > 1"
+                    OnRemove="() => Model.Options.RemoveAt(optionIndex)"
+                />
+
+                if (optionIndex + 1 < Model.Options.Count)
+                {
+                    <hr/>
+                }
+            }
+        </BodyTemplate>
+    </HxCard>
+
+    <HxSubmit
+        Text="Save"
+        Color="@ThemeColor.Primary"
+        Enabled="RendererInfo.IsInteractive"
+        Spinner="IsSending"
+    />
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid? PollId { get; set; }
+
+    [Parameter]
+    public required PollEditModel InitialModel { get; set; }
+
+    [Parameter]
+    public required List<EligibilityPlan> EligibilityDescriptors { get; set; }
+
+    private PollEditModel Model { get; set; } = null!;
+
+    private bool? IsSending { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Model = InitialModel.Clone();
+
+        if (Model.Options.Count == 0)
+        {
+            Model.AddBlankOption();
+        }
+
+        if (Model.EligibilityOptions.Count == 0)
+        {
+            Model.EligibilityOptions.Add(new());
+        }
+    }
+
+    private void MoveOption(int optionIndex, int change)
+    {
+        PollOptionEditModel option = Model.Options[optionIndex];
+
+        Model.Options.RemoveAt(optionIndex);
+        Model.Options.Insert(optionIndex + change, option);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        HttpClient http = HttpClientProvider.HttpClient;
+
+        IsSending = true;
+        try
+        {
+            HttpResponseMessage response;
+            if (!PollId.HasValue)
+            {
+                response = await http.PostAsJsonAsync(
+                    ApiEndpointPaths.PollsNew,
+                    new CreatePollCommand
+                    {
+                        CreatorId = CreatorId,
+                        Model = Model.Clone(),
+                    }
+                );
+            }
+            else
+            {
+                response = await http.PostAsJsonAsync(
+                    ApiEndpointPaths.PollsUpdate,
+                    new UpdatePollCommand
+                    {
+                        Id = PollId.Value,
+                        Model = Model.Clone(),
+                    }
+                );
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                HxMessenger.AddError("Failed to save Poll");
+                return;
+            }
+
+            HxMessenger.AddInformation("Poll saved");
+
+            // TODO: redirect to studio Poll details page
+        }
+        finally
+        {
+            IsSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        HxMessenger.AddError("Form validation failed");
+    }
+
+}
