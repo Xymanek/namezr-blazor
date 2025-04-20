@@ -15,6 +15,7 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Features.StudioCommon.Components
 @using Namezr.Features.Identity.Components
+@using Namezr.Features.Polls.Data
 
 @layout StudioPageHeaderLayout
 
@@ -158,6 +159,24 @@
                         </td>
                     </tr>
                 }
+                
+                @* TODO: this leaks that the user has made a choice (even if the exact answer is not shown) *@
+                @foreach (PollEntity poll in _polls)
+                {
+                    <tr>
+                        <td>Poll choice</td>
+                        <td>
+                            <a href="@($"/studio/{CreatorId.NoHyphens()}/polls/{poll.Id.NoHyphens()}")">
+                                <TruncatedText
+                                    Text="@poll.Title"
+                                    MaxLength="30"/>
+                            </a>
+                        </td>
+                        <td style="width: 1%">
+                            @* No choice-specific page currently *@
+                        </td>
+                    </tr>
+                }
                 </tbody>
             </table>
         </BodyTemplate>
@@ -182,9 +201,11 @@
     private ApplicationUser? _user;
     private SupportPlan[] _supportPlans = [];
     private IReadOnlySet<SupportPlanFullId> _activeSupportPlans = new HashSet<SupportPlanFullId>();
-    private QuestionnaireSubmissionEntity[] _submissions = [];
     private ApplicationUserLogin[]? _associatedLogins;
 
+    private QuestionnaireSubmissionEntity[] _submissions = [];
+    private PollEntity[] _polls = [];
+    
     protected override async Task OnInitializedAsync()
     {
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
@@ -226,6 +247,14 @@
             .Where(submission => submission.Version.Questionnaire.CreatorId == CreatorId)
             .OrderBy(submission => submission.Id)
             .Include(submission => submission.Version.Questionnaire)
+            .ToArrayAsync(HttpContext.RequestAborted);
+
+        _polls = await dbContext.PollChoices
+            .Where(choice => choice.UserId == UserId)
+            .Where(choice => choice.Poll.CreatorId == CreatorId)
+            .Select(choice => choice.Poll)
+            .Distinct()
+            .OrderBy(poll => poll.Id)
             .ToArrayAsync(HttpContext.RequestAborted);
 
         _associatedLogins = await ConsumerUserRetriever.BuildConsumerUsersQuery(dbContext)

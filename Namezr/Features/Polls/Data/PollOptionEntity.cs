@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Client.Studio.Polls.Edit;
@@ -7,6 +8,7 @@ namespace Namezr.Features.Polls.Data;
 
 public class PollOptionEntity
 {
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid Id { get; set; }
 
     public PollEntity Poll { get; set; } = null!;

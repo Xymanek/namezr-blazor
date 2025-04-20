@@ -100,13 +100,16 @@
                     @* TODO: if description is set, some kind of hover/click to popup display *@
                 </td>
                 <td>
-                    @_optionResults?.GetValueOrDefault(option.Id)?.VotesCount ?? 0
+                    @(_optionResults?.GetValueOrDefault(option.Id)?.VotesCount ?? 0)
                 </td>
                 <td>
-                    <HxProgressBar
-                        Value="GetWeightedRatio(option.Id)"
-                        Label="@($"{GetWeightedRatio(option.Id):P2}%")"
-                    />
+                    <HxProgress>
+                        <HxProgressBar
+                            Value="GetWeightedRatio(option.Id)"
+                            Label="@(GetWeightedRatio(option.Id).ToString("P2"))"
+                            MaxValue="1"
+                        />
+                    </HxProgress>
                 </td>
             </tr>
         }

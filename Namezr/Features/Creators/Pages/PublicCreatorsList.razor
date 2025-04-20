@@ -7,6 +7,7 @@
 @using Namezr.Infrastructure.Data
 @using Namezr.Components
 @using Namezr.Features.Creators.Models
+@using Namezr.Features.Polls.Data
 
 @inject ApplicationDbContext DbContext
 
@@ -32,6 +33,15 @@
                 </a>
             </li>
         }
+        
+        @foreach (PollEntity poll in creator.Polls!)
+        {
+            <li>
+                <a href="/polls/@poll.Id.ToString("N")">
+                    @poll.Title
+                </a>
+            </li>
+        }
     </ul>
 }
 
@@ -43,6 +53,7 @@
         _creators = await DbContext.Creators
             .Where(x => x.Visibility == CreatorVisibility.Public)
             .Include(x => x.Questionnaires)
+            .Include(x => x.Polls)
             .AsSplitQuery()
             .ToArrayAsync();
 

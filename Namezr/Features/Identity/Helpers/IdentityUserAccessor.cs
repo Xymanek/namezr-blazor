@@ -51,7 +51,7 @@ internal sealed class IdentityUserAccessor(
         }
 
         userId = Guid.Parse(userIdString);
-        return false;
+        return true;
     }
 
     public Guid GetRequiredUserId(HttpContext context)

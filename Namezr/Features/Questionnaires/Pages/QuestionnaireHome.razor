@@ -52,6 +52,7 @@
     @if (_eligibilityResult is not null)
     {
         <PublicEligibilityPresenter
+            CreatorId="@_versionEntity!.Questionnaire.CreatorId"
             Configuration="_versionEntity!.Questionnaire.EligibilityConfiguration"
             EligibilityResult="_eligibilityResult"
         />

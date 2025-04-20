@@ -15,6 +15,9 @@
 @inject NavigationManager NavigationManager
 
 @{
+    // Hold until loaded
+    if (_eligibilityPlans == null) return;
+
     IEnumerable<IGrouping<(EligibilityType Type, Guid? SupportTargetId), EligibilityOptionEntity>> groupedOptions =
         Configuration
             .Options!
