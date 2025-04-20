@@ -1,6 +1,7 @@
 ﻿@page "/polls/{PollId:guid}"
 
 @using System.Diagnostics
+@using EntityFramework.Exceptions.Common
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Features.Consumers.Services
 @using Namezr.Features.Eligibility.Services
@@ -17,6 +18,7 @@
 @inject IEligibilityService EligibilityService
 @inject IdentityUserAccessor UserAccessor
 @inject IPollResultsRetriever ResultsRetriever
+@inject NavigationManager NavigationManager
 
 @if (_poll is not null)
 {
@@ -135,6 +137,13 @@
                 Add option
             </HeaderTemplate>
             <BodyTemplate>
+                @if (_newOptionNameWasDuplicate)
+                {
+                    <HxAlert Color="ThemeColor.Danger">
+                        An option with this name already exists.
+                    </HxAlert>
+                }
+
                 <EditForm
                     method="post"
                     FormName="add-option"
@@ -251,10 +260,43 @@
         throw new NotImplementedException();
     }
 
-    private Task HandleAddOption(EditContext arg)
-    {
-        // TODO: validate unique as well
+    private bool _newOptionNameWasDuplicate;
 
-        throw new NotImplementedException();
+    private async Task HandleAddOption()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+        CancellationToken ct = HttpContext.RequestAborted;
+
+        PollEntity pollForUpdate = await dbContext.Polls
+            .AsTracking()
+            .Include(x => x.Options)
+            .SingleAsync(x => x.Id == PollId, ct);
+
+        pollForUpdate.OptionsSetVersionMarker = Guid.NewGuid();
+        pollForUpdate.Options!.Add(new PollOptionEntity
+        {
+            Poll = pollForUpdate,
+
+            Title = NewOptionModel.Title,
+            Description = NewOptionModel.Description,
+
+            Order = pollForUpdate.Options!.Max(poll => poll.Order) + 1,
+
+            WasUserAdded = true,
+        });
+
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintException e) when (
+            e.ConstraintProperties is [nameof(PollOptionEntity.PollId), nameof(PollOptionEntity.Title)]
+        )
+        {
+            _newOptionNameWasDuplicate = true;
+            return;
+        }
+
+        NavigationManager.Refresh();
     }
 }
