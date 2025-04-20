@@ -105,7 +105,7 @@
                             <form
                                 @formname="@($"vote-{option.Id}")"
                                 method="post"
-                                @onsubmit="HandleVoteSubmit"
+                                @onsubmit="@(() => HandleVoteSubmit(option.Id))"
                             >
                                 <AntiforgeryToken/>
 
@@ -254,10 +254,25 @@
         return (float)(_perOptionStats.GetValueOrDefault(optionId)?.WeightedRatio ?? 0);
     }
 
-    // TODO: which option?
-    private Task HandleVoteSubmit()
+    private async Task HandleVoteSubmit(Guid optionId)
     {
-        throw new NotImplementedException();
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+        CancellationToken ct = HttpContext.RequestAborted;
+
+        PollChoiceEntity newChoice = new()
+        {
+            PollId = PollId,
+
+            OptionId = optionId,
+            UserId = UserAccessor.GetRequiredUserId(HttpContext),
+
+            Weight = _eligibilityResult!.Modifier,
+        };
+
+        dbContext.PollChoices.Add(newChoice);
+        await dbContext.SaveChangesAsync(ct);
+
+        NavigationManager.Refresh();
     }
 
     private bool _newOptionNameWasDuplicate;

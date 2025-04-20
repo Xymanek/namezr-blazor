@@ -26,7 +26,7 @@ public class PollChoiceEntity
     public ApplicationUser User { get; set; } = null!;
     public Guid UserId { get; set; }
 
-    public decimal Weight { get; set; }
+    public required decimal Weight { get; set; }
 }
 
 internal class PollChoiceEntityTypeConfiguration : IEntityTypeConfiguration<PollChoiceEntity>
