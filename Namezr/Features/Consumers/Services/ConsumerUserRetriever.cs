@@ -70,8 +70,11 @@ public static class ConsumerUserRetriever
     {
         ExpressionStarter<ApplicationUser> filter = PredicateBuilder.New<ApplicationUser>();
 
-        filter = filter.Or(user => user.Submissions!.Any(submission =>
+        filter = filter.Or(user => user.QuestionnaireSubmissions!.Any(submission =>
             submission.Version.Questionnaire.CreatorId == creatorId
+        ));
+        filter = filter.Or(user => user.PollChoices!.Any(choice =>
+            choice.Poll.CreatorId == creatorId
         ));
 
         return users.Where(filter);
