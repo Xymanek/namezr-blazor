@@ -200,7 +200,7 @@
     public Guid PollId { get; set; }
 
     [SupplyParameterFromForm]
-    public PollPublicNewOptionModel NewOptionModel { get; set; } = new();
+    public PollPublicNewOptionModel NewOptionModel { get; set; } = null!;
 
     private PollEntity? _poll;
     private IReadOnlyDictionary<Guid, PollOptionResult> _perOptionStats = new Dictionary<Guid, PollOptionResult>();
@@ -211,6 +211,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        NewOptionModel ??= new PollPublicNewOptionModel();
+
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
         CancellationToken ct = HttpContext.RequestAborted;
 
@@ -313,14 +316,15 @@
         pollForUpdate.OptionsSetVersionMarker = Guid.NewGuid();
         pollForUpdate.Options!.Add(new PollOptionEntity
         {
+            Id = Guid.CreateVersion7(),
+
             Poll = pollForUpdate,
+            WasUserAdded = true,
 
             Title = NewOptionModel.Title,
             Description = NewOptionModel.Description,
 
             Order = pollForUpdate.Options!.Max(poll => poll.Order) + 1,
-
-            WasUserAdded = true,
         });
 
         try
