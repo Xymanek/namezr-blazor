@@ -8,7 +8,9 @@ public interface IPollResultsRetriever
     /// <summary>
     /// Important: an option can be missing from the result if it was not voted in the poll.
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, PollOptionResult>> CalculatePerOptionStats(Guid pollId);
+    Task<IReadOnlyDictionary<Guid, PollOptionResult>> CalculatePerOptionStats(
+        Guid pollId, CancellationToken ct = default
+    );
 }
 
 public record PollOptionResult
@@ -30,9 +32,11 @@ public partial class PollResultsRetriever : IPollResultsRetriever
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
-    public async Task<IReadOnlyDictionary<Guid, PollOptionResult>> CalculatePerOptionStats(Guid pollId)
+    public async Task<IReadOnlyDictionary<Guid, PollOptionResult>> CalculatePerOptionStats(
+        Guid pollId, CancellationToken ct = default
+    )
     {
-        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         var optionStats = await dbContext.PollChoices
             .Where(x => x.PollId == pollId)
@@ -44,7 +48,7 @@ public partial class PollResultsRetriever : IPollResultsRetriever
                 VotesCount = group.Count(),
                 OptionWeight = group.Sum(choice => choice.Weight),
             })
-            .ToArrayAsync();
+            .ToArrayAsync(ct);
 
         decimal globalWeight = optionStats.Sum(x => x.OptionWeight);
 

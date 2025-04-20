@@ -1,0 +1,33 @@
+﻿@using Namezr.Client
+@using Namezr.Features.Creators.Data
+
+@if (Creator != null)
+{
+    <div class="d-flex flex-row gap-4">
+        @if (Creator.LogoFileId is not null)
+        {
+            <img
+                src="@($"{ApiEndpointPaths.CreatorsLogoDownload}?creatorId={Creator.Id}")"
+                alt="Creator logo"
+                style="max-width: 250px; max-height: 250px;"
+            />
+        }
+
+        <div>
+            <a href="@($"/creators/{Creator.Id.NoHyphens()}")">
+                <strong>@Creator.DisplayName</strong>
+            </a>
+            <h3>@ActivityTitle</h3>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public CreatorEntity? Creator { get; set; }
+
+    [Parameter]
+    public string? ActivityTitle { get; set; }
+
+}

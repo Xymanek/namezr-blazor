@@ -13,6 +13,8 @@ public static partial class EligibilityEntityMapper
         ICollection<EligibilityOptionEntity>? entities = null
     )
     {
+        // TODO: replace with CollectionMapper
+
         entities ??= new HashSet<EligibilityOptionEntity>(models.Count);
 
         Dictionary<EligibilityPlanId, EligibilityOptionEntity> entitiesById = entities

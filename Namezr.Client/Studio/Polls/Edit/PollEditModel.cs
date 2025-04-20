@@ -8,8 +8,8 @@ public class PollEditModel
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
-    public bool IsAnonymous { get; set; }
-    public bool IsOpen { get; set; }
+    public bool IsAnonymous { get; set; } = true;
+    public bool IsOpen { get; set; } = true;
     public bool AllowUsersToAddOptions { get; set; }
 
     public List<EligibilityOptionEditModel> EligibilityOptions { get; set; } = new();
@@ -76,7 +76,7 @@ public class PollOptionEditModel
         public Validator()
         {
             RuleFor(x => x.Title)
-                .MinimumLength(3)
+                .MinimumLength(TitleMinLength)
                 .MaximumLength(TitleMaxLength);
 
             RuleFor(x => x.Description)
@@ -84,6 +84,8 @@ public class PollOptionEditModel
         }
     }
 
+    public const int TitleMinLength = 3;
     public const int TitleMaxLength = 30;
+    
     public const int DescriptionMaxLength = 500;
 }

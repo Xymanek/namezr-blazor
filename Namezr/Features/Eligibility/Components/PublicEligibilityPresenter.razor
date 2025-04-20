@@ -1,0 +1,213 @@
+﻿@using System.Collections.Immutable
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Data
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Data
+@using Namezr.Features.Eligibility.Services
+@using Namezr.Features.Identity.Helpers
+@using Namezr.Infrastructure.Data
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IEligibilityService EligibilityService
+@inject ISupportPlansService SupportPlansService
+@inject IdentityUserAccessor UserAccessor
+@inject NavigationManager NavigationManager
+
+@{
+    IEnumerable<IGrouping<(EligibilityType Type, Guid? SupportTargetId), EligibilityOptionEntity>> groupedOptions =
+        Configuration
+            .Options!
+            .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId?.SupportTargetId))
+            .OrderBy(x => x.Key.Type switch
+            {
+                // Ensure that the "other"/virtual group is always last
+                EligibilityType.Virtual => 1,
+                _ => 0,
+            });
+}
+
+<div class="row">
+    @foreach (var grouping in groupedOptions)
+    {
+        SupportTargetEntity? supportTarget = null;
+
+        if (grouping.Key.Type == EligibilityType.SupportPlan)
+        {
+            EligibilityPlan matchingEligibilityPlan = _eligibilityPlans!.Values
+                .First(x => x.SupportPlan?.Id.SupportTargetId == grouping.Key.SupportTargetId);
+
+            supportTarget = _supportTargets
+                .GetValueOrDefault(matchingEligibilityPlan.SupportPlan!.Id.SupportTargetId);
+        }
+
+        <div class="col">
+            <HxCard>
+                <HeaderTemplate>
+                    @if (supportTarget is not null)
+                    {
+                        @if (supportTarget.HomeUrl is not null)
+                        {
+                            <a
+                                href="@supportTarget.HomeUrl"
+                                class="text-decoration-none"
+                                target="_blank"
+                            >
+                                <SupportTargetEligibilityHeader SupportTarget="supportTarget"/>
+                            </a>
+                        }
+                        else
+                        {
+                            <SupportTargetEligibilityHeader SupportTarget="supportTarget"/>
+                        }
+                    }
+                    else
+                    {
+                        <span>Other</span>
+                    }
+                </HeaderTemplate>
+
+                <BodyTemplate>
+                    <ul>
+                        @foreach (EligibilityOptionEntity option in grouping)
+                        {
+                            <li>
+                                @if (option.PlanId.Type == EligibilityType.SupportPlan)
+                                {
+                                    EligibilityPlan plan = _eligibilityPlans![option.PlanId];
+
+                                    <span>
+                                        @plan.SupportPlan!.DisplayName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>@option.PlanId.VirtualEligibilityType</span>
+                                }
+
+                                @if (EligiblePlanIds.Contains(option.PlanId))
+                                {
+                                    <span class="ms-2 badge bg-success">Eligible</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+
+                    @if (supportTarget is not null)
+                    {
+                        @if (_userLoginSchemes == null)
+                        {
+                            <form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
+                                <div>
+                                    <AntiforgeryToken/>
+                                    <input type="hidden" name="ReturnUrl" value="@NavigationManager.Uri"/>
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        name="provider"
+                                        value="@SupportServiceToAuthMap.ServiceTypeToAuthScheme(supportTarget.ServiceType)"
+                                    >
+                                        Login to use your status
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                        else if (grouping.All(option => !EligiblePlanIds.Contains(option.PlanId)))
+                        {
+                            // User is logged in but is not eligible for any of the options
+
+                            if (
+                                !SupportServiceToAuthMap.HasSupportServiceLink(
+                                    supportTarget.ServiceType, _userLoginSchemes
+                                )
+                            )
+                            {
+                                // User is logged in but has not linked account with this service
+
+                                /* TODO: direct redirect to challenge */
+                                <a
+                                    href="/Account/Manage/ExternalLogins" class="btn btn-primary"
+                                >
+                                    Link account to use your status
+                                </a>
+                            }
+                            else if (supportTarget.JoinUrl is not null || supportTarget.HomeUrl is not null)
+                            {
+                                // User is logged in and has linked account with this service.
+                                // Present the option to join the support target
+
+                                <a
+                                    href="@(supportTarget.JoinUrl ?? supportTarget.HomeUrl)"
+                                    target="_blank"
+                                    class="btn btn-primary"
+                                >
+                                    Join to become eligible
+                                </a>
+                            }
+                        }
+                    }
+                </BodyTemplate>
+            </HxCard>
+        </div>
+    }
+</div>
+
+
+@code
+{
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; }
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
+    /// <summary>
+    /// <see cref="EligibilityConfigurationEntity.Options"/> must be loaded
+    /// </summary>
+    [Parameter]
+    public required EligibilityConfigurationEntity Configuration { get; set; }
+
+    [Parameter]
+    public required EligibilityResult EligibilityResult { get; set; }
+
+    private IReadOnlyDictionary<Guid, SupportTargetEntity> _supportTargets
+        = new Dictionary<Guid, SupportTargetEntity>();
+
+    private IReadOnlyDictionary<EligibilityPlanId, EligibilityPlan>? _eligibilityPlans;
+
+    /// <summary>
+    /// If null, the user is not logged in.
+    /// </summary>
+    private string[]? _userLoginSchemes;
+
+    private ImmutableHashSet<EligibilityPlanId> EligiblePlanIds
+        => EligibilityResult.EligiblePlanIds;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        // TODO (optimization): all queries in parallel
+
+        _supportTargets = await dbContext.SupportTargets
+            .Where(x => x.CreatorId == CreatorId)
+            .ToDictionaryAsync(x => x.Id);
+
+        _eligibilityPlans = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                await SupportPlansService.GetSupportPlans(CreatorId)
+            )
+            .ToDictionary(plan => plan.Id);
+
+        if (UserAccessor.TryGetUserId(HttpContext, out Guid userId))
+        {
+            _userLoginSchemes = await dbContext.UserLogins
+                .Where(x => x.UserId == userId)
+                .Select(x => x.LoginProvider)
+                .Distinct()
+                .ToArrayAsync(HttpContext.RequestAborted);
+        }
+    }
+}
