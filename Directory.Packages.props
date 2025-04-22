@@ -39,6 +39,7 @@
     <PackageVersion Include="Sentry.AspNetCore.Blazor.WebAssembly" Version="5.5.1" />
     <PackageVersion Include="Sentry.OpenTelemetry" Version="5.4.0" />
     <PackageVersion Include="SkiaSharp" Version="3.116.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.116.1" />
     <PackageVersion Include="SuperLinq" Version="6.3.0" />
     <PackageVersion Include="TwitchLib.Api" Version="3.9.0" />
     <PackageVersion Include="vNext.BlazorComponents.FluentValidation" Version="1.1.3" />

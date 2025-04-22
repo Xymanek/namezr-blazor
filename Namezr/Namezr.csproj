@@ -45,6 +45,7 @@
         <PackageReference Include="Sentry.AspNetCore" />
         <PackageReference Include="Sentry.OpenTelemetry" />
         <PackageReference Include="SkiaSharp" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
         <PackageReference Include="SuperLinq" />
         <PackageReference Include="TwitchLib.Api" />
     </ItemGroup>
