@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Namezr.Features.Consumers.Services;
 using Namezr.Features.Eligibility.Data;
+using Namezr.Features.Eligibility.Helpers;
 using Namezr.Features.Eligibility.Services;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.SelectionSeries.Data;
@@ -257,15 +258,29 @@ public partial class SelectionWorker : ISelectionWorker
 
         SelectionCandidateEntity? PickOneForCurrentCycle()
         {
-            (SelectionCandidateEntity Candidate, double Modifier)[] candidateModifiers = candidates
+            (SelectionCandidateEntity Candidate, EligibilityResult Eligibility)[] attemptCandidates = candidates
                 .Where(x => !usersSelectedInCurrentCycle.Contains(x.UserId))
-                .Select(x => (x.Candidate, (double)userEligibilities[x.UserId].Modifier))
+                .Select(x => (x.Candidate, userEligibilities[x.UserId]))
                 .ToArray();
 
-            if (candidateModifiers.Length == 0)
+            if (attemptCandidates.Length == 0)
             {
                 return null;
             }
+
+            // Find the lowest selection wave
+            int? lowestSelectionWave = attemptCandidates
+                .Select(x => x.Eligibility.SelectionWave)
+                .Min(SelectionWaveComparer.Instance);
+
+            // Only consider candidates with the lowest selection wave
+            attemptCandidates = attemptCandidates
+                .Where(x => x.Eligibility.SelectionWave == lowestSelectionWave)
+                .ToArray();
+
+            (SelectionCandidateEntity Candidate, double Modifier)[] candidateModifiers = attemptCandidates
+                .Select(x => (x.Candidate, (double)x.Eligibility.Modifier))
+                .ToArray();
 
             double totalModifier = candidateModifiers.Sum(x => x.Modifier);
             double selectedPoint = Random.Shared.NextDouble() * totalModifier;
@@ -280,7 +295,7 @@ public partial class SelectionWorker : ISelectionWorker
                 }
             }
 
-            throw new UnreachableException();
+            throw new UnreachableException("Rolled weight is higher than the sum of all weights.");
         }
 
         void PickCurrentCycleMostPossible()

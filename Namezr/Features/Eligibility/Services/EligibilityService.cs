@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Services;
 using Namezr.Features.Eligibility.Data;
+using Namezr.Features.Eligibility.Helpers;
 using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Eligibility.Services;
@@ -120,10 +121,7 @@ public partial class EligibilityService : IEligibilityService
 
         if (isMatchingPerEligibilityPlan.Values.All(x => !x))
         {
-            return new EligibilityResult
-            {
-                EligiblePlanIds = ImmutableHashSet<EligibilityPlanId>.Empty,
-            };
+            return EligibilityResult.None;
         }
 
         IGrouping<string, EligibilityOptionEntity>[] optionsByPriorityGroup = configuration.Options
@@ -140,6 +138,12 @@ public partial class EligibilityService : IEligibilityService
             )
             .Sum();
 
+        int? selectionWave = configuration.Options
+            .Where(option => isMatchingPerEligibilityPlan[option.PlanId])
+            .Select(option => option.SelectionWave)
+            .Prepend(null)
+            .Min(SelectionWaveComparer.Instance);
+
         return new EligibilityResult
         {
             EligiblePlanIds = isMatchingPerEligibilityPlan
@@ -147,6 +151,7 @@ public partial class EligibilityService : IEligibilityService
                 .Select(x => x.Key)
                 .ToImmutableHashSet(),
 
+            SelectionWave = selectionWave,
             Modifier = modifier,
         };
     }

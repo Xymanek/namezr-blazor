@@ -12,7 +12,8 @@ public record EligibilityResult
     };
 
     public required ImmutableHashSet<EligibilityPlanId> EligiblePlanIds { get; init; }
-    public decimal Modifier { get; init; }
-
     public bool Any => EligiblePlanIds.Count > 0;
+
+    public int? SelectionWave { get; init; }
+    public decimal Modifier { get; init; }
 };

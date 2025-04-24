@@ -25,6 +25,18 @@
     <div class="col-2">
         <HxTooltip
             Trigger="TooltipTrigger.Focus"
+            Text="Valid lower value candidates are always selected before candidates with a higher value. If empty, assumed to be highest value possible. When multiple options match, the lowest value will be used."
+        >
+            <HxInputNumber
+                Label="Wave"
+                Placeholder="None/latest"
+                @bind-Value="Value.SelectionWave"
+            />
+        </HxTooltip>
+    </div>
+    <div class="col-2">
+        <HxTooltip
+            Trigger="TooltipTrigger.Focus"
             Text="How likely the entry is to be selected. An entry with a weight of 6 is twice as likely as one with a weight of 3. Highest weight per priority group is used. When multiple priority groups match, the highest weights will be summed together."
         >
             <HxInputNumber
