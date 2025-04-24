@@ -32,6 +32,15 @@
                 @bind-Value="Value.PriorityModifier"/>
         </HxTooltip>
     </div>
+    <div class="col-1">
+        <HxTooltip
+            Text="Not shown unless the user is eligible."
+        >
+            <HxCheckbox
+                Label="Hidden"
+                @bind-Value="Value.IsHidden"/>
+        </HxTooltip>
+    </div>
 
     <div class="col-1">
         <HxButtonGroup>
