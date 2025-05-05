@@ -88,6 +88,7 @@
     <table class="table table-striped">
         <thead>
         <tr>
+            <th></th>
             <th>User</th>
             <th>Submitted</th>
             <th>Is approved</th>
@@ -103,6 +104,9 @@
 
             <tr>
                 <td>
+                    #@submission.Number
+                </td>
+                <td>
                     <a href="@($"/studio/{CreatorId.NoHyphens()}/supporters/users/{submission.User.Id.NoHyphens()}")">
                         @submission.User.UserName
                     </a>
@@ -113,7 +117,9 @@
                 <td>
                     <YesNoBadge Value="@(submission.ApprovedAt != null)"/>
                 </td>
-                <td>@submission.VersionId</td>
+                <td>
+                    @submission.Version.CreatedAt.ToDateTimeOffset().ToString("dd/MM/yyyy HH:mm")
+                </td>
                 <td>
                     <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions/@submission.Id.NoHyphens()"
                        class="btn btn-primary">
@@ -158,6 +164,7 @@
 
         _submissions = await dbContext.QuestionnaireSubmissions
             .Include(s => s.User)
+            .Include(s => s.Version)
             .Where(s => s.Version.QuestionnaireId == Id)
             .ToArrayAsync();
     }
