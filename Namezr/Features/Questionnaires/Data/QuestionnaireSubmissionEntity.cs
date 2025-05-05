@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.SelectionSeries.Data;
@@ -51,24 +50,9 @@ internal class QuestionnaireSubmissionEntityConfiguration : IEntityTypeConfigura
         // Numbers need to be per-submission, so we also need a trigger to validate
         // the 2nd level uniqueness (submission -> version -> questionnaire).
         builder.HasIndex(e => new { e.VersionId, e.Number }).IsUnique();
-        builder.ToTable(table => table.HasTrigger("validate_unique_number")); // TODO: implement
+        builder.ToTable(table => table.HasTrigger("validate_number_per_questionnaire"));
 
         builder.Property(e => e.SubmittedAt)
             .HasDefaultValueSql("now()");
     }
-
-    // private static string GetNumberColumnComputedSql(EntityTypeBuilder<QuestionnaireSubmissionEntity> builder)
-    // {
-    //     const string identifierEscape = "\"";
-    //
-    //     string versionIdColumnName = builder
-    //         .Property(e => e.VersionId)
-    //         .Metadata
-    //         .GetColumnName();
-    //
-    //     return
-    //         "questionnaire_submission_get_next_number_by_version_id(" +
-    //         identifierEscape + versionIdColumnName + identifierEscape +
-    //         ")";
-    // }
 }
