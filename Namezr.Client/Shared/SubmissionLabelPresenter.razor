@@ -1,0 +1,26 @@
+﻿@rendermode InteractiveWebAssembly
+
+@if (Label == null) return;
+
+<HxTooltip
+    Text="@Label.Description"
+>
+    <div
+        class="d-inline-flex rounded px-2 py-1"
+        style="background-color: @Label.Colour"
+    >
+        @if (Label.Icon != null)
+        {
+            <HxIcon Icon="Label.Icon"/>
+        }
+
+        <div>@Label.Text</div>
+    </div>
+</HxTooltip>
+
+@code {
+
+    [Parameter]
+    public SubmissionLabelModel? Label { get; set; }
+
+}

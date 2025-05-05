@@ -32,6 +32,7 @@ public class QuestionnaireSubmissionEntity : SelectionCandidateEntity
     public Guid? ApproverId { get; set; }
 
     public ICollection<QuestionnaireFieldValueEntity>? FieldValues { get; set; }
+    public ICollection<SubmissionLabelEntity>? Labels { get; set; }
 }
 
 /// <remarks>
@@ -52,7 +53,7 @@ internal class QuestionnaireSubmissionEntityConfiguration : IEntityTypeConfigura
         {
             // The BEFORE INSERT trigger that achieves the above-mentioned generation logic
             table.HasTrigger("set_number");
-            
+
             // Ensure that the value was successfully populated
             table.HasCheckConstraint("CK_Number_AboveZero", "\"Number\" > 0");
         });
@@ -64,5 +65,8 @@ internal class QuestionnaireSubmissionEntityConfiguration : IEntityTypeConfigura
 
         builder.Property(e => e.SubmittedAt)
             .HasDefaultValueSql("now()");
+
+        builder.HasMany(s => s.Labels)
+            .WithMany();
     }
 }

@@ -16,4 +16,6 @@ public partial class ApplicationDbContext
     public DbSet<QuestionnaireFieldValueEntity> QuestionnaireFieldValues { get; set; } = null!;
 
     public DbSet<SubmissionNumberSequenceEntity> SubmissionNumberSequences { get; set; } = null!;
+    
+    public DbSet<SubmissionLabelEntity> SubmissionLabels { get; set; } = null!;
 }
