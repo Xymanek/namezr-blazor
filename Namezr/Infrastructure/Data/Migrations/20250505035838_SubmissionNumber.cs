@@ -136,30 +136,37 @@ namespace Namezr.Infrastructure.Data.Migrations
                 CREATE OR REPLACE FUNCTION validate_submission_number_per_questionnaire()
                     RETURNS TRIGGER AS $$
                 DECLARE 
+                    questionnaire_id uuid;
                     count_bad int;
                 BEGIN
+                    questionnaire_id := (
+                        SELECT QV."QuestionnaireId"
+                        FROM "QuestionnaireVersions" QV
+                        WHERE QV."Id" = NEW."VersionId"
+                    );
+                    
                     SELECT COUNT(1) INTO count_bad
                     FROM (
                         SELECT 1
                         FROM "QuestionnaireSubmissions" QS
                         JOIN "QuestionnaireVersions" QV on QV."Id" = QS."VersionId"
-                        WHERE EXISTS(
-                            SELECT 1
-                            FROM NEW
-                            WHERE QS."Id" = NEW."Id"
-                        )
-                        GROUP BY QV."QuestionnaireId", QS."Number"
+                        WHERE QV."QuestionnaireId" = questionnaire_id
+                        GROUP BY QS."Number"
                         HAVING COUNT(1) > 1
                     ) bad_groups;
-                    
+
                     IF count_bad > 0 THEN
                         RAISE EXCEPTION 'Submission number must be unique per questionnaire';
                     END IF;
+                    
+                    RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql;
 
                 CREATE CONSTRAINT TRIGGER validate_number_per_questionnaire
                     AFTER INSERT OR UPDATE ON "QuestionnaireSubmissions"
+                    DEFERRABLE INITIALLY DEFERRED
+                    FOR EACH ROW
                     EXECUTE FUNCTION validate_submission_number_per_questionnaire();
                 """
                 );
