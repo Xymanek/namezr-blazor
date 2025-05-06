@@ -1,0 +1,27 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+
+@for (int i = 0; i < Labels.Count; i++)
+{
+    SubmissionLabelModel label = Labels[i];
+    int iLabel = i;
+
+    <LabelManagementEntry
+        LabelStored="label"
+        OnSaved="newLabel => Labels[iLabel] = newLabel"
+    />
+}
+
+<h2>Add new</h2>
+
+<LabelManagementEntry
+    OnSaved="Labels.Add"
+/>
+
+@code {
+
+    [Parameter]
+    public List<SubmissionLabelModel> Labels { get; set; } = [];
+    
+}

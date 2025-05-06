@@ -7,6 +7,8 @@ public static class ApiEndpointPaths
     
     public const string QuestionnaireSubmissionSave = "/api/questionnaires-submissions/save";
     public const string QuestionnaireSubmissionDownloadFile = "/api/questionnaires-submissions/download-file";
+    
+    public const string SubmissionLabelsConfigSave = "/api/submission-labels/config/save";
 
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
