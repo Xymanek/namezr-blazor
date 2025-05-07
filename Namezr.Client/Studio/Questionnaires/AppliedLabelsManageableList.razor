@@ -1,0 +1,66 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+
+<div class="d-flex flex-row flex-wrap gap-2">
+    @foreach (SubmissionLabelModel label in AppliedLabels)
+    {
+        /* TODO: remove button */
+        <SubmissionLabelPresenter
+            Label="label"
+        />
+    }
+    
+    @if (AppliedLabels.Count == 0)
+    {
+        <i>Currently none</i>
+    }
+
+    <HxButton
+        Icon="BootstrapIcon.Plus"
+        Outline="true"
+        Color="ThemeColor.Secondary"
+    />
+</div>
+
+<HxModal @ref="_applyLabelModal">
+    <BodyTemplate>
+        <HxListGroup Flush="true">
+            @foreach (SubmissionLabelModel label in GetApplyableLabels())
+            {
+                <HxListGroupItem OnClick="() => ApplyLabel(label)">
+                    <SubmissionLabelPresenter
+                        Label="label"
+                    />
+                </HxListGroupItem>
+            }
+        </HxListGroup>
+
+    </BodyTemplate>
+</HxModal>
+
+@code {
+    private HxModal? _applyLabelModal;
+
+    [Parameter]
+    public List<SubmissionLabelModel> AppliedLabels { get; set; } = [];
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    private IEnumerable<SubmissionLabelModel> GetApplyableLabels()
+    {
+        return PossibleLabels
+            .ExceptBy(AppliedLabels.Select(label => label.Id), label => label.Id);
+    }
+
+    private async Task ApplyLabel(SubmissionLabelModel label)
+    {
+        // TODO: http call
+        
+        await _applyLabelModal!.HideAsync();
+        
+        throw new NotImplementedException();
+    }
+
+}

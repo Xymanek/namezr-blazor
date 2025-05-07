@@ -21,6 +21,8 @@
 @using Namezr.Features.Eligibility.Data
 @using Namezr.Features.Creators.Services
 @using Namezr.Components
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Features.Questionnaires.Mappers
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -103,6 +105,16 @@
         <tr>
             <th>Questionnaire version</th>
             <td>@_submission.VersionId</td>
+        </tr>
+
+        <tr>
+            <th>Labels</th>
+            <td>
+                <AppliedLabelsManageableList
+                    AppliedLabels="_appliedLabels"
+                    PossibleLabels="_possibleLabels"
+                />
+            </td>
         </tr>
 
         <tr>
@@ -294,6 +306,9 @@
     private EligibilityResult? _eligibilityResult;
     private Dictionary<EligibilityPlanId, EligibilityPlan> _eligibilityPlans = [];
 
+    private List<SubmissionLabelModel> _appliedLabels = [];
+    private List<SubmissionLabelModel> _possibleLabels = [];
+
     protected override async Task OnInitializedAsync()
     {
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
@@ -308,9 +323,17 @@
             .Include(x => x.Version.Fields!).ThenInclude(x => x.Field)
             .Include(x => x.FieldValues)
             .Include(x => x.User)
+            .Include(x => x.Labels)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
         // TODO: 404 if not found
+
+        SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
+            .Where(label => label.CreatorId == CreatorId)
+            .ToArrayAsync();
+
+        _appliedLabels = _submission!.Labels!.Select(SubmissionLabelMapper.ToModel).ToList();
+        _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
 
         _eligibilityPlans = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
