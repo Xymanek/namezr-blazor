@@ -1,9 +1,11 @@
 ﻿@rendermode InteractiveWebAssembly
 
+@using BlazorColorPicker
 @using Namezr.Client.Infra
 @using Namezr.Client.Shared
 
 @inject ISpaHttpClientProvider HttpClientProvider
+@inject IColorPickerService ColorPickerService
 
 @if (_labelForEdit != null)
 {
@@ -22,11 +24,12 @@
             </div>
 
             <div class="col-12">
-                <HxInputText
-                    Label="Colour"
-                    @bind-Value="@_labelForEdit.Colour"
-                    HelperText="Use HTML color name or hex code"
-                />
+                <button class="btn btn-primary" @onclick="OpenColourPicker">
+                    <div style="background-color:@_labelForEdit.Colour" class="buttonColor"></div>
+                    Select a Color
+                </button>
+
+                <HxValidationMessage For="() => _labelForEdit.Colour"/>
             </div>
 
             @*
@@ -135,5 +138,17 @@ else if (LabelStored != null)
     //     BootstrapIcon.Alarm
     //     throw new NotImplementedException();
     // }
+
+    private async Task OpenColourPicker()
+    {
+        ColorPickerParameters parameters = new()
+        {
+            ColorSelected = _labelForEdit!.Colour,
+            Title = "Choose label colour",
+        };
+        _labelForEdit.Colour = await ColorPickerService.ShowColorPicker(parameters);
+
+        // TODO: trigger validation
+    }
 
 }

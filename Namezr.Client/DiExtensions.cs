@@ -1,4 +1,5 @@
-﻿using Havit.Blazor.Components.Web;
+﻿using BlazorColorPicker;
+using Havit.Blazor.Components.Web;
 
 namespace Namezr.Client;
 
@@ -11,6 +12,8 @@ public static class DiExtensions
     {
         services.AddHxServices();
         services.AddHxMessenger();
+
+        services.AddColorPicker();
 
         services.AutoRegister();
     }
