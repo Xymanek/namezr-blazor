@@ -4,6 +4,7 @@
 
 <HxTooltip
     Text="@Label.Description"
+    Placement="TooltipPlacement.Top"
 >
     <div
         class="d-inline-flex rounded px-2 py-1"
@@ -15,6 +16,8 @@
         }
 
         <div>@Label.Text</div>
+
+        @Button
     </div>
 </HxTooltip>
 
@@ -22,5 +25,8 @@
 
     [Parameter]
     public SubmissionLabelModel? Label { get; set; }
+
+    [Parameter]
+    public RenderFragment? Button { get; set; }
 
 }

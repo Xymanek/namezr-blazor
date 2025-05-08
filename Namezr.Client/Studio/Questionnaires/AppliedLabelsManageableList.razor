@@ -1,16 +1,25 @@
 ﻿@rendermode InteractiveWebAssembly
 
+@using Namezr.Client.Infra
 @using Namezr.Client.Shared
+
+@inject ISpaHttpClientProvider HttpClientProvider
 
 <div class="d-flex flex-row flex-wrap gap-2">
     @foreach (SubmissionLabelModel label in AppliedLabels)
     {
-        /* TODO: remove button */
         <SubmissionLabelPresenter
             Label="label"
-        />
+        >
+            <HxButton
+                Icon="BootstrapIcon.Trash"
+                Tooltip="Remove"
+                TooltipPlacement="TooltipPlacement.Bottom"
+                OnClick="_ => RemoveLabel(label)"
+            />
+        </SubmissionLabelPresenter>
     }
-    
+
     @if (AppliedLabels.Count == 0)
     {
         <i>Currently none</i>
@@ -23,7 +32,7 @@
     />
 </div>
 
-<HxModal @ref="_applyLabelModal">
+<HxModal @ref="_applyLabelModal" CloseOnEscape="!_isSubmitting" ShowCloseButton="!_isSubmitting">
     <BodyTemplate>
         <HxListGroup Flush="true">
             @foreach (SubmissionLabelModel label in GetApplyableLabels())
@@ -36,6 +45,10 @@
             }
         </HxListGroup>
 
+        @if (_isSubmitting)
+        {
+            <p>Working...</p>
+        }
     </BodyTemplate>
 </HxModal>
 
@@ -43,10 +56,15 @@
     private HxModal? _applyLabelModal;
 
     [Parameter]
+    public Guid SubmissionId { get; set; }
+
+    [Parameter]
     public List<SubmissionLabelModel> AppliedLabels { get; set; } = [];
 
     [Parameter]
     public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    private bool _isSubmitting;
 
     private IEnumerable<SubmissionLabelModel> GetApplyableLabels()
     {
@@ -56,11 +74,40 @@
 
     private async Task ApplyLabel(SubmissionLabelModel label)
     {
-        // TODO: http call
-        
+        await DoUpdatePresence(label, true);
         await _applyLabelModal!.HideAsync();
-        
-        throw new NotImplementedException();
+    }
+
+    private async Task RemoveLabel(SubmissionLabelModel label)
+    {
+        await DoUpdatePresence(label, false);
+    }
+
+    private async Task DoUpdatePresence(SubmissionLabelModel label, bool newPresent)
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        _isSubmitting = true;
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionLabelsPresenceMutate,
+                new MutateLabelPresenceRequest
+                {
+                    LabelId = label.Id,
+                    SubmissionId = SubmissionId,
+
+                    NewPresent = newPresent,
+                }
+            );
+
+            // TODO: toasts
+            response.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
 }
