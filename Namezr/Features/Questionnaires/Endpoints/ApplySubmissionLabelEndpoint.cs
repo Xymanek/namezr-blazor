@@ -9,6 +9,7 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[Behaviors] // Clear out the validation
 [MapPost(ApiEndpointPaths.SubmissionLabelsPresenceMutate)]
 internal partial class ApplySubmissionLabelEndpoint
 {

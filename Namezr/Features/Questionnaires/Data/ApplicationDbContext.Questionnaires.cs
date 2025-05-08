@@ -18,4 +18,12 @@ public partial class ApplicationDbContext
     public DbSet<SubmissionNumberSequenceEntity> SubmissionNumberSequences { get; set; } = null!;
     
     public DbSet<SubmissionLabelEntity> SubmissionLabels { get; set; } = null!;
+
+    private static void OnModelCreatingQuestionnaires(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SubmissionLabelEntity>()
+            .HasMany<QuestionnaireSubmissionEntity>()
+            .WithMany(submission => submission.Labels)
+            .UsingEntity(joinEntity => joinEntity.ToTable("QuestionnaireSubmissions_Labels"));
+    }
 }
