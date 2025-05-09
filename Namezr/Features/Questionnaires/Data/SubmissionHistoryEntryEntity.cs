@@ -115,7 +115,6 @@ internal class SubmissionHistoryEntryEntityConfiguration :
 
     private SubmissionHistoryEntryEntityConfiguration()
     {
-        // TODO: recreate migration due to spelling kakaffulfel
     }
 
     public static void Apply(ModelBuilder modelBuilder)
