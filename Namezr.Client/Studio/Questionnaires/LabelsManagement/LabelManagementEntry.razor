@@ -120,6 +120,7 @@ else if (LabelStored != null)
     private async Task HandleValidSubmit()
     {
         HttpClient httpClient = HttpClientProvider.HttpClient;
+        SubmissionLabelModel labelForSubmit = _labelForEdit!.Clone();
 
         _isSaving = true;
         try
@@ -128,7 +129,7 @@ else if (LabelStored != null)
                 .PostAsJsonAsync(ApiEndpointPaths.SubmissionLabelsConfigSave, new LabelSaveRequest
                 {
                     CreatorId = CreatorId,
-                    Label = _labelForEdit!,
+                    Label = labelForSubmit,
                 });
 
             response.EnsureSuccessStatusCode();
@@ -136,7 +137,13 @@ else if (LabelStored != null)
         finally
         {
             _isSaving = false;
+            StateHasChanged();
         }
+
+        LabelStored = labelForSubmit;
+        StateHasChanged();
+
+        await OnSaved.InvokeAsync(labelForSubmit);
     }
 
     // private static readonly IReadOnlyDictionary<string, BootstrapIcon> LabeledIcons = Enum

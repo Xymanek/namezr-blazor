@@ -67,6 +67,7 @@
             .ToArrayAsync();
 
         _labelModels = labelEntities
+            .OrderBy(label => label.Text, StringComparer.OrdinalIgnoreCase)
             .Select(SubmissionLabelMapper.ToModel)
             .ToList();
     }

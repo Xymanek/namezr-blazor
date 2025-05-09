@@ -46,9 +46,10 @@ internal partial class SaveLabelConfigEndpoint
         {
             labelEntity = request.Label.ToEntity();
             labelEntity.Creator = creator;
+
+            dbContext.SubmissionLabels.Add(labelEntity);
         }
 
-        dbContext.SubmissionLabels.Add(labelEntity);
         await dbContext.SaveChangesAsync(ct);
     }
 }
