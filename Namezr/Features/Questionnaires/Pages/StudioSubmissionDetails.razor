@@ -1,6 +1,7 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/{submissionId:guid}"
 
 @using System.Diagnostics
+@using Humanizer
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client
@@ -35,57 +36,61 @@
 @inject IEligibilityService EligibilityService
 @inject ISupportPlansService SupportPlansService
 
-@if (_submission is not null)
+@if (_submission == null || _eligibilityResult is null)
 {
-    <PageTitle>
-        Submission |
-        <StaticTruncatedText Text="@_submission.Version.Questionnaire.Title" MaxLength="25"/>
-        <StudioTitleSuffix/>
-    </PageTitle>
+    return;
+}
 
-    <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
-        <HxBreadcrumb>
-            <QuestionnaireBreadcrumbs
-                Questionnaire="_submission.Version.Questionnaire"
+<PageTitle>
+    Submission |
+    <StaticTruncatedText Text="@_submission.Version.Questionnaire.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <QuestionnaireBreadcrumbs
+            Questionnaire="_submission.Version.Questionnaire"
+        />
+
+        <HxBreadcrumbItem
+            Text="Submissions"
+        />
+
+        <HxBreadcrumbItem
+            Href=@(NavigationManager.Uri)
+            Text=@($"#{_submission.Number}")
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Submission details
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    @if (_submission.ApprovedAt is not null)
+    {
+        <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
+            <HxSubmit
+                Text="Remove approval"
+                Color="@ThemeColor.Danger"
             />
-
-            <HxBreadcrumbItem
-                Text="Submissions"
+        </EditForm>
+    }
+    else
+    {
+        <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
+            <HxSubmit
+                Text="Approve"
+                Color="@ThemeColor.Success"
             />
+        </EditForm>
+    }
+</SectionContent>
 
-            <HxBreadcrumbItem
-                Href=@(NavigationManager.Uri)
-                Text=@($"#{_submission.Number}")
-            />
-        </HxBreadcrumb>
-    </SectionContent>
-
-    <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-        Submission details
-    </SectionContent>
-
-    <SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
-        @if (_submission.ApprovedAt is not null)
-        {
-            <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
-                <HxSubmit
-                    Text="Remove approval"
-                    Color="@ThemeColor.Danger"
-                />
-            </EditForm>
-        }
-        else
-        {
-            <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
-                <HxSubmit
-                    Text="Approve"
-                    Color="@ThemeColor.Success"
-                />
-            </EditForm>
-        }
-    </SectionContent>
-
-    <table class="table table-striped">
+<div class="d-flex flex-column gap-3">
+    <table class="table table-striped mb-0">
         <tr>
             <th>User</th>
             <td>
@@ -144,7 +149,7 @@
         }
     </table>
 
-    <table class="table table-striped mt-4">
+    <table class="table table-striped mb-0">
         @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _submission.Version.Fields!)
         {
             string? valueSerialized = _submission.FieldValues!.SingleOrDefault(x => x.FieldId == fieldConfiguration.FieldId)?.ValueSerialized;
@@ -190,10 +195,7 @@
             </tr>
         }
     </table>
-}
 
-@if (_submission != null && _eligibilityResult is not null)
-{
     <HxCard>
         <HeaderTemplate>
             <div class="d-flex flex-row align-items-center gap-3">
@@ -285,7 +287,51 @@
             </table>
         </BodyTemplate>
     </HxCard>
-}
+
+    <HxCard BodyCssClass="gap-1">
+        <HeaderTemplate>
+            History
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex gap-3 flex-wrap">
+                    <div class="d-flex gap-2">
+                        <HxIcon Icon="BootstrapIcon.Download"/>
+
+                        <div>
+                            <strong>Kexx</strong> downloaded <i>Character bin</i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-grow-1">
+                        <div class="flex-grow-1"></div>
+                        <div>
+                            @DateTime.Now.AddMinutes(-45).Humanize()
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 flex-wrap">
+                    <div class="d-flex gap-2">
+                        <HxIcon Icon="BootstrapIcon.Download"/>
+
+                        <div>
+                            <strong>Kexx</strong> downloaded <i>Character bin</i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-grow-1">
+                        <div class="flex-grow-1"></div>
+                        <div>
+                            @DateTime.Now.AddMinutes(-45).Humanize()
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </BodyTemplate>
+    </HxCard>
+</div>
 
 @code {
 
