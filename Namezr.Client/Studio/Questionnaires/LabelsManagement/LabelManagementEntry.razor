@@ -64,7 +64,16 @@ else if (LabelStored != null)
 {
     <div class="row">
         <div class="col-2">
-            <SubmissionLabelPresenter Label="LabelStored"/>
+            <SubmissionLabelPresenter Label="LabelStored">
+                <Button>
+                    <HxButton
+                        Icon="BootstrapIcon.Pencil"
+                        Tooltip="Edit"
+                        TooltipPlacement="TooltipPlacement.Bottom"
+                        OnClick="StartEdit"
+                    />
+                </Button>
+            </SubmissionLabelPresenter>
         </div>
     </div>
 }
@@ -152,6 +161,11 @@ else if (LabelStored != null)
         _labelForEdit.Colour = await ColorPickerService.ShowColorPicker(parameters);
 
         // TODO: trigger validation
+    }
+
+    private void StartEdit()
+    {
+        _labelForEdit = LabelStored!.Clone();
     }
 
 }
