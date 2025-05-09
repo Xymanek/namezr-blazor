@@ -1,0 +1,40 @@
+﻿@using Namezr.Features.Questionnaires.Data
+
+@if (Entry == null)
+{
+    return;
+}
+
+@if (Entry.InstigatorIsProgrammatic)
+{
+    <i>System</i>
+    return;
+}
+
+@if (Entry.InstigatorUser != null)
+{
+    <strong>
+        @Entry.InstigatorUser.UserName
+
+        @if (Entry.InstigatorIsStaff)
+        {
+            <i>(staff)</i>
+        }
+    </strong>
+
+    return;
+}
+
+<i>Unknown</i>
+
+@if (Entry.InstigatorIsStaff)
+{
+    <i>(staff)</i>
+}
+
+@code {
+
+    [Parameter]
+    public SubmissionHistoryEntryEntity? Entry { get; set; }
+
+}
