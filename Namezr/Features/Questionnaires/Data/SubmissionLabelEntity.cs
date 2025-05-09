@@ -34,6 +34,9 @@ public class SubmissionLabelEntity
     // public BootstrapIcon? Icon { get; set; }
 
     public required bool IsSubmitterVisible { get; set; }
+
+    public ICollection<QuestionnaireSubmissionEntity>? Submissions { get; set; }
+    public ICollection<SubmissionLabelLinkEntity>? SubmissionLinks { get; set; }
 }
 
 internal class SubmissionLabelEntityTypeConfiguration : IEntityTypeConfiguration<SubmissionLabelEntity>

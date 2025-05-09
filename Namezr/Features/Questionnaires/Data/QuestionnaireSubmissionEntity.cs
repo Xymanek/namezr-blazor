@@ -32,7 +32,9 @@ public class QuestionnaireSubmissionEntity : SelectionCandidateEntity
     public Guid? ApproverId { get; set; }
 
     public ICollection<QuestionnaireFieldValueEntity>? FieldValues { get; set; }
+
     public ICollection<SubmissionLabelEntity>? Labels { get; set; }
+    public ICollection<SubmissionLabelLinkEntity>? LabelLinks { get; set; }
 }
 
 /// <remarks>
@@ -65,8 +67,5 @@ internal class QuestionnaireSubmissionEntityConfiguration : IEntityTypeConfigura
 
         builder.Property(e => e.SubmittedAt)
             .HasDefaultValueSql("now()");
-
-        builder.HasMany(s => s.Labels)
-            .WithMany();
     }
 }
