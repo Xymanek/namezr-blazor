@@ -7,7 +7,10 @@
     SubmissionLabelModel label = Labels[i];
     int iLabel = i;
 
+    /* TODO: edit button */
+    /* TODO: display whether submitter visible or not */
     <LabelManagementEntry
+        CreatorId="CreatorId"
         LabelStored="label"
         OnSaved="newLabel => Labels[iLabel] = newLabel"
     />
@@ -16,6 +19,7 @@
 <h2>Add new</h2>
 
 <LabelManagementEntry
+    CreatorId="CreatorId"
     OnSaved="Labels.Add"
 />
 
@@ -23,5 +27,8 @@
 
     [Parameter]
     public List<SubmissionLabelModel> Labels { get; set; } = [];
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
     
 }

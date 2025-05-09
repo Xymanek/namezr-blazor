@@ -11,12 +11,14 @@
         <SubmissionLabelPresenter
             Label="label"
         >
-            <HxButton
-                Icon="BootstrapIcon.Trash"
-                Tooltip="Remove"
-                TooltipPlacement="TooltipPlacement.Bottom"
-                OnClick="_ => RemoveLabel(label)"
-            />
+            <Button>
+                <HxButton
+                    Icon="BootstrapIcon.Trash"
+                    Tooltip="Remove"
+                    TooltipPlacement="TooltipPlacement.Bottom"
+                    OnClick="() => RemoveLabel(label)"
+                />
+            </Button>
         </SubmissionLabelPresenter>
     }
 
@@ -29,18 +31,40 @@
         Icon="BootstrapIcon.Plus"
         Outline="true"
         Color="ThemeColor.Secondary"
+        OnClick="() => _applyLabelModal!.ShowAsync()"
     />
 </div>
 
 <HxModal @ref="_applyLabelModal" CloseOnEscape="!_isSubmitting" ShowCloseButton="!_isSubmitting">
+    <HeaderTemplate>
+        <div class="flex-grow-1 d-flex justify-content-between align-items-center gap-3">
+            <div>Pick label to apply</div>
+
+            <HxTooltip Text="Create new label">
+                <a href=@($"studio/{CreatorId.NoHyphens()}/config/submission-labels")
+                   target="_blank"
+                   class="btn btn-success"
+                >
+                    <HxIcon Icon="BootstrapIcon.Plus"/>
+                </a>
+            </HxTooltip>
+        </div>
+    </HeaderTemplate>
+
     <BodyTemplate>
         <HxListGroup Flush="true">
             @foreach (SubmissionLabelModel label in GetApplyableLabels())
             {
                 <HxListGroupItem OnClick="() => ApplyLabel(label)">
                     <SubmissionLabelPresenter
-                        Label="label"
-                    />
+                        Label="label"/>
+                </HxListGroupItem>
+            }
+
+            @if (!GetApplyableLabels().Any())
+            {
+                <HxListGroupItem>
+                    <i>No labels available</i>
                 </HxListGroupItem>
             }
         </HxListGroup>
@@ -54,6 +78,9 @@
 
 @code {
     private HxModal? _applyLabelModal;
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
 
     [Parameter]
     public Guid SubmissionId { get; set; }
@@ -75,12 +102,19 @@
     private async Task ApplyLabel(SubmissionLabelModel label)
     {
         await DoUpdatePresence(label, true);
+
+        AppliedLabels.Add(label);
+        StateHasChanged();
+
         await _applyLabelModal!.HideAsync();
     }
 
     private async Task RemoveLabel(SubmissionLabelModel label)
     {
         await DoUpdatePresence(label, false);
+
+        AppliedLabels.Remove(label);
+        StateHasChanged();
     }
 
     private async Task DoUpdatePresence(SubmissionLabelModel label, bool newPresent)
@@ -107,6 +141,7 @@
         finally
         {
             _isSubmitting = false;
+            StateHasChanged();
         }
     }
 

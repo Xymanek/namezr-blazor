@@ -13,6 +13,9 @@ public class LabelSaveRequest
     {
         public Validator(IValidator<SubmissionLabelModel> labelValidator)
         {
+            RuleFor(x => x.CreatorId)
+                .NotEmpty();
+
             RuleFor(x => x.Label)
                 .SetValidator(labelValidator);
         }

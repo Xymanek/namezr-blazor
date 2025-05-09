@@ -24,7 +24,7 @@
             </div>
 
             <div class="col-12">
-                <button class="btn btn-primary" @onclick="OpenColourPicker">
+                <button type="button" class="btn btn-primary" @onclick="OpenColourPicker">
                     <div style="background-color:@_labelForEdit.Colour" class="buttonColor"></div>
                     Select a Color
                 </button>
@@ -85,6 +85,9 @@ else if (LabelStored != null)
     [Parameter]
     public EventCallback<SubmissionLabelModel> OnSaved { get; set; }
 
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
     private SubmissionLabelModel? _labelForEdit;
     private bool _isSaving;
 
@@ -115,7 +118,7 @@ else if (LabelStored != null)
             HttpResponseMessage response = await httpClient
                 .PostAsJsonAsync(ApiEndpointPaths.SubmissionLabelsConfigSave, new LabelSaveRequest
                 {
-                    CreatorId = Guid.Empty, // TODO
+                    CreatorId = CreatorId,
                     Label = _labelForEdit!,
                 });
 
