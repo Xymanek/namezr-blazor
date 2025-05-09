@@ -3,6 +3,7 @@ using Immediate.Handlers.Shared;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires;
+using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
 
@@ -16,6 +17,8 @@ internal partial class ApplySubmissionLabelEndpoint
     private static async ValueTask HandleAsync(
         MutateLabelPresenceRequest request,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        IdentityUserAccessor userAccessor,
+        IHttpContextAccessor httpContextAccessor,
         CancellationToken ct
     )
     {
@@ -29,11 +32,16 @@ internal partial class ApplySubmissionLabelEndpoint
             .SingleOrDefaultAsync(submission => submission.Id == request.SubmissionId, ct);
 
         if (submission == null) throw new Exception("Bad submission ID");
-        // TODO: validate access
+        await ValidateAccess();
 
         SubmissionLabelEntity? label = await dbContext.SubmissionLabels
             .AsTracking()
-            .SingleOrDefaultAsync(label => label.Id == request.LabelId, ct);
+            .SingleOrDefaultAsync(
+                label =>
+                    label.Id == request.LabelId &&
+                    label.CreatorId == submission.Version.Questionnaire.CreatorId,
+                ct
+            );
 
         // TODO: 400 these
         if (label == null) throw new Exception("Bad label ID");
@@ -52,5 +60,24 @@ internal partial class ApplySubmissionLabelEndpoint
         }
 
         await dbContext.SaveChangesAsync(ct);
+        return;
+
+        async Task ValidateAccess()
+        {
+            Guid userId = userAccessor.GetRequiredUserId(httpContextAccessor.HttpContext!);
+
+            // ReSharper disable once AccessToDisposedClosure
+            bool isCreatorStaff = await dbContext.CreatorStaff
+                .Where(staff =>
+                    staff.UserId == userId &&
+                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
+                )
+                .AnyAsync(ct);
+
+            if (isCreatorStaff) return;
+
+            // TODO: correct
+            throw new Exception("Access denied");
+        }
     }
 }
