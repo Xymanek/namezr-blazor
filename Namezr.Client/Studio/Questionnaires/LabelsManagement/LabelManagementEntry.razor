@@ -1,0 +1,178 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using BlazorColorPicker
+@using Namezr.Client.Infra
+@using Namezr.Client.Shared
+
+@inject ISpaHttpClientProvider HttpClientProvider
+@inject IColorPickerService ColorPickerService
+
+@if (_labelForEdit != null)
+{
+    <EditForm Model="_labelForEdit" OnValidSubmit="HandleValidSubmit">
+        <div class="row g-3">
+            <div class="col-12">
+                <HxInputText Label="Text" @bind-Value="@_labelForEdit.Text"/>
+            </div>
+
+            <div class="col-12">
+                <HxInputText
+                    Label="Description"
+                    @bind-Value="@_labelForEdit.Description"
+                    Hint="Shown on hover"
+                />
+            </div>
+
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" @onclick="OpenColourPicker">
+                    <div style="background-color:@_labelForEdit.Colour" class="buttonColor"></div>
+                    Select a Color
+                </button>
+
+                <HxValidationMessage For="() => _labelForEdit.Colour"/>
+            </div>
+
+            @*
+            <div class="col-12">
+                <HxAutosuggest
+                    TValue="BootstrapIcon?"
+                    TItem="BootstrapIcon"
+                    Label="Icon"
+                    Placeholder="Type to search"
+                    @bind-Value="@_labelForEdit.Icon"
+                    DataProvider="ProvideIconSuggestions"
+                    >
+                    
+                </HxAutosuggest>
+                
+                <HxInputEnum Label="Icon" @bind-Value="@_labelForEdit.Icon"
+                             Nullable="true"/>
+            </div>
+            *@
+
+            <div class="col-12">
+                <HxCheckbox Label="Submitter Visible" @bind-Value="@_labelForEdit.IsSubmitterVisible"/>
+            </div>
+
+            <div class="col1-12">
+                <HxSubmit Text="Save" Color="ThemeColor.Primary" Enabled="!_isSaving"/>
+            </div>
+        </div>
+    </EditForm>
+}
+else if (LabelStored != null)
+{
+    <div class="row">
+        <div class="col-2">
+            <SubmissionLabelPresenter Label="LabelStored">
+                <Button>
+                    <HxButton
+                        Icon="BootstrapIcon.Pencil"
+                        Tooltip="Edit"
+                        TooltipPlacement="TooltipPlacement.Bottom"
+                        OnClick="StartEdit"
+                    />
+                </Button>
+            </SubmissionLabelPresenter>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public SubmissionLabelModel? LabelStored
+    {
+        get;
+        set
+        {
+            field = value;
+            InitEditPostStoredSet();
+        }
+    }
+
+    [Parameter]
+    public EventCallback<SubmissionLabelModel> OnSaved { get; set; }
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
+    private SubmissionLabelModel? _labelForEdit;
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        InitEditPostStoredSet();
+    }
+
+    private void InitEditPostStoredSet()
+    {
+        if (LabelStored != null)
+        {
+            _labelForEdit = null;
+        }
+        else if (_labelForEdit == null)
+        {
+            _labelForEdit = new SubmissionLabelModel();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+        SubmissionLabelModel labelForSubmit = _labelForEdit!.Clone();
+
+        _isSaving = true;
+        try
+        {
+            HttpResponseMessage response = await httpClient
+                .PostAsJsonAsync(ApiEndpointPaths.SubmissionLabelsConfigSave, new LabelSaveRequest
+                {
+                    CreatorId = CreatorId,
+                    Label = labelForSubmit,
+                });
+
+            response.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+
+        LabelStored = labelForSubmit;
+        StateHasChanged();
+
+        await OnSaved.InvokeAsync(labelForSubmit);
+    }
+
+    // private static readonly IReadOnlyDictionary<string, BootstrapIcon> LabeledIcons = Enum
+    //     .GetValues<BootstrapIcon>()
+    //     .
+
+    // private Task<AutosuggestDataProviderResult<BootstrapIcon>> ProvideIconSuggestions(
+    //     AutosuggestDataProviderRequest request
+    // )
+    // {
+    //     BootstrapIcon.Alarm
+    //     throw new NotImplementedException();
+    // }
+
+    private async Task OpenColourPicker()
+    {
+        ColorPickerParameters parameters = new()
+        {
+            ColorSelected = _labelForEdit!.Colour,
+            Title = "Choose label colour",
+        };
+        _labelForEdit.Colour = await ColorPickerService.ShowColorPicker(parameters);
+
+        // TODO: trigger validation
+    }
+
+    private void StartEdit()
+    {
+        _labelForEdit = LabelStored!.Clone();
+    }
+
+}

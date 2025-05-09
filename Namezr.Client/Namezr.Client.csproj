@@ -18,6 +18,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="BlazorColorPicker" />
         <PackageReference Include="FluentValidation" />
         <PackageReference Include="Havit.Blazor.Components.Web.Bootstrap" />
         <PackageReference Include="Humanizer.Core" />

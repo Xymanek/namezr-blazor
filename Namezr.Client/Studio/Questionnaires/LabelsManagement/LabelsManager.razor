@@ -1,0 +1,37 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+
+@inject NavigationManager NavigationManager
+
+@for (int i = 0; i < Labels.Count; i++)
+{
+    SubmissionLabelModel label = Labels[i];
+    int iLabel = i;
+
+    /* TODO: delete button */
+    /* TODO: display whether submitter visible or not */
+    <LabelManagementEntry
+        CreatorId="CreatorId"
+        LabelStored="label"
+        OnSaved="newLabel => Labels[iLabel] = newLabel"
+    />
+}
+
+<h2>Add new</h2>
+
+@* Note: if list updating ever becomes a client side concern, the sort needs to move here *@
+<LabelManagementEntry
+    CreatorId="CreatorId"
+    OnSaved="() => NavigationManager.Refresh()"
+/>
+
+@code {
+
+    [Parameter]
+    public List<SubmissionLabelModel> Labels { get; set; } = [];
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+    
+}

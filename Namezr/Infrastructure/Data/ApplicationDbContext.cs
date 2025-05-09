@@ -39,6 +39,7 @@ public partial class ApplicationDbContext : IdentityUserContext<
     {
         base.OnModelCreating(builder);
 
+        OnModelCreatingQuestionnaires(builder);
         OnModelCreatingThirdParty(builder);
         OnModelCreatingIdentity(builder);
     }

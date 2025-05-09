@@ -16,4 +16,22 @@ public partial class ApplicationDbContext
     public DbSet<QuestionnaireFieldValueEntity> QuestionnaireFieldValues { get; set; } = null!;
 
     public DbSet<SubmissionNumberSequenceEntity> SubmissionNumberSequences { get; set; } = null!;
+
+    public DbSet<SubmissionLabelEntity> SubmissionLabels { get; set; } = null!;
+
+    private static void OnModelCreatingQuestionnaires(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SubmissionLabelEntity>()
+            .HasMany(label => label.Submissions)
+            .WithMany(submission => submission.Labels)
+            .UsingEntity<SubmissionLabelLinkEntity>(
+                j => j.HasOne<QuestionnaireSubmissionEntity>(link => link.Submission)
+                    .WithMany(submission => submission.LabelLinks)
+                    .HasForeignKey(link => link.SubmissionId),
+                j => j.HasOne<SubmissionLabelEntity>(link => link.Label)
+                    .WithMany(label => label.SubmissionLinks)
+                    .HasForeignKey(link => link.LabelId),
+                j => j.ToTable("QuestionnaireSubmissions_Labels")
+            );
+    }
 }

@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["Namezr.styles.css"]"/>
 
+    @* TODO: conditional? @Assets? *@
+    <link href="_content/BlazorColorPicker/colorpicker.css" rel="stylesheet"/>
+
     <ImportMap/>
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -38,6 +41,8 @@
 <script src="_framework/blazor.web.js"></script>
 @((MarkupString)HxSetup.RenderBootstrapJavaScriptReference())
 <WasmTrigger/>
+
+<BlazorColorPicker.ColorPicker @rendermode="InteractiveWebAssembly" />
 
 @* Fancybox *@
 <script src="@Assets["lib/fancybox/5.0.36/fancybox.umd.js"]"></script>
