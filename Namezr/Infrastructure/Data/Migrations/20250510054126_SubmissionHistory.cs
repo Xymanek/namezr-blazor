@@ -21,8 +21,9 @@ namespace Namezr.Infrastructure.Data.Migrations
                     InstigatorUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     InstigatorIsStaff = table.Column<bool>(type: "boolean", nullable: false),
                     InstigatorIsProgrammatic = table.Column<bool>(type: "boolean", nullable: false),
-                    Type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Type = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
                     FieldId = table.Column<Guid>(type: "uuid", nullable: true),
+                    InBatch = table.Column<bool>(type: "boolean", nullable: true),
                     Comment = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: true),
                     LabelId = table.Column<Guid>(type: "uuid", nullable: true)
                 },

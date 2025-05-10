@@ -15,7 +15,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Namezr.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250509174753_SubmissionHistory")]
+    [Migration("20250510054126_SubmissionHistory")]
     partial class SubmissionHistory
     {
         /// <inheritdoc />
@@ -636,10 +636,9 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.Property<Guid>("SubmissionId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
+                    b.Property<int>("Type")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -649,7 +648,7 @@ namespace Namezr.Infrastructure.Data.Migrations
 
                     b.ToTable("SubmissionHistoryEntries");
 
-                    b.HasDiscriminator<string>("Type").IsComplete(true).HasValue("SubmissionHistoryEntryEntity");
+                    b.HasDiscriminator<int>("Type").IsComplete(true);
 
                     b.UseTphMappingStrategy();
                 });
@@ -882,14 +881,14 @@ namespace Namezr.Infrastructure.Data.Migrations
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.HasDiscriminator().HasValue("ApprovalGranted");
+                    b.HasDiscriminator().HasValue(5);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryApprovalRemovedEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.HasDiscriminator().HasValue("ApprovalRemoved");
+                    b.HasDiscriminator().HasValue(6);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryFileDownloadedEntity", b =>
@@ -899,16 +898,19 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.Property<Guid>("FieldId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("InBatch")
+                        .HasColumnType("boolean");
+
                     b.HasIndex("FieldId");
 
-                    b.HasDiscriminator().HasValue("FileDownloaded");
+                    b.HasDiscriminator().HasValue(2);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryInitialSubmitEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.HasDiscriminator().HasValue("InitialSubmit");
+                    b.HasDiscriminator().HasValue(3);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryInternalCommentEntity", b =>
@@ -922,7 +924,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(5000)")
                         .HasColumnName("Comment");
 
-                    b.HasDiscriminator().HasValue("InternalComment");
+                    b.HasDiscriminator().HasValue(7);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryLabelAppliedEntity", b =>
@@ -936,7 +938,7 @@ namespace Namezr.Infrastructure.Data.Migrations
 
                     b.HasIndex("LabelId");
 
-                    b.HasDiscriminator().HasValue("LabelApplied");
+                    b.HasDiscriminator().HasValue(0);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryLabelRemovedEntity", b =>
@@ -950,7 +952,7 @@ namespace Namezr.Infrastructure.Data.Migrations
 
                     b.HasIndex("LabelId");
 
-                    b.HasDiscriminator().HasValue("LabelRemoved");
+                    b.HasDiscriminator().HasValue(1);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryPublicCommentEntity", b =>
@@ -964,14 +966,14 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(5000)")
                         .HasColumnName("Comment");
 
-                    b.HasDiscriminator().HasValue("PublicComment");
+                    b.HasDiscriminator().HasValue(8);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryStaffViewedEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.HasDiscriminator().HasValue("StaffViewed");
+                    b.HasDiscriminator().HasValue(10);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistorySubmitterCommentEntity", b =>
@@ -985,14 +987,14 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(5000)")
                         .HasColumnName("Comment");
 
-                    b.HasDiscriminator().HasValue("SubmitterComment");
+                    b.HasDiscriminator().HasValue(9);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryUpdatedValuesEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.HasDiscriminator().HasValue("UpdatedValues");
+                    b.HasDiscriminator().HasValue(4);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity", b =>

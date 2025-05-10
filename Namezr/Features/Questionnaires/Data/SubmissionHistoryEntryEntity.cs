@@ -61,6 +61,11 @@ public class SubmissionHistoryFileDownloadedEntity : SubmissionHistoryEntryEntit
 {
     public Guid FieldId { get; set; }
     public QuestionnaireFieldEntity Field { get; set; } = null!;
+
+    /// <summary>
+    /// True if the file was downloaded as part of a batch download.
+    /// </summary>
+    public required bool InBatch { get; set; }
 }
 
 public class SubmissionHistoryInitialSubmitEntity : SubmissionHistoryEntryEntity;
@@ -131,18 +136,18 @@ internal class SubmissionHistoryEntryEntityConfiguration :
     {
         builder.UseTphMappingStrategy();
 
-        builder.HasDiscriminator("Type", typeof(string))
-            .HasValue<SubmissionHistoryLabelAppliedEntity>("LabelApplied")
-            .HasValue<SubmissionHistoryLabelRemovedEntity>("LabelRemoved")
-            .HasValue<SubmissionHistoryFileDownloadedEntity>("FileDownloaded")
-            .HasValue<SubmissionHistoryInitialSubmitEntity>("InitialSubmit")
-            .HasValue<SubmissionHistoryUpdatedValuesEntity>("UpdatedValues")
-            .HasValue<SubmissionHistoryApprovalGrantedEntity>("ApprovalGranted")
-            .HasValue<SubmissionHistoryApprovalRemovedEntity>("ApprovalRemoved")
-            .HasValue<SubmissionHistoryInternalCommentEntity>("InternalComment")
-            .HasValue<SubmissionHistoryPublicCommentEntity>("PublicComment")
-            .HasValue<SubmissionHistorySubmitterCommentEntity>("SubmitterComment")
-            .HasValue<SubmissionHistoryStaffViewedEntity>("StaffViewed")
+        builder.HasDiscriminator<int>("Type")
+            .HasValue<SubmissionHistoryLabelAppliedEntity>(0)
+            .HasValue<SubmissionHistoryLabelRemovedEntity>(1)
+            .HasValue<SubmissionHistoryFileDownloadedEntity>(2)
+            .HasValue<SubmissionHistoryInitialSubmitEntity>(3)
+            .HasValue<SubmissionHistoryUpdatedValuesEntity>(4)
+            .HasValue<SubmissionHistoryApprovalGrantedEntity>(5)
+            .HasValue<SubmissionHistoryApprovalRemovedEntity>(6)
+            .HasValue<SubmissionHistoryInternalCommentEntity>(7)
+            .HasValue<SubmissionHistoryPublicCommentEntity>(8)
+            .HasValue<SubmissionHistorySubmitterCommentEntity>(9)
+            .HasValue<SubmissionHistoryStaffViewedEntity>(10)
             .IsComplete();
 
         // Set the maximum length for the discriminator column
