@@ -1,4 +1,5 @@
-﻿@using Namezr.Features.Questionnaires.Data
+﻿@using System.Diagnostics
+@using Namezr.Features.Questionnaires.Data
 @using Namezr.Client.Shared
 
 @if (Entry == null)
@@ -15,13 +16,65 @@
 
             @switch (Entry)
             {
+                case SubmissionHistoryLabelAppliedEntity labelEntry:
+                    <span>applied</span>
+                    <SubmissionHistoryLabel Label="labelEntry.Label"/>
+                    <span>label</span>
+                    break;
+
+                case SubmissionHistoryLabelRemovedEntity labelEntry:
+                    <span>removed</span>
+                    <SubmissionHistoryLabel Label="labelEntry.Label"/>
+                    <span>label</span>
+                    break;
+
                 case SubmissionHistoryFileDownloadedEntity fileDownloaded:
                     <span>
-                        downloaded <i>Character bin</i>
+                        downloaded
+                        <i>
+                            @* TODO: fetch the the latest field name but capped by the version tha the submission is targeted against *@
+                            @*Character bin*@
+                            @fileDownloaded.FieldId
+                        </i>
                     </span>
+
+                    @if (fileDownloaded.InBatch)
+                    {
+                        <span>
+                            (in batch)
+                        </span>
+                    }
+
+                    break;
+
+                case SubmissionHistoryInitialSubmitEntity:
+                    <span>created the submission</span>
+                    break;
+
+                case SubmissionHistoryUpdatedValuesEntity:
+                    <span>updated the submission field values</span>
+                    break;
+
+                case SubmissionHistoryApprovalGrantedEntity:
+                    <span>granted approval</span>
+                    break;
+
+                case SubmissionHistoryApprovalRemovedEntity:
+                    <span>removed approval</span>
+                    break;
+
+                case SubmissionHistoryInternalNoteEntity:
+                    <span>left an internal note (not visible to the submitter)</span>
+                    break;
+
+                case SubmissionHistoryPublicCommentEntity:
+                    <span>left a comment (visible to the submitter)</span>
+                    break;
+
+                case SubmissionHistoryStaffViewedEntity:
+                    <span>viewed the submission</span>
                     break;
             }
-
         </div>
 
         <div class="d-flex flex-grow-1">
@@ -33,6 +86,17 @@
     </div>
 </div>
 
+@switch (Entry)
+{
+    case SubmissionHistoryInternalNoteEntity commentEntry:
+        <SubmissionCommentStudioPresenter Content="@commentEntry.Content"/>
+        break;
+
+    case SubmissionHistoryPublicCommentEntity commentEntry:
+        <SubmissionCommentStudioPresenter Content="@commentEntry.Content"/>
+        break;
+}
+
 @code {
 
     [Parameter]
@@ -40,10 +104,20 @@
 
     private BootstrapIcon? Icon => Entry switch
     {
-        SubmissionHistoryFileDownloadedEntity => BootstrapIcon.Download,
-        // TODO: rest
+        null => null,
 
-        _ => null,
+        SubmissionHistoryLabelAppliedEntity => BootstrapIcon.PlusCircle,
+        SubmissionHistoryLabelRemovedEntity => BootstrapIcon.DashCircle,
+        SubmissionHistoryFileDownloadedEntity => BootstrapIcon.Download,
+        SubmissionHistoryInitialSubmitEntity => BootstrapIcon.FileEarmarkPlus,
+        SubmissionHistoryUpdatedValuesEntity => BootstrapIcon.PencilFill,
+        SubmissionHistoryApprovalGrantedEntity => BootstrapIcon.CheckCircle,
+        SubmissionHistoryApprovalRemovedEntity => BootstrapIcon.XCircle,
+        SubmissionHistoryInternalNoteEntity => BootstrapIcon.Sticky,
+        SubmissionHistoryPublicCommentEntity => BootstrapIcon.ChatFill,
+        SubmissionHistoryStaffViewedEntity => BootstrapIcon.EyeFill,
+
+        _ => throw new UnreachableException("Unknown entry type: " + Entry.GetType()),
     };
 
 }

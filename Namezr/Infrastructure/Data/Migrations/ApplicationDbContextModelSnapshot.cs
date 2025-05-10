@@ -909,16 +909,16 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue(3);
                 });
 
-            modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryInternalCommentEntity", b =>
+            modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryInternalNoteEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
-                    b.Property<string>("Comment")
+                    b.Property<string>("Content")
                         .IsRequired()
                         .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
-                        .HasColumnName("Comment");
+                        .HasColumnName("CommentContent");
 
                     b.HasDiscriminator().HasValue(7);
                 });
@@ -960,7 +960,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)")
-                        .HasColumnName("Comment");
+                        .HasColumnName("CommentContent");
 
                     b.HasDiscriminator().HasValue(8);
                 });
@@ -968,20 +968,6 @@ namespace Namezr.Infrastructure.Data.Migrations
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryStaffViewedEntity", b =>
                 {
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
-
-                    b.HasDiscriminator().HasValue(10);
-                });
-
-            modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistorySubmitterCommentEntity", b =>
-                {
-                    b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)")
-                        .HasColumnName("Comment");
 
                     b.HasDiscriminator().HasValue(9);
                 });

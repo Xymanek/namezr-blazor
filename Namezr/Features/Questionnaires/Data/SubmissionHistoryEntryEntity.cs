@@ -29,8 +29,8 @@ public abstract class SubmissionHistoryEntryEntity
     /// </summary>
     public bool InstigatorIsProgrammatic { get; set; }
 
-    protected const int CommentMaxLength = 5000;
-    protected const string CommentColumnName = nameof(SubmissionHistoryInternalCommentEntity.Comment);
+    protected const int CommentContentMaxLength = 5000;
+    protected const string CommentContentColumnName = "CommentContent";
 
     protected const string LabelIdColumnName = nameof(SubmissionHistoryLabelAppliedEntity.LabelId);
 }
@@ -77,32 +77,22 @@ public class SubmissionHistoryApprovalGrantedEntity : SubmissionHistoryEntryEnti
 public class SubmissionHistoryApprovalRemovedEntity : SubmissionHistoryEntryEntity;
 
 /// <summary>
-/// A staff comment that is NOT visible to the submitter.
+/// A staff note/comment that is NOT visible to the submitter.
 /// </summary>
-public class SubmissionHistoryInternalCommentEntity : SubmissionHistoryEntryEntity
+public class SubmissionHistoryInternalNoteEntity : SubmissionHistoryEntryEntity
 {
-    [Column(CommentColumnName)]
-    [MaxLength(CommentMaxLength)]
-    public required string Comment { get; set; }
-}
-
-/// <summary>
-/// A staff comment that is VISIBLE to the submitter.
-/// </summary>
-public class SubmissionHistoryPublicCommentEntity : SubmissionHistoryEntryEntity
-{
-    [Column(CommentColumnName)]
-    [MaxLength(CommentMaxLength)]
+    [Column(CommentContentColumnName)]
+    [MaxLength(CommentContentMaxLength)]
     public required string Content { get; set; }
 }
 
 /// <summary>
-/// A comment by the submitter.
+/// A staff comment that is VISIBLE to the submitter OR a comment by the submitter.
 /// </summary>
-public class SubmissionHistorySubmitterCommentEntity : SubmissionHistoryEntryEntity
+public class SubmissionHistoryPublicCommentEntity : SubmissionHistoryEntryEntity
 {
-    [Column(CommentColumnName)]
-    [MaxLength(CommentMaxLength)]
+    [Column(CommentContentColumnName)]
+    [MaxLength(CommentContentMaxLength)]
     public required string Content { get; set; }
 }
 
@@ -144,10 +134,9 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .HasValue<SubmissionHistoryUpdatedValuesEntity>(4)
             .HasValue<SubmissionHistoryApprovalGrantedEntity>(5)
             .HasValue<SubmissionHistoryApprovalRemovedEntity>(6)
-            .HasValue<SubmissionHistoryInternalCommentEntity>(7)
+            .HasValue<SubmissionHistoryInternalNoteEntity>(7)
             .HasValue<SubmissionHistoryPublicCommentEntity>(8)
-            .HasValue<SubmissionHistorySubmitterCommentEntity>(9)
-            .HasValue<SubmissionHistoryStaffViewedEntity>(10)
+            .HasValue<SubmissionHistoryStaffViewedEntity>(9)
             .IsComplete();
     }
 
@@ -157,6 +146,9 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .WithMany()
             .HasForeignKey(x => x.LabelId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Navigation(x => x.Label)
+            .AutoInclude();
     }
 
     public void Configure(EntityTypeBuilder<SubmissionHistoryLabelRemovedEntity> builder)
@@ -165,5 +157,8 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .WithMany()
             .HasForeignKey(x => x.LabelId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Navigation(x => x.Label)
+            .AutoInclude();
     }
 }
