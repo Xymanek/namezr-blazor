@@ -23,7 +23,13 @@ public class EligibilityOptionEntity
 
     public required decimal PriorityModifier { get; set; }
     
-    // TODO: add SelectionWave, e.g. all "1"s must be selected before "2"s are considered
+    // TODO: this is too confusing and does not allow "select everyone before this". Set a default value instead.
+    /// <summary>
+    /// Valid lower value candidates are always selected before candidates with a higher value.
+    /// If <c>null</c>, assumed to be highest/latest.
+    /// When multiple options match, the lowest value will be used.
+    /// </summary>
+    public required int? SelectionWave { get; set; }
 }
 
 internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<EligibilityOptionEntity>
