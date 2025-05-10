@@ -634,7 +634,6 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("Type")
-                        .HasMaxLength(20)
                         .HasColumnType("integer");
 
                     b.HasKey("Id");

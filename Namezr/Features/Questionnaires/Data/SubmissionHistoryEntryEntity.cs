@@ -149,9 +149,6 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .HasValue<SubmissionHistorySubmitterCommentEntity>(9)
             .HasValue<SubmissionHistoryStaffViewedEntity>(10)
             .IsComplete();
-
-        // Set the maximum length for the discriminator column
-        builder.Property("Type").HasMaxLength(20);
     }
 
     public void Configure(EntityTypeBuilder<SubmissionHistoryLabelAppliedEntity> builder)
