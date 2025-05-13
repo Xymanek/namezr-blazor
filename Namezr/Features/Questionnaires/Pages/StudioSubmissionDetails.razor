@@ -421,16 +421,7 @@
         submission.ApprovedAt = Clock.GetCurrentInstant();
         submission.ApproverId = (await UserAccessor.GetRequiredUserAsync(HttpContext)).Id;
 
-        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryApprovalGrantedEntity
-        {
-            Submission = submission,
-
-            InstigatorIsProgrammatic = false,
-            InstigatorIsStaff = true,
-            InstigatorUserId = submission.ApproverId,
-
-            OccuredAt = submission.ApprovedAt.Value,
-        });
+        dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalGrant(submission));
 
         await dbContext.SaveChangesAsync();
 

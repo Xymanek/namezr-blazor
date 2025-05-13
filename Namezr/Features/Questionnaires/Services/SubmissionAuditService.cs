@@ -48,6 +48,9 @@ internal interface ISubmissionAuditService
     SubmissionHistoryApprovalRemovedEntity ApprovalRemoval(QuestionnaireSubmissionEntity submission);
 
     [MustUseReturnValue]
+    SubmissionHistoryApprovalGrantedEntity ApprovalGrant(QuestionnaireSubmissionEntity submission);
+
+    [MustUseReturnValue]
     SubmissionHistoryStaffViewedEntity StaffView(QuestionnaireSubmissionEntity submission);
 }
 
@@ -234,35 +237,6 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public SubmissionHistoryApprovalGrantedEntity CreateApprovalGrant(
-        QuestionnaireSubmissionEntity submission)
-    {
-        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
-
-        _logger.LogInformation("Staff member {UserId} granted approval for submission {SubmissionId}",
-            userId, submission.Id);
-
-        return new SubmissionHistoryApprovalGrantedEntity
-        {
-            Submission = submission,
-            OccuredAt = _clock.GetCurrentInstant(),
-            InstigatorIsProgrammatic = false,
-            InstigatorIsStaff = true,
-            InstigatorUserId = userId
-        };
-    }
-
-    public async ValueTask GrantApproval(
-        QuestionnaireSubmissionEntity submission,
-        CancellationToken ct)
-    {
-        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
-
-        var entry = CreateApprovalGrant(submission);
-        dbContext.SubmissionHistoryEntries.Add(entry);
-        await dbContext.SaveChangesAsync(ct);
-    }
-
     public SubmissionHistoryApprovalRemovedEntity ApprovalRemoval(
         QuestionnaireSubmissionEntity submission)
     {
@@ -288,6 +262,35 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         var entry = ApprovalRemoval(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryApprovalGrantedEntity ApprovalGrant(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation("Staff member {UserId} granted approval for submission {SubmissionId}",
+            userId, submission.Id);
+
+        return new SubmissionHistoryApprovalGrantedEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask GrantApproval(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+
+        var entry = ApprovalGrant(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }
