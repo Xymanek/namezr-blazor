@@ -17,6 +17,7 @@
 @using Namezr.Components
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
+@using Namezr.Client.Shared
 
 @inject ApplicationDbContext DbContext
 @inject IEligibilityService EligibilityService
@@ -103,6 +104,30 @@
     }
 }
 
+@* TODO: a form to leave a comment *@
+
+@foreach (SubmissionHistoryPublicCommentEntity comment in SubmissionComments)
+{
+    <HxCard>
+        <HeaderTemplate>
+            <div class="d-flex justify-content-between align-items-center gap-2">
+                @if (comment.InstigatorIsStaff)
+                {
+                    <span>Staff comment</span>
+                }
+                else
+                {
+                    <span>Your comment</span>
+                }
+
+                <div>
+                    <RelativeTime Value="comment.OccuredAt.ToDateTimeOffset()"/>
+                </div>
+            </div>
+        </HeaderTemplate>
+    </HxCard>
+}
+
 @code {
     private QuestionnaireVersionEntity? _versionEntity;
 
@@ -115,6 +140,8 @@
     private QuestionnaireConfigModel? ConfigModel { get; set; }
     private Guid? QuestionnaireVersionId { get; set; }
     private Guid? SubmissionId { get; set; }
+
+    private SubmissionHistoryPublicCommentEntity[] SubmissionComments { get; set; } = [];
 
     private EligibilityResult? _eligibilityResult;
 
@@ -169,6 +196,7 @@
 
             QuestionnaireSubmissionEntity? submission = await DbContext.QuestionnaireSubmissions
                 .Include(x => x.FieldValues)
+                .Include(x => x.History!.Where(entry => entry is SubmissionHistoryPublicCommentEntity))
                 .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
 
             if (submission is null)
@@ -190,6 +218,11 @@
 
                 _initialValues = new Dictionary<string, SubmissionValueModel>();
                 SubmissionId = submission.Id;
+
+                SubmissionComments = submission.History!
+                    .Cast<SubmissionHistoryPublicCommentEntity>()
+                    .OrderByDescending(comment => comment.OccuredAt)
+                    .ToArray();
 
                 foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
                 {
