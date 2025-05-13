@@ -37,6 +37,43 @@ internal interface ISubmissionAuditService
         bool inBatch,
         CancellationToken ct
     );
+
+    [MustUseReturnValue]
+    SubmissionHistoryInitialSubmitEntity CreateInitialSubmit(QuestionnaireSubmissionEntity submission);
+
+    ValueTask InitialSubmit(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryUpdatedValuesEntity CreateUpdateValues(QuestionnaireSubmissionEntity submission);
+
+    ValueTask UpdateValues(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryApprovalGrantedEntity CreateApprovalGrant(QuestionnaireSubmissionEntity submission);
+
+    ValueTask GrantApproval(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryApprovalRemovedEntity CreateApprovalRemoval(QuestionnaireSubmissionEntity submission);
+
+    ValueTask RemoveApproval(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryInternalNoteEntity CreateInternalNote(QuestionnaireSubmissionEntity submission, string content);
+
+    ValueTask AddInternalNote(QuestionnaireSubmissionEntity submission, string content, CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryPublicCommentEntity CreatePublicComment(QuestionnaireSubmissionEntity submission, string content,
+        bool isStaff);
+
+    ValueTask AddPublicComment(QuestionnaireSubmissionEntity submission, string content, bool isStaff,
+        CancellationToken ct);
+
+    [MustUseReturnValue]
+    SubmissionHistoryStaffViewedEntity CreateStaffView(QuestionnaireSubmissionEntity submission);
+
+    ValueTask RecordStaffView(QuestionnaireSubmissionEntity submission, CancellationToken ct);
 }
 
 [AutoConstructor]
@@ -144,6 +181,196 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
             InBatch = inBatch,
         });
 
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryInitialSubmitEntity CreateInitialSubmit(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryInitialSubmitEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = false,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask InitialSubmit(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateInitialSubmit(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryUpdatedValuesEntity CreateUpdateValues(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryUpdatedValuesEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = false,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask UpdateValues(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateUpdateValues(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryApprovalGrantedEntity CreateApprovalGrant(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryApprovalGrantedEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask GrantApproval(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateApprovalGrant(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryApprovalRemovedEntity CreateApprovalRemoval(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryApprovalRemovedEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask RemoveApproval(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateApprovalRemoval(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryInternalNoteEntity CreateInternalNote(
+        QuestionnaireSubmissionEntity submission,
+        string content)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryInternalNoteEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+            Content = content
+        };
+    }
+
+    public async ValueTask AddInternalNote(
+        QuestionnaireSubmissionEntity submission,
+        string content,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateInternalNote(submission, content);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryPublicCommentEntity CreatePublicComment(
+        QuestionnaireSubmissionEntity submission,
+        string content,
+        bool isStaff)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryPublicCommentEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = isStaff,
+            InstigatorUserId = userId,
+            Content = content
+        };
+    }
+
+    public async ValueTask AddPublicComment(
+        QuestionnaireSubmissionEntity submission,
+        string content,
+        bool isStaff,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreatePublicComment(submission, content, isStaff);
+        dbContext.SubmissionHistoryEntries.Add(entry);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryStaffViewedEntity CreateStaffView(
+        QuestionnaireSubmissionEntity submission)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        return new SubmissionHistoryStaffViewedEntity
+        {
+            Submission = submission,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId
+        };
+    }
+
+    public async ValueTask RecordStaffView(
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        
+        var entry = CreateStaffView(submission);
+        dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }
 }
