@@ -45,7 +45,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ILogger<SubmissionAuditService> _logger;
+    private readonly ILogger<SubmissionAuditService> _logger; // TODO: add logs
     private readonly IdentityUserAccessor _userAccessor;
     private readonly IClock _clock;
 
