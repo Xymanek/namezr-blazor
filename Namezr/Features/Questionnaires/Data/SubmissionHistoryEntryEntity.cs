@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Namezr.Features.Identity.Data;
+using NodaTime;
 
 namespace Namezr.Features.Questionnaires.Data;
 
@@ -13,7 +14,7 @@ public abstract class SubmissionHistoryEntryEntity
     public QuestionnaireSubmissionEntity Submission { get; set; } = null!;
     public Guid SubmissionId { get; set; }
 
-    public DateTimeOffset OccuredAt { get; set; }
+    public required Instant OccuredAt { get; set; }
 
     public ApplicationUser? InstigatorUser { get; set; }
     public Guid? InstigatorUserId { get; set; }
@@ -22,12 +23,12 @@ public abstract class SubmissionHistoryEntryEntity
     /// Allows distinguishing when an action was performed through studio or through public UI.
     /// For cases when staff is also the submitter.
     /// </summary>
-    public bool InstigatorIsStaff { get; set; }
+    public required bool InstigatorIsStaff { get; set; }
 
     /// <summary>
     /// True if the action was performed by a completely automated process, not on behalf of a user.
     /// </summary>
-    public bool InstigatorIsProgrammatic { get; set; }
+    public required bool InstigatorIsProgrammatic { get; set; }
 
     protected const int CommentContentMaxLength = 5000;
     protected const string CommentContentColumnName = "CommentContent";
@@ -61,6 +62,8 @@ public class SubmissionHistoryFileDownloadedEntity : SubmissionHistoryEntryEntit
 {
     public Guid FieldId { get; set; }
     public QuestionnaireFieldEntity Field { get; set; } = null!;
+
+    public required Guid FileId { get; set; }
 
     /// <summary>
     /// True if the file was downloaded as part of a batch download.

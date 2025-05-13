@@ -34,6 +34,7 @@ internal partial class DownloadSubmissionFileEndpoint
         IFileStorageService fileStorageService,
         IdentityUserAccessor userAccessor,
         IDownloadContentTypeProvider contentTypeProvider,
+        SubmissionAuditService submissionAudit,
         CancellationToken ct
     )
     {
@@ -52,6 +53,9 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("Submission not found");
         }
 
+        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        bool isOwnSubmission = user.Id == submission.UserId;
+
         await ValidateAccess();
 
         SubmissionFileData? fileData = submission.FieldValues!
@@ -65,6 +69,11 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("File not found");
         }
 
+        await RecordDownload(dbContextFactory, submission, fileData, user, isOwnSubmission, ct);
+        
+        // TODO: need both fieldId and fileId
+        submissionAudit.DownloadFileStaff(submission, fileData, ct);
+
         return Results.File(
             fileStorageService.GetFilePath(fileData.Id),
             contentType: contentTypeProvider.MaybeGetFromFilename(fileData.Name),
@@ -73,17 +82,14 @@ internal partial class DownloadSubmissionFileEndpoint
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
-
             // Can always download own files
-            if (user.Id == submission.UserId) return;
+            if (isOwnSubmission) return;
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.CreatorId == submission.Version.Questionnaire.CreatorId
+                .Where(staff =>
+                    staff.UserId == user.Id &&
+                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
                 )
                 .AnyAsync(ct);
 
@@ -92,5 +98,31 @@ internal partial class DownloadSubmissionFileEndpoint
             // TODO: correct
             throw new Exception("Access denied");
         }
+    }
+
+    private static async ValueTask RecordDownload(
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        QuestionnaireSubmissionEntity submission, 
+        SubmissionFileData fileData, 
+        ApplicationUser user, 
+        bool isOwnSubmission, 
+        CancellationToken ct
+    )
+    {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+
+        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryLabelAppliedEntity
+        {
+            Submission = submission,
+            OccuredAt = clock.GetCurrentInstant(),
+
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+
+            Label = label,
+        });
+        
+        
     }
 }

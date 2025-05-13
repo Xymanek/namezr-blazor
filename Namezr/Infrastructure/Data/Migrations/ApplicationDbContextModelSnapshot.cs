@@ -1466,7 +1466,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasForeignKey("InstigatorUserId");
 
                     b.HasOne("Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity", "Submission")
-                        .WithMany()
+                        .WithMany("History")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1718,6 +1718,8 @@ namespace Namezr.Infrastructure.Data.Migrations
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity", b =>
                 {
                     b.Navigation("FieldValues");
+
+                    b.Navigation("History");
 
                     b.Navigation("LabelLinks");
                 });

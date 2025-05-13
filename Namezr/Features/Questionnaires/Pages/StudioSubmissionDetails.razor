@@ -328,6 +328,11 @@
                         </div>
                     </div>
                 </div>
+
+                @foreach (SubmissionHistoryEntryEntity entry in _submission.History!)
+                {
+                    <SubmissionHistoryEntry Entry="entry"/>
+                }
             </div>
         </BodyTemplate>
     </HxCard>
@@ -372,6 +377,7 @@
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .Include(x => x.Labels)
+            .Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
         // TODO: 404 if not found
