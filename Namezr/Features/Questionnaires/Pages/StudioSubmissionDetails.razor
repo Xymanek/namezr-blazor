@@ -24,6 +24,7 @@
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
 @using Namezr.Features.Questionnaires.Mappers
+@using vNext.BlazorComponents.FluentValidation
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -296,6 +297,8 @@
 
         <BodyTemplate>
             <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
+                <FluentValidationValidator />
+                
                 @* TODO: is needed? *@
                 @*<div class="d-flex gap-2">*@
                 <div class="">
