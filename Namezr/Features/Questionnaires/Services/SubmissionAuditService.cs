@@ -57,7 +57,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ILogger<SubmissionAuditService> _logger; // TODO: add logs
+    private readonly ILogger<SubmissionAuditService> _logger;
     private readonly IdentityUserAccessor _userAccessor;
     private readonly IClock _clock;
 
@@ -67,6 +67,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     )
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} applied label {LabelId} '{LabelName}' to submission {SubmissionId}",
+            userId, label.Id, label.Text, submission.Id);
 
         return new SubmissionHistoryLabelAppliedEntity
         {
@@ -87,6 +91,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     )
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} removed label {LabelId} '{LabelName}' from submission {SubmissionId}",
+            userId, label.Id, label.Text, submission.Id);
 
         return new SubmissionHistoryLabelRemovedEntity
         {
@@ -112,6 +120,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Submitter {UserId} downloaded file {FileId} '{FileName}' from field {FieldId} in submission {SubmissionId}, in batch: {InBatch}",
+            userId, file.Id, file.Name, fieldValue.FieldId, submission.Id, inBatch);
 
         dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
@@ -142,6 +154,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
+        _logger.LogInformation(
+            "Staff member {UserId} downloaded file {FileId} '{FileName}' from field {FieldId} in submission {SubmissionId}, in batch: {InBatch}",
+            userId, file.Id, file.Name, fieldValue.FieldId, submission.Id, inBatch);
+
         dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
             Submission = submission,
@@ -163,6 +179,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "User {UserId} made initial submission {SubmissionId} for questionnaire version {VersionId}",
+            userId, submission.Id, submission.VersionId);
 
         return new SubmissionHistoryInitialSubmitEntity
         {
@@ -190,6 +210,9 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
+        _logger.LogInformation("User {UserId} updated values for submission {SubmissionId}",
+            userId, submission.Id);
+
         return new SubmissionHistoryUpdatedValuesEntity
         {
             Submission = submission,
@@ -215,6 +238,9 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation("Staff member {UserId} granted approval for submission {SubmissionId}",
+            userId, submission.Id);
 
         return new SubmissionHistoryApprovalGrantedEntity
         {
@@ -242,6 +268,9 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
+        _logger.LogInformation("Staff member {UserId} removed approval for submission {SubmissionId}",
+            userId, submission.Id);
+
         return new SubmissionHistoryApprovalRemovedEntity
         {
             Submission = submission,
@@ -268,6 +297,10 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} viewed submission {SubmissionId}",
+            userId, submission.Id);
 
         return new SubmissionHistoryStaffViewedEntity
         {
