@@ -18,12 +18,16 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using NodaTime
+@using vNext.BlazorComponents.FluentValidation
 
 @inject ApplicationDbContext DbContext
 @inject IEligibilityService EligibilityService
 @inject IdentityUserAccessor UserAccessor
 @inject IFieldValueSerializer FieldValueSerializer
 @inject IFileUploadTicketHelper FileUploadTicketHelper
+@inject IClock Clock
+@inject NavigationManager NavigationManager
 
 @if (_versionEntity is not null)
 {
@@ -104,7 +108,16 @@
     }
 }
 
-@* TODO: a form to leave a comment *@
+<HxCard>
+    <BodyTemplate>
+        <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
+            <FluentValidationValidator/>
+
+            <HxInputTextArea @bind-Value="NewComment.Content"/>
+            <HxSubmit Text="Submit"/>
+        </EditForm>
+    </BodyTemplate>
+</HxCard>
 
 @foreach (SubmissionHistoryPublicCommentEntity comment in SubmissionComments)
 {
@@ -142,6 +155,9 @@
     private Guid? SubmissionId { get; set; }
 
     private SubmissionHistoryPublicCommentEntity[] SubmissionComments { get; set; } = [];
+
+    [SupplyParameterFromForm]
+    private SubmissionCreateSubmitterCommentModel NewComment { get; set; } = new();
 
     private EligibilityResult? _eligibilityResult;
 
@@ -267,6 +283,26 @@
         NotLoggedIn,
         NotEligible,
         AlreadyApproved,
+    }
+
+    private async Task OnValidSubmitNewComment()
+    {
+        SubmissionHistoryPublicCommentEntity comment = new()
+        {
+            SubmissionId = SubmissionId!.Value,
+            OccuredAt = Clock.GetCurrentInstant(),
+
+            InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+            InstigatorIsStaff = false,
+            InstigatorIsProgrammatic = false,
+
+            Content = NewComment.Content,
+        };
+
+        DbContext.SubmissionHistoryEntries.Add(comment);
+        await DbContext.SaveChangesAsync();
+
+        NavigationManager.Refresh();
     }
 
 }
