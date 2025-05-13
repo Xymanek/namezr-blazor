@@ -35,6 +35,7 @@
 @inject IClock Clock
 @inject IEligibilityService EligibilityService
 @inject ISupportPlansService SupportPlansService
+@inject ISubmissionAuditService AuditService
 
 @if (_submission == null || _eligibilityResult is null)
 {
@@ -369,7 +370,7 @@
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         _submission = await dbContext.QuestionnaireSubmissions
-            .AsNoTracking()
+            .AsTracking()
             .AsSplitQuery()
             .Include(x => x.Version.Questionnaire.EligibilityConfiguration)
             .ThenInclude(x => x.Options!)
@@ -380,7 +381,14 @@
             .Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
-        // TODO: 404 if not found
+        if (_submission == null)
+        {
+            throw new Exception("Not found"); // TODO: 404 if not found
+        }
+
+        // TODO: validate that _submission.History gets updated
+        dbContext.SubmissionHistoryEntries.Add(AuditService.StaffView(_submission));
+        await dbContext.SaveChangesAsync();
 
         SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
             .Where(label => label.CreatorId == CreatorId)
@@ -413,6 +421,17 @@
         submission.ApprovedAt = Clock.GetCurrentInstant();
         submission.ApproverId = (await UserAccessor.GetRequiredUserAsync(HttpContext)).Id;
 
+        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryApprovalGrantedEntity
+        {
+            Submission = submission,
+
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = submission.ApproverId,
+
+            OccuredAt = submission.ApprovedAt.Value,
+        });
+
         await dbContext.SaveChangesAsync();
 
         // Reload the page with new info
@@ -429,6 +448,8 @@
 
         submission.ApprovedAt = null;
         submission.ApproverId = null;
+
+        dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalRemoval(submission));
 
         await dbContext.SaveChangesAsync();
 

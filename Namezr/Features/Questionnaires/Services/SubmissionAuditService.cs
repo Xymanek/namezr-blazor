@@ -39,29 +39,16 @@ internal interface ISubmissionAuditService
     );
 
     [MustUseReturnValue]
-    SubmissionHistoryInitialSubmitEntity CreateInitialSubmit(QuestionnaireSubmissionEntity submission);
-
-    ValueTask InitialSubmit(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+    SubmissionHistoryInitialSubmitEntity InitialSubmit(QuestionnaireSubmissionEntity submission);
 
     [MustUseReturnValue]
-    SubmissionHistoryUpdatedValuesEntity CreateUpdateValues(QuestionnaireSubmissionEntity submission);
-
-    ValueTask UpdateValues(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+    SubmissionHistoryUpdatedValuesEntity UpdateValues(QuestionnaireSubmissionEntity submission);
 
     [MustUseReturnValue]
-    SubmissionHistoryApprovalGrantedEntity CreateApprovalGrant(QuestionnaireSubmissionEntity submission);
-
-    ValueTask GrantApproval(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+    SubmissionHistoryApprovalRemovedEntity ApprovalRemoval(QuestionnaireSubmissionEntity submission);
 
     [MustUseReturnValue]
-    SubmissionHistoryApprovalRemovedEntity CreateApprovalRemoval(QuestionnaireSubmissionEntity submission);
-
-    ValueTask RemoveApproval(QuestionnaireSubmissionEntity submission, CancellationToken ct);
-
-    [MustUseReturnValue]
-    SubmissionHistoryStaffViewedEntity CreateStaffView(QuestionnaireSubmissionEntity submission);
-
-    ValueTask RecordStaffView(QuestionnaireSubmissionEntity submission, CancellationToken ct);
+    SubmissionHistoryStaffViewedEntity StaffView(QuestionnaireSubmissionEntity submission);
 }
 
 [AutoConstructor]
@@ -172,7 +159,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public SubmissionHistoryInitialSubmitEntity CreateInitialSubmit(
+    public SubmissionHistoryInitialSubmitEntity InitialSubmit(
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
@@ -193,12 +180,12 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
-        var entry = CreateInitialSubmit(submission);
+        var entry = InitialSubmit(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public SubmissionHistoryUpdatedValuesEntity CreateUpdateValues(
+    public SubmissionHistoryUpdatedValuesEntity UpdateValues(
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
@@ -219,7 +206,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
-        var entry = CreateUpdateValues(submission);
+        var entry = UpdateValues(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }
@@ -250,7 +237,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public SubmissionHistoryApprovalRemovedEntity CreateApprovalRemoval(
+    public SubmissionHistoryApprovalRemovedEntity ApprovalRemoval(
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
@@ -271,13 +258,13 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
-        var entry = CreateApprovalRemoval(submission);
+        var entry = ApprovalRemoval(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }
 
 
-    public SubmissionHistoryStaffViewedEntity CreateStaffView(
+    public SubmissionHistoryStaffViewedEntity StaffView(
         QuestionnaireSubmissionEntity submission)
     {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
@@ -298,7 +285,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
-        var entry = CreateStaffView(submission);
+        var entry = StaffView(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
     }

@@ -36,6 +36,7 @@ internal partial class SubmissionSaveEndpoint
         IFieldValueSerializer fieldValueSerializer,
         ApplicationDbContext dbContext,
         IFileUploadTicketHelper fileTicketHelper,
+        ISubmissionAuditService auditService,
         CancellationToken ct
     )
     {
@@ -213,6 +214,8 @@ internal partial class SubmissionSaveEndpoint
                 submissionEntity.ApprovedAt = null;
                 submissionEntity.ApproverId = null;
             }
+        
+            dbContext.SubmissionHistoryEntries.Add(auditService.UpdateValues(submissionEntity));
         }
         else
         {
@@ -225,6 +228,7 @@ internal partial class SubmissionSaveEndpoint
             };
 
             dbContext.QuestionnaireSubmissions.Add(submissionEntity);
+            dbContext.SubmissionHistoryEntries.Add(auditService.InitialSubmit(submissionEntity));
         }
 
         // Even if we loaded an existing entity, outright replace old value entities/rows
