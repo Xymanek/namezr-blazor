@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Namezr.Client.Public.Questionnaires;
 using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
@@ -23,13 +24,17 @@ internal interface ISubmissionAuditService
 
     ValueTask DownloadFileSubmitter(
         QuestionnaireSubmissionEntity submission,
-        SubmissionLabelEntity label,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch,
         CancellationToken ct
     );
 
     ValueTask DownloadFileStaff(
         QuestionnaireSubmissionEntity submission,
-        SubmissionLabelEntity label,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch,
         CancellationToken ct
     );
 }
@@ -86,15 +91,17 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
     public async ValueTask DownloadFileSubmitter(
         QuestionnaireSubmissionEntity submission,
-        FiDa,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
-        
+
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
-        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryLabelRemovedEntity
+        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
             Submission = submission,
             OccuredAt = _clock.GetCurrentInstant(),
@@ -103,34 +110,40 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
             InstigatorIsStaff = false,
             InstigatorUserId = userId,
 
-            Label = label,
+            FieldId = fieldValue.FieldId,
+            FileId = file.Id,
+            InBatch = inBatch,
         });
-        
+
         await dbContext.SaveChangesAsync(ct);
     }
 
     public async ValueTask DownloadFileStaff(
         QuestionnaireSubmissionEntity submission,
-        SubmissionLabelEntity label,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
-        
+
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
-        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryLabelRemovedEntity
+        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
             Submission = submission,
             OccuredAt = _clock.GetCurrentInstant(),
 
             InstigatorIsProgrammatic = false,
-            InstigatorIsStaff = false,
+            InstigatorIsStaff = true,
             InstigatorUserId = userId,
 
-            Label = label,
+            FieldId = fieldValue.FieldId,
+            FileId = file.Id,
+            InBatch = inBatch,
         });
-        
+
         await dbContext.SaveChangesAsync(ct);
     }
 }
