@@ -30,7 +30,7 @@ public abstract class SubmissionHistoryEntryEntity
     /// </summary>
     public required bool InstigatorIsProgrammatic { get; set; }
 
-    protected const int CommentContentMaxLength = 5000;
+    public const int CommentContentMaxLength = 5000;
     protected const string CommentContentColumnName = "CommentContent";
 
     protected const string LabelIdColumnName = nameof(SubmissionHistoryLabelAppliedEntity.LabelId);

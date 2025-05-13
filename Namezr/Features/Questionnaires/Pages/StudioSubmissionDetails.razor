@@ -289,6 +289,34 @@
         </BodyTemplate>
     </HxCard>
 
+    <HxCard>
+        <HeaderTemplate>
+            Leave a comment
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
+                @* TODO: is needed? *@
+                @*<div class="d-flex gap-2">*@
+                <div class="">
+                    <HxRadioButtonList
+                        TItem="StudioSubmissionCommentType"
+                        TValue="StudioSubmissionCommentType"
+                        Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                        @bind-Value="@NewComment.Type"
+                        ItemTextSelector="@(type => type.Humanize())"
+                        Inline="true"/>
+
+                    <HxInputTextArea @bind-Value="NewComment.Content"/>
+
+                    <HxSubmit Text="Submit"/>
+                </div>
+
+            </EditForm>
+
+        </BodyTemplate>
+    </HxCard>
+
     <HxCard BodyCssClass="gap-1">
         <HeaderTemplate>
             History
@@ -355,6 +383,9 @@
 
     [Parameter]
     public Guid SubmissionId { get; set; }
+
+    [SupplyParameterFromForm]
+    public StudioSubmissionCommentModel NewComment { get; set; } = new();
 
     private QuestionnaireSubmissionEntity? _submission;
     private EligibilityResult? _eligibilityResult;
@@ -445,6 +476,41 @@
         await dbContext.SaveChangesAsync();
 
         // Reload the page with new info
+        NavigationManager.Refresh();
+    }
+
+    private async Task OnValidSubmitNewComment()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        SubmissionHistoryEntryEntity historyEntry = NewComment.Type switch
+        {
+            StudioSubmissionCommentType.InternalNote => new SubmissionHistoryInternalNoteEntity
+            {
+                Content = NewComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+            StudioSubmissionCommentType.PublicComment => new SubmissionHistoryPublicCommentEntity
+            {
+                Content = NewComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+
+            _ => throw new UnreachableException(),
+        };
+
+        dbContext.SubmissionHistoryEntries.Add(historyEntry);
+        await dbContext.SaveChangesAsync();
+
+        // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
         NavigationManager.Refresh();
     }
 
