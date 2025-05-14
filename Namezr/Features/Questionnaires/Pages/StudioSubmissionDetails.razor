@@ -412,7 +412,7 @@
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .Include(x => x.Labels)
-            .Include(x => x.History)
+            .Include(x => x.History!).ThenInclude(entry => entry.InstigatorUser)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
         if (_submission == null)
