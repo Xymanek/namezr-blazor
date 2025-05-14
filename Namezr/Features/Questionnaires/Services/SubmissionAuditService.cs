@@ -55,7 +55,7 @@ internal interface ISubmissionAuditService
 }
 
 [AutoConstructor]
-[RegisterSingleton]
+[RegisterScoped]
 internal partial class SubmissionAuditService : ISubmissionAuditService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
