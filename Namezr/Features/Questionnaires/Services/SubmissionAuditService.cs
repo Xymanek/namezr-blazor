@@ -77,7 +77,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryLabelAppliedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
 
             InstigatorIsProgrammatic = false,
@@ -101,7 +101,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryLabelRemovedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
 
             InstigatorIsProgrammatic = false,
@@ -130,7 +130,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
 
             InstigatorIsProgrammatic = false,
@@ -163,7 +163,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
 
             InstigatorIsProgrammatic = false,
@@ -189,7 +189,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryInitialSubmitEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = false,
@@ -218,7 +218,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryUpdatedValuesEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = false,
@@ -247,7 +247,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryApprovalRemovedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = true,
@@ -276,7 +276,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryApprovalGrantedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = true,
@@ -307,7 +307,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         return new SubmissionHistoryStaffViewedEntity
         {
-            Submission = submission,
+            SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = true,
