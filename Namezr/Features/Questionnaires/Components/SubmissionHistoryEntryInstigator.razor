@@ -1,4 +1,7 @@
-﻿@using Namezr.Features.Questionnaires.Data
+﻿@* Important as we want to add spaces around different parts *@
+@preservewhitespace true
+
+@using Namezr.Features.Questionnaires.Data
 
 @if (Entry == null)
 {
@@ -36,5 +39,4 @@
 
     [Parameter]
     public SubmissionHistoryEntryEntity? Entry { get; set; }
-
 }

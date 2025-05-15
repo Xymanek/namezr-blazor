@@ -297,24 +297,19 @@
 
         <BodyTemplate>
             <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
-                <FluentValidationValidator />
-                
-                @* TODO: is needed? *@
-                @*<div class="d-flex gap-2">*@
-                <div class="">
-                    <HxRadioButtonList
-                        TItem="StudioSubmissionCommentType"
-                        TValue="StudioSubmissionCommentType"
-                        Data="Enum.GetValues<StudioSubmissionCommentType>()"
-                        @bind-Value="@NewComment.Type"
-                        ItemTextSelector="@(type => type.Humanize())"
-                        Inline="true"/>
+                <FluentValidationValidator/>
 
-                    <HxInputTextArea @bind-Value="NewComment.Content"/>
+                <HxRadioButtonList
+                    TItem="StudioSubmissionCommentType"
+                    TValue="StudioSubmissionCommentType"
+                    Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                    @bind-Value="@NewComment.Type"
+                    ItemTextSelector="@(type => type.Humanize())"
+                    Inline="true"/>
 
-                    <HxSubmit Text="Submit"/>
-                </div>
+                <HxInputTextArea @bind-Value="NewComment.Content"/>
 
+                <HxSubmit Color="ThemeColor.Primary" Text="Submit"/>
             </EditForm>
 
         </BodyTemplate>
@@ -327,41 +322,7 @@
 
         <BodyTemplate>
             <div class="d-flex flex-column gap-3">
-                <div class="d-flex gap-3 flex-wrap">
-                    <div class="d-flex gap-2">
-                        <HxIcon Icon="BootstrapIcon.Download"/>
-
-                        <div>
-                            <strong>Kexx</strong> downloaded <i>Character bin</i>
-                        </div>
-                    </div>
-
-                    <div class="d-flex flex-grow-1">
-                        <div class="flex-grow-1"></div>
-                        <div>
-                            @DateTime.Now.AddMinutes(-45).Humanize()
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-3 flex-wrap">
-                    <div class="d-flex gap-2">
-                        <HxIcon Icon="BootstrapIcon.Download"/>
-
-                        <div>
-                            <strong>Kexx</strong> downloaded <i>Character bin</i>
-                        </div>
-                    </div>
-
-                    <div class="d-flex flex-grow-1">
-                        <div class="flex-grow-1"></div>
-                        <div>
-                            @DateTime.Now.AddMinutes(-45).Humanize()
-                        </div>
-                    </div>
-                </div>
-
-                @foreach (SubmissionHistoryEntryEntity entry in _submission.History!)
+                @foreach (SubmissionHistoryEntryEntity entry in _submission.History!.OrderByDescending(entry => entry.OccuredAt))
                 {
                     <SubmissionHistoryEntry Entry="entry"/>
                 }
