@@ -303,7 +303,7 @@
                     TItem="StudioSubmissionCommentType"
                     TValue="StudioSubmissionCommentType"
                     Data="Enum.GetValues<StudioSubmissionCommentType>()"
-                    @bind-Value="@NewComment.Type"
+                    @bind-Value="@NewComment!.Type"
                     ItemTextSelector="@(type => type.Humanize())"
                     Inline="true"/>
 
@@ -349,7 +349,7 @@
     public Guid SubmissionId { get; set; }
 
     [SupplyParameterFromForm]
-    public StudioSubmissionCommentModel NewComment { get; set; } = new();
+    public StudioSubmissionCommentModel? NewComment { get; set; }
 
     private QuestionnaireSubmissionEntity? _submission;
     private EligibilityResult? _eligibilityResult;
@@ -360,6 +360,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        NewComment ??= new StudioSubmissionCommentModel();
+
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -381,9 +383,12 @@
             throw new Exception("Not found"); // TODO: 404 if not found
         }
 
-        // TODO: validate that _submission.History gets updated
-        dbContext.SubmissionHistoryEntries.Add(AuditService.StaffView(_submission));
-        await dbContext.SaveChangesAsync();
+        if (HttpContext.Request.Method.Equals(HttpMethod.Get.Method, StringComparison.InvariantCultureIgnoreCase))
+        {
+            // TODO: validate that _submission.History gets updated
+            dbContext.SubmissionHistoryEntries.Add(AuditService.StaffView(_submission));
+            await dbContext.SaveChangesAsync();
+        }
 
         SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
             .Where(label => label.CreatorId == CreatorId)
@@ -447,7 +452,7 @@
     {
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        SubmissionHistoryEntryEntity historyEntry = NewComment.Type switch
+        SubmissionHistoryEntryEntity historyEntry = NewComment!.Type switch
         {
             StudioSubmissionCommentType.InternalNote => new SubmissionHistoryInternalNoteEntity
             {
