@@ -1,0 +1,75 @@
+﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions"
+
+@using Microsoft.AspNetCore.Authorization
+@using Namezr.Components.Layout
+@using Namezr.Client.Studio.Questionnaires.Submissions
+@using Namezr.Components
+@using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.EntityFrameworkCore
+@using Namezr.Features.Questionnaires.Components
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Infrastructure.Data
+
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>
+    Submissions |
+    <StaticTruncatedText Text="@_questionnaire?.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <QuestionnaireBreadcrumbs
+            Questionnaire="_questionnaire"
+        />
+
+        @* TODO: link (+ unite with details page) *@
+        <HxBreadcrumbItem
+            Text="Submissions"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Submissions
+</SectionContent>
+
+<SubmissionsTable
+    EligibilityDescriptors="[] /* TODO */"
+    QuestionnaireConfig="null /* TODO */"
+    PossibleLabels="[] /* TODO */"
+    Items="[] /* TODO */"
+/>
+
+@code {
+
+    [CascadingParameter]
+    public required HttpContext HttpContext { get; set; } = null!;
+
+    [CascadingParameter]
+    public required IStudioPageContext StudioContext { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    private QuestionnaireEntity? _questionnaire;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
+
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _questionnaire = await dbContext.Questionnaires
+            .AsNoTracking()
+            .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
+    }
+
+}
