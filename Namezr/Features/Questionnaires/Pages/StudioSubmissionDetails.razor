@@ -326,7 +326,7 @@
             <div class="d-flex flex-column gap-3">
                 @foreach (SubmissionHistoryEntryEntity entry in _submission.History!.OrderByDescending(entry => entry.OccuredAt))
                 {
-                    <SubmissionHistoryEntry Entry="entry"/>
+                    <SubmissionHistoryEntry Submission="_submission" Entry="entry"/>
                 }
             </div>
         </BodyTemplate>
@@ -387,7 +387,7 @@
 
         if (HttpContext.Request.Method.Equals(HttpMethod.Get.Method, StringComparison.InvariantCultureIgnoreCase))
         {
-            // TODO: validate that _submission.History gets updated
+            // Note: this will update _submission.History
             dbContext.SubmissionHistoryEntries.Add(AuditService.StaffView(_submission));
             await dbContext.SaveChangesAsync();
         }

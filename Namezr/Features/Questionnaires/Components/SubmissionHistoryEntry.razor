@@ -31,11 +31,7 @@
                 case SubmissionHistoryFileDownloadedEntity fileDownloaded:
                     <span>
                         downloaded
-                        <i>
-                            @* TODO: fetch the the latest field name but capped by the version tha the submission is targeted against *@
-                            @*Character bin*@
-                            @fileDownloaded.FieldId
-                        </i>
+                        <SubmissionDownloadEntryFileName Submission="Submission" Entry="fileDownloaded" />
                     </span>
 
                     @if (fileDownloaded.InBatch)
@@ -99,6 +95,12 @@
 
 @code {
 
+    /// <summary>
+    /// <see cref="QuestionnaireSubmissionEntity.FieldValues"/> must be loaded
+    /// </summary>
+    [Parameter]
+    public required QuestionnaireSubmissionEntity Submission { get; set; }
+    
     [Parameter]
     public SubmissionHistoryEntryEntity? Entry { get; set; }
 
