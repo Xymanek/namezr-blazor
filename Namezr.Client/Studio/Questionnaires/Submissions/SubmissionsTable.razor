@@ -237,7 +237,7 @@
     public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
 
     [Parameter]
-    public List<SubmissionTableItemModel> Items { get; set; } = [];
+    public SubmissionTableItemModel[] Items { get; set; } = [];
 
     private SubmissionFilterModel _filter = new();
 
