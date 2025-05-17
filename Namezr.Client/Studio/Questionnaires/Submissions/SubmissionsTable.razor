@@ -1,25 +1,41 @@
 ﻿@using System.Diagnostics
+@using Humanizer
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Types
 
 <div class="row">
-    <div class="col-lg-2">
+    <div class="col-lg-1">
         <HxInputNumber
             Label="Min weight"
             @bind-Value="@_filter.MinWeight"
         />
     </div>
 
-    <div class="col-lg-2">
+    <div class="col-lg-1">
         <HxInputNumber
-            Label="Min weight"
-            @bind-Value="@_filter.MinWeight"
+            Label="Max weight"
+            @bind-Value="@_filter.MaxWeight"
         />
     </div>
 
-    <div class="col-lg-8">
-        Columns
+    <div class="col-lg-1">
+        <HxSelect
+            Label="Is approved"
+            NullText="No filter"
+            Data="[true, false]"
+            @bind-Value="@_filter.MatchIsApproved"
+        />
+    </div>
+
+    <div class="col-lg-9">
+        <HxMultiSelect
+            Label="Columns"
+            Data="GetColumns()"
+            @bind-Value="_columns"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="@(column => column.Label)"
+        />
     </div>
 </div>
 
@@ -282,6 +298,48 @@
 
             _ => throw new UnreachableException(),
         };
+    }
+
+    private record Column
+    {
+        public required string Label { get; init; }
+        public required SubmissionsColumnId Id { get; init; }
+    }
+
+    private IEnumerable<Column> GetColumns()
+    {
+        yield return ColumnForType(SubmissionsColumnType.SubmissionNumber);
+        yield return ColumnForType(SubmissionsColumnType.UserDisplayName);
+        yield return ColumnForType(SubmissionsColumnType.InitiallySubmittedAt);
+        yield return ColumnForType(SubmissionsColumnType.LastUpdateAt);
+        yield return ColumnForType(SubmissionsColumnType.IsApproved);
+        yield return ColumnForType(SubmissionsColumnType.Labels);
+        yield return ColumnForType(SubmissionsColumnType.Weight);
+        yield return ColumnForType(SubmissionsColumnType.EligibilityPlans);
+
+        foreach (QuestionnaireConfigFieldModel field in QuestionnaireConfig!.Fields)
+        {
+            yield return new Column
+            {
+                Label = field.Title,
+                Id = new SubmissionsColumnId
+                {
+                    Type = SubmissionsColumnType.FieldValue,
+                    FieldId = field.Id,
+                },
+            };
+        }
+
+        yield break;
+
+        static Column ColumnForType(SubmissionsColumnType type)
+        {
+            return new Column
+            {
+                Id = new SubmissionsColumnId(type),
+                Label = type.Humanize(),
+            };
+        }
     }
 
 }

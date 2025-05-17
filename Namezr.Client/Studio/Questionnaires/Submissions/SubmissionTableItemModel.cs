@@ -14,9 +14,9 @@ public class SubmissionTableItemModel
 
     public required DateTimeOffset InitiallySubmittedAt { get; init; }
     public required DateTimeOffset LastUpdateAt { get; init; }
-    
+
     public required bool IsApproved { get; init; }
-    
+
     public required IReadOnlyList<SubmissionLabelModel> Labels { get; init; }
     public required IReadOnlyDictionary<Guid, SubmissionValueModel> Values { get; set; }
 }
