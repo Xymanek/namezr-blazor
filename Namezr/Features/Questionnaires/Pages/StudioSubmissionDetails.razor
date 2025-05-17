@@ -299,13 +299,15 @@
             <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
                 <FluentValidationValidator/>
 
-                <HxRadioButtonList
+                <HxSelect
                     TItem="StudioSubmissionCommentType"
                     TValue="StudioSubmissionCommentType"
+                    Label="Type"
+                    Nullable="false"
                     Data="Enum.GetValues<StudioSubmissionCommentType>()"
                     @bind-Value="@NewComment!.Type"
-                    ItemTextSelector="@(type => type.Humanize())"
-                    Inline="true"/>
+                    TextSelector="@(type => type.Humanize())"
+                />
 
                 <HxInputTextArea @bind-Value="NewComment.Content"/>
 
