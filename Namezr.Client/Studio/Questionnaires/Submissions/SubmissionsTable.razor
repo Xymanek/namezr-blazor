@@ -1,4 +1,5 @@
-﻿@using Namezr.Client.Public.Questionnaires
+﻿@using System.Diagnostics
+@using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Types
 
@@ -9,14 +10,14 @@
             @bind-Value="@_filter.MinWeight"
         />
     </div>
-    
+
     <div class="col-lg-2">
         <HxInputNumber
             Label="Min weight"
             @bind-Value="@_filter.MinWeight"
         />
     </div>
-    
+
     <div class="col-lg-8">
         Columns
     </div>
@@ -24,19 +25,52 @@
 
 <div class="row">
     <div class="col-lg-6">
-        Included eligibility plans
+        <HxMultiSelect
+            TItem="EligibilityPlan"
+            TValue="EligibilityPlanId"
+            Label="Included eligibility plans"
+            EmptyText="No filter"
+            Data="EligibilityDescriptors"
+            @bind-Value="_filter.IncludedPlanIds"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="GetEligibilityDescriptorDisplayName"
+        />
     </div>
+
     <div class="col-lg-6">
-        Excluded eligibility plans
+        <HxMultiSelect
+            TItem="EligibilityPlan"
+            TValue="EligibilityPlanId"
+            Label="Excluded eligibility plans"
+            EmptyText="No filter"
+            Data="EligibilityDescriptors"
+            @bind-Value="_filter.ExcludedPlanIds"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="GetEligibilityDescriptorDisplayName"
+        />
     </div>
 </div>
 
 <div class="row">
     <div class="col-lg-6">
-        Included labels
+        <HxMultiSelect
+            Label="Included labels"
+            EmptyText="No filter"
+            Data="PossibleLabels"
+            @bind-Value="_filter.IncludedLabelIds"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="@(label => label.Text)"
+        />
     </div>
     <div class="col-lg-6">
-        Excluded labels
+        <HxMultiSelect
+            Label="Excluded labels"
+            EmptyText="No filter"
+            Data="PossibleLabels"
+            @bind-Value="_filter.ExcludedLabelIds"
+            ValueSelector="@(x => x.Id)"
+            TextSelector="@(label => label.Text)"
+        />
     </div>
 </div>
 
@@ -175,8 +209,6 @@
     </Columns>
 </HxGrid>
 
-<h3>SubmissionsTable</h3>
-
 @code {
 
     [Parameter]
@@ -238,6 +270,18 @@
             return false;
 
         return true;
+    }
+
+    // TODO: unify with option editor
+    private string GetEligibilityDescriptorDisplayName(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => $"{plan.SupportPlan!.ServiceType} - {plan.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + plan.VirtualEligibilityType,
+
+            _ => throw new UnreachableException(),
+        };
     }
 
 }

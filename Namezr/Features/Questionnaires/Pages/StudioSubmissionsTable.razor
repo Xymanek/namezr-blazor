@@ -6,18 +6,31 @@
 @using Namezr.Components
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
+@using Namezr.Client.Types
+@using Namezr.Features.Creators.Services
+@using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Questionnaires.Components
 @using Namezr.Features.Questionnaires.Data
+@using Namezr.Features.Questionnaires.Mappers
 @using Namezr.Infrastructure.Data
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ISupportPlansService SupportPlansService
+@inject IEligibilityService EligibilityService
+
+@if (_questionnaire == null || _questionnaireConfig == null)
+{
+    return;
+}
 
 <PageTitle>
     Submissions |
-    <StaticTruncatedText Text="@_questionnaire?.Title" MaxLength="25"/>
+    <StaticTruncatedText Text="@_questionnaire.Title" MaxLength="25"/>
     <StudioTitleSuffix/>
 </PageTitle>
 
@@ -39,9 +52,9 @@
 </SectionContent>
 
 <SubmissionsTable
-    EligibilityDescriptors="[] /* TODO */"
-    QuestionnaireConfig="null /* TODO */"
-    PossibleLabels="[] /* TODO */"
+    EligibilityDescriptors="_eligibilityDescriptors"
+    QuestionnaireConfig="_questionnaireConfig"
+    PossibleLabels="_possibleLabels"
     Items="[] /* TODO */"
 />
 
@@ -61,6 +74,10 @@
 
     private QuestionnaireEntity? _questionnaire;
 
+    private List<EligibilityPlan> _eligibilityDescriptors = [];
+    private List<SubmissionLabelModel> _possibleLabels = [];
+    private QuestionnaireConfigModel? _questionnaireConfig;
+
     protected override async Task OnInitializedAsync()
     {
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
@@ -69,7 +86,29 @@
 
         _questionnaire = await dbContext.Questionnaires
             .AsNoTracking()
-            .FirstOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
+            .AsSplitQuery()
+            .Include(q => q.Versions)
+            .SingleOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
+
+        // TODO: handle not found
+
+        _questionnaireConfig = _questionnaire!.Versions!
+            .OrderByDescending(version => version.CreatedAt)
+            .First()
+            .MapToConfigModel();
+
+        _eligibilityDescriptors = EligibilityService
+            .GetEligibilityDescriptorsFromAllSupportPlans(
+                // TODO: in parallel
+                await SupportPlansService.GetSupportPlans(CreatorId)
+            )
+            .ToList();
+
+        SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
+            .Where(label => label.CreatorId == CreatorId)
+            .ToArrayAsync();
+
+        _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
     }
 
 }
