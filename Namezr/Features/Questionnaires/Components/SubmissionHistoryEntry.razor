@@ -1,0 +1,125 @@
+﻿@using System.Diagnostics
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Client.Shared
+
+@if (Entry == null)
+{
+    return;
+}
+
+<div class="d-flex gap-3 flex-wrap">
+    <div class="d-flex gap-2">
+        <HxIcon Icon="Icon"/>
+
+        <div>
+            <SubmissionHistoryEntryInstigator Entry="Entry"/>
+
+            @switch (Entry)
+            {
+                case SubmissionHistoryLabelAppliedEntity labelEntry:
+                    <span>applied</span>
+                    <SubmissionHistoryLabel Label="labelEntry.Label"/>
+                    <span>label</span>
+                    break;
+
+                case SubmissionHistoryLabelRemovedEntity labelEntry:
+                    <span>removed</span>
+                    <SubmissionHistoryLabel Label="labelEntry.Label"/>
+                    <span>label</span>
+                    break;
+
+                case SubmissionHistoryFileDownloadedEntity fileDownloaded:
+                    <span>
+                        downloaded
+                        <SubmissionDownloadEntryFileName Submission="Submission" Entry="fileDownloaded" />
+                    </span>
+
+                    @if (fileDownloaded.InBatch)
+                    {
+                        <span>
+                            (in batch)
+                        </span>
+                    }
+
+                    break;
+
+                case SubmissionHistoryInitialSubmitEntity:
+                    <span>created the submission</span>
+                    break;
+
+                case SubmissionHistoryUpdatedValuesEntity:
+                    <span>updated the submission field values</span>
+                    break;
+
+                case SubmissionHistoryApprovalGrantedEntity:
+                    <span>granted approval</span>
+                    break;
+
+                case SubmissionHistoryApprovalRemovedEntity:
+                    <span>removed approval</span>
+                    break;
+
+                case SubmissionHistoryInternalNoteEntity:
+                    <span>left an internal note (not visible to the submitter)</span>
+                    break;
+
+                case SubmissionHistoryPublicCommentEntity:
+                    <span>left a comment (visible to the submitter)</span>
+                    break;
+
+                case SubmissionHistoryStaffViewedEntity:
+                    <span>viewed the submission</span>
+                    break;
+            }
+        </div>
+    </div>
+
+    <div class="d-flex flex-grow-1">
+        <div class="flex-grow-1"></div>
+        <div>
+            <RelativeTime Value="Entry.OccuredAt.ToDateTimeOffset()"/>
+        </div>
+    </div>
+</div>
+
+@switch (Entry)
+{
+    case SubmissionHistoryInternalNoteEntity commentEntry:
+        <SubmissionCommentStudioPresenter Content="@commentEntry.Content"/>
+        break;
+
+    case SubmissionHistoryPublicCommentEntity commentEntry:
+        <SubmissionCommentStudioPresenter Content="@commentEntry.Content"/>
+        break;
+}
+
+@code {
+
+    /// <summary>
+    /// <see cref="QuestionnaireSubmissionEntity.FieldValues"/> must be loaded
+    /// </summary>
+    [Parameter]
+    public required QuestionnaireSubmissionEntity Submission { get; set; }
+    
+    [Parameter]
+    public SubmissionHistoryEntryEntity? Entry { get; set; }
+
+    private BootstrapIcon? Icon => Entry switch
+    {
+        null => null,
+
+        SubmissionHistoryLabelAppliedEntity => BootstrapIcon.PlusCircleFill,
+        SubmissionHistoryLabelRemovedEntity => BootstrapIcon.DashCircleFill,
+        SubmissionHistoryFileDownloadedEntity => BootstrapIcon.Download,
+        SubmissionHistoryInitialSubmitEntity => BootstrapIcon.FileEarmarkPlusFill,
+        SubmissionHistoryUpdatedValuesEntity => BootstrapIcon.PencilFill,
+        SubmissionHistoryApprovalGrantedEntity => BootstrapIcon.CheckCircleFill,
+        SubmissionHistoryApprovalRemovedEntity => BootstrapIcon.XCircleFill,
+        SubmissionHistoryInternalNoteEntity => BootstrapIcon.StickyFill,
+        SubmissionHistoryPublicCommentEntity => BootstrapIcon.ChatFill,
+        SubmissionHistoryStaffViewedEntity => BootstrapIcon.Eye,
+
+        _ => throw new UnreachableException("Unknown entry type: " + Entry.GetType()),
+    };
+
+}

@@ -1,0 +1,26 @@
+﻿@using Namezr.Features.Questionnaires.Data
+@using Namezr.Client.Shared
+@using Namezr.Features.Questionnaires.Mappers
+
+@if (Label == null)
+{
+    <span>a</span>
+    <i>(deleted)</i>
+}
+else
+{
+    <span>the</span>
+    <SubmissionLabelPresenter Label="Label.ToModel()"/>
+}
+
+@code {
+
+    /// <summary>
+    /// Assumes that the navigation has been loaded.
+    /// Currently this is being done automatically in
+    /// <see cref="T:Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntityConfiguration"/>
+    /// </summary>
+    [Parameter]
+    public SubmissionLabelEntity? Label { get; set; }
+
+}

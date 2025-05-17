@@ -5,6 +5,7 @@ using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires;
 using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
+using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
@@ -12,13 +13,14 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Handler]
 [Behaviors] // Clear out the validation
 [MapPost(ApiEndpointPaths.SubmissionLabelsPresenceMutate)]
-internal partial class ApplySubmissionLabelEndpoint
+internal partial class MutateSubmissionLabelPresenceEndpoint
 {
     private static async ValueTask HandleAsync(
         MutateLabelPresenceRequest request,
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IdentityUserAccessor userAccessor,
         IHttpContextAccessor httpContextAccessor,
+        ISubmissionAuditService submissionAudit,
         CancellationToken ct
     )
     {
@@ -53,10 +55,12 @@ internal partial class ApplySubmissionLabelEndpoint
         if (request.NewPresent)
         {
             submission.Labels!.Add(label);
+            dbContext.SubmissionHistoryEntries.Add(submissionAudit.LabelAddedStaff(submission, label));
         }
         else
         {
             submission.Labels!.Remove(label);
+            dbContext.SubmissionHistoryEntries.Add(submissionAudit.LabelRemovedStaff(submission, label));
         }
 
         await dbContext.SaveChangesAsync(ct);

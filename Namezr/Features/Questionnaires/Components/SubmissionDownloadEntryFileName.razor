@@ -1,0 +1,62 @@
+﻿@preservewhitespace true
+
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Features.Questionnaires.Data
+@using Namezr.Features.Questionnaires.Services
+
+@inject IFieldValueSerializer ValueSerializer
+
+@{
+    QuestionnaireFieldConfigurationEntity? field = FindField();
+    SubmissionFileData? file = FindFile();
+}
+
+@if (field != null)
+{
+    <span>@field.Title:</span>
+}
+else
+{
+    <span><i>(removed field)</i>:</span>
+}
+
+@if (file != null)
+{
+    @file.Name
+}
+else
+{
+    <i>(deleted file)</i>
+}
+
+@code {
+
+    /// <summary>
+    /// <see cref="QuestionnaireSubmissionEntity.FieldValues"/> and
+    /// <see cref="QuestionnaireSubmissionEntity.Version"/> -> <see cref="QuestionnaireVersionEntity.Fields"/>
+    /// must be loaded
+    /// </summary>
+    [Parameter]
+    public required QuestionnaireSubmissionEntity Submission { get; set; }
+
+    [Parameter]
+    public required SubmissionHistoryFileDownloadedEntity Entry { get; set; }
+
+    private SubmissionFileData? FindFile()
+    {
+        return Submission.FieldValues!
+            .Where(value => value.FieldId == Entry.FieldId)
+            .Select(value => ValueSerializer.Deserialize(QuestionnaireFieldType.FileUpload, value.ValueSerialized))
+            .SelectMany(valueContent => valueContent.FileValue?.Where(file => file.Id == Entry.FileId) ?? [])
+            .SingleOrDefault();
+    }
+
+    private QuestionnaireFieldConfigurationEntity? FindField()
+    {
+        return Submission.Version
+            .Fields!
+            .SingleOrDefault(field => field.FieldId == Entry.FieldId);
+    }
+
+}

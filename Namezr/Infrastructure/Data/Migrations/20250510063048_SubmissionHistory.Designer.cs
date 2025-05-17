@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Namezr.Infrastructure.Data;
 using NodaTime;
@@ -14,9 +15,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Namezr.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250510063048_SubmissionHistory")]
+    partial class SubmissionHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -627,7 +630,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.Property<Guid?>("InstigatorUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Instant>("OccuredAt")
+                    b.Property<DateTimeOffset>("OccuredAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("SubmissionId")
@@ -892,9 +895,6 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
                     b.Property<Guid>("FieldId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("FileId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("InBatch")
@@ -1469,7 +1469,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasForeignKey("InstigatorUserId");
 
                     b.HasOne("Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity", "Submission")
-                        .WithMany("History")
+                        .WithMany()
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1721,8 +1721,6 @@ namespace Namezr.Infrastructure.Data.Migrations
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity", b =>
                 {
                     b.Navigation("FieldValues");
-
-                    b.Navigation("History");
 
                     b.Navigation("LabelLinks");
                 });

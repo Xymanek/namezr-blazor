@@ -34,6 +34,7 @@ internal partial class DownloadSubmissionFileEndpoint
         IFileStorageService fileStorageService,
         IdentityUserAccessor userAccessor,
         IDownloadContentTypeProvider contentTypeProvider,
+        ISubmissionAuditService submissionAudit,
         CancellationToken ct
     )
     {
@@ -52,17 +53,38 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("Submission not found");
         }
 
+        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        bool isOwnSubmission = user.Id == submission.UserId;
+
         await ValidateAccess();
 
-        SubmissionFileData? fileData = submission.FieldValues!
-            .Select(v => fieldValueSerializer.Deserialize(QuestionnaireFieldType.FileUpload, v.ValueSerialized))
-            .SelectMany(v => v.FileValue!)
-            .SingleOrDefault(file => file.Id == parameters.FileId);
+        (QuestionnaireFieldValueEntity fieldValue, SubmissionFileData fileData) = submission.FieldValues!
+            .SelectMany(fieldValue =>
+            {
+                SubmissionValueModel value = fieldValueSerializer.Deserialize(
+                    QuestionnaireFieldType.FileUpload, // Safe assumption due to .Include() filter above
+                    fieldValue.ValueSerialized
+                );
+
+                return (value.FileValue ?? [])
+                    .Select(fileData => (fieldValue, fileData));
+            })
+            .SingleOrDefault(tuple => tuple.fileData.Id == parameters.FileId);
 
         // TODO: return 404 if not found
         if (fileData is null)
         {
             throw new Exception("File not found");
+        }
+
+        // TODO: this should be passed from the client and hooked up to the access check
+        if (isOwnSubmission)
+        {
+            await submissionAudit.DownloadFileSubmitter(submission, fieldValue, fileData, inBatch: false, ct);
+        }
+        else
+        {
+            await submissionAudit.DownloadFileStaff(submission, fieldValue, fileData, inBatch: false, ct);
         }
 
         return Results.File(
@@ -73,17 +95,14 @@ internal partial class DownloadSubmissionFileEndpoint
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
-
             // Can always download own files
-            if (user.Id == submission.UserId) return;
+            if (isOwnSubmission) return;
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.CreatorId == submission.Version.Questionnaire.CreatorId
+                .Where(staff =>
+                    staff.UserId == user.Id &&
+                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
                 )
                 .AnyAsync(ct);
 

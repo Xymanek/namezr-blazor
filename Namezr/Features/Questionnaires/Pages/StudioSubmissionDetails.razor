@@ -1,6 +1,7 @@
 ﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/{submissionId:guid}"
 
 @using System.Diagnostics
+@using Humanizer
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Namezr.Client
@@ -23,6 +24,7 @@
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
 @using Namezr.Features.Questionnaires.Mappers
+@using vNext.BlazorComponents.FluentValidation
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -34,58 +36,63 @@
 @inject IClock Clock
 @inject IEligibilityService EligibilityService
 @inject ISupportPlansService SupportPlansService
+@inject ISubmissionAuditService AuditService
 
-@if (_submission is not null)
+@if (_submission == null || _eligibilityResult is null)
 {
-    <PageTitle>
-        Submission |
-        <StaticTruncatedText Text="@_submission.Version.Questionnaire.Title" MaxLength="25"/>
-        <StudioTitleSuffix/>
-    </PageTitle>
+    return;
+}
 
-    <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
-        <HxBreadcrumb>
-            <QuestionnaireBreadcrumbs
-                Questionnaire="_submission.Version.Questionnaire"
+<PageTitle>
+    Submission |
+    <StaticTruncatedText Text="@_submission.Version.Questionnaire.Title" MaxLength="25"/>
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <QuestionnaireBreadcrumbs
+            Questionnaire="_submission.Version.Questionnaire"
+        />
+
+        <HxBreadcrumbItem
+            Text="Submissions"
+        />
+
+        <HxBreadcrumbItem
+            Href=@(NavigationManager.Uri)
+            Text=@($"#{_submission.Number}")
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Submission details
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
+    @if (_submission.ApprovedAt is not null)
+    {
+        <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
+            <HxSubmit
+                Text="Remove approval"
+                Color="@ThemeColor.Danger"
             />
-
-            <HxBreadcrumbItem
-                Text="Submissions"
+        </EditForm>
+    }
+    else
+    {
+        <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
+            <HxSubmit
+                Text="Approve"
+                Color="@ThemeColor.Success"
             />
+        </EditForm>
+    }
+</SectionContent>
 
-            <HxBreadcrumbItem
-                Href=@(NavigationManager.Uri)
-                Text=@($"#{_submission.Number}")
-            />
-        </HxBreadcrumb>
-    </SectionContent>
-
-    <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-        Submission details
-    </SectionContent>
-
-    <SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
-        @if (_submission.ApprovedAt is not null)
-        {
-            <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
-                <HxSubmit
-                    Text="Remove approval"
-                    Color="@ThemeColor.Danger"
-                />
-            </EditForm>
-        }
-        else
-        {
-            <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
-                <HxSubmit
-                    Text="Approve"
-                    Color="@ThemeColor.Success"
-                />
-            </EditForm>
-        }
-    </SectionContent>
-
-    <table class="table table-striped">
+<div class="d-flex flex-column gap-3">
+    <table class="table table-striped mb-0">
         <tr>
             <th>User</th>
             <td>
@@ -144,7 +151,7 @@
         }
     </table>
 
-    <table class="table table-striped mt-4">
+    <table class="table table-striped mb-0">
         @foreach (QuestionnaireFieldConfigurationEntity fieldConfiguration in _submission.Version.Fields!)
         {
             string? valueSerialized = _submission.FieldValues!.SingleOrDefault(x => x.FieldId == fieldConfiguration.FieldId)?.ValueSerialized;
@@ -190,10 +197,7 @@
             </tr>
         }
     </table>
-}
 
-@if (_submission != null && _eligibilityResult is not null)
-{
     <HxCard>
         <HeaderTemplate>
             <div class="d-flex flex-row align-items-center gap-3">
@@ -285,7 +289,49 @@
             </table>
         </BodyTemplate>
     </HxCard>
-}
+
+    <HxCard>
+        <HeaderTemplate>
+            Leave a comment
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
+                <FluentValidationValidator/>
+
+                <HxSelect
+                    TItem="StudioSubmissionCommentType"
+                    TValue="StudioSubmissionCommentType"
+                    Label="Type"
+                    Nullable="false"
+                    Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                    @bind-Value="@NewComment!.Type"
+                    TextSelector="@(type => type.Humanize())"
+                />
+
+                <HxInputTextArea @bind-Value="NewComment.Content"/>
+
+                <HxSubmit Color="ThemeColor.Primary" Text="Submit"/>
+            </EditForm>
+
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard BodyCssClass="gap-1">
+        <HeaderTemplate>
+            History
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <div class="d-flex flex-column gap-3">
+                @foreach (SubmissionHistoryEntryEntity entry in _submission.History!.OrderByDescending(entry => entry.OccuredAt))
+                {
+                    <SubmissionHistoryEntry Submission="_submission" Entry="entry"/>
+                }
+            </div>
+        </BodyTemplate>
+    </HxCard>
+</div>
 
 @code {
 
@@ -304,6 +350,9 @@
     [Parameter]
     public Guid SubmissionId { get; set; }
 
+    [SupplyParameterFromForm]
+    public StudioSubmissionCommentModel? NewComment { get; set; }
+
     private QuestionnaireSubmissionEntity? _submission;
     private EligibilityResult? _eligibilityResult;
     private Dictionary<EligibilityPlanId, EligibilityPlan> _eligibilityPlans = [];
@@ -313,12 +362,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        NewComment ??= new StudioSubmissionCommentModel();
+
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         _submission = await dbContext.QuestionnaireSubmissions
-            .AsNoTracking()
+            .AsTracking()
             .AsSplitQuery()
             .Include(x => x.Version.Questionnaire.EligibilityConfiguration)
             .ThenInclude(x => x.Options!)
@@ -326,9 +377,20 @@
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .Include(x => x.Labels)
+            .Include(x => x.History!).ThenInclude(entry => entry.InstigatorUser)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
-        // TODO: 404 if not found
+        if (_submission == null)
+        {
+            throw new Exception("Not found"); // TODO: 404 if not found
+        }
+
+        if (HttpContext.Request.Method.Equals(HttpMethod.Get.Method, StringComparison.InvariantCultureIgnoreCase))
+        {
+            // Note: this will update _submission.History
+            dbContext.SubmissionHistoryEntries.Add(AuditService.StaffView(_submission));
+            await dbContext.SaveChangesAsync();
+        }
 
         SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
             .Where(label => label.CreatorId == CreatorId)
@@ -361,6 +423,8 @@
         submission.ApprovedAt = Clock.GetCurrentInstant();
         submission.ApproverId = (await UserAccessor.GetRequiredUserAsync(HttpContext)).Id;
 
+        dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalGrant(submission));
+
         await dbContext.SaveChangesAsync();
 
         // Reload the page with new info
@@ -378,9 +442,46 @@
         submission.ApprovedAt = null;
         submission.ApproverId = null;
 
+        dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalRemoval(submission));
+
         await dbContext.SaveChangesAsync();
 
         // Reload the page with new info
+        NavigationManager.Refresh();
+    }
+
+    private async Task OnValidSubmitNewComment()
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        SubmissionHistoryEntryEntity historyEntry = NewComment!.Type switch
+        {
+            StudioSubmissionCommentType.InternalNote => new SubmissionHistoryInternalNoteEntity
+            {
+                Content = NewComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+            StudioSubmissionCommentType.PublicComment => new SubmissionHistoryPublicCommentEntity
+            {
+                Content = NewComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+
+            _ => throw new UnreachableException(),
+        };
+
+        dbContext.SubmissionHistoryEntries.Add(historyEntry);
+        await dbContext.SaveChangesAsync();
+
+        // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
         NavigationManager.Refresh();
     }
 

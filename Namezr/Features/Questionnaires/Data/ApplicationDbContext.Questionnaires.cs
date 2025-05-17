@@ -14,6 +14,7 @@ public partial class ApplicationDbContext
 
     public DbSet<QuestionnaireSubmissionEntity> QuestionnaireSubmissions { get; set; } = null!;
     public DbSet<QuestionnaireFieldValueEntity> QuestionnaireFieldValues { get; set; } = null!;
+    public DbSet<SubmissionHistoryEntryEntity> SubmissionHistoryEntries { get; set; } = null!;
 
     public DbSet<SubmissionNumberSequenceEntity> SubmissionNumberSequences { get; set; } = null!;
 
@@ -33,5 +34,7 @@ public partial class ApplicationDbContext
                     .HasForeignKey(link => link.LabelId),
                 j => j.ToTable("QuestionnaireSubmissions_Labels")
             );
+
+        SubmissionHistoryEntryEntityConfiguration.Apply(modelBuilder);
     }
 }
