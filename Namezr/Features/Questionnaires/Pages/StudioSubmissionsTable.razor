@@ -59,7 +59,7 @@
     EligibilityDescriptors="_eligibilityDescriptors"
     QuestionnaireConfig="_questionnaireConfig"
     PossibleLabels="_possibleLabels"
-    Items="_items"
+    Items="[] /* TODO: _items */"
 />
 
 @code {
@@ -92,7 +92,7 @@
         _questionnaire = await dbContext.Questionnaires
             .AsNoTracking()
             .AsSplitQuery()
-            .Include(q => q.Versions)
+            .Include(q => q.Versions!).ThenInclude(v => v.Fields!).ThenInclude(f => f.Field)
             .Include(q => q.EligibilityConfiguration).ThenInclude(q => q.Options)
             .SingleOrDefaultAsync(q => q.Id == QuestionnaireId && q.CreatorId == CreatorId);
 
@@ -112,6 +112,8 @@
             .Select(submission => new
             {
                 submission,
+
+                // TODO: crashes in post-query marshalling if there was no matched record
                 LastUpdate = submission.History!
                     .Where(entry =>
                         !(entry is SubmissionHistoryStaffViewedEntity) &&

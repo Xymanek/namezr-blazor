@@ -1,229 +1,233 @@
-﻿@using System.Diagnostics
+﻿@rendermode InteractiveWebAssembly
+
+@using System.Diagnostics
 @using Humanizer
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Types
 
-<div class="row">
-    <div class="col-lg-1">
-        <HxInputNumber
-            Label="Min weight"
-            @bind-Value="@_filter.MinWeight"
-        />
-    </div>
 
-    <div class="col-lg-1">
-        <HxInputNumber
-            Label="Max weight"
-            @bind-Value="@_filter.MaxWeight"
-        />
-    </div>
+<HxListLayout TFilterModel="HxListLayout.NoFilter">
+    <SearchTemplate>
+        <div class="w-100">
+            <div class="row">
+                <div class="col-lg-1">
+                    <HxInputNumber
+                        Label="Min weight"
+                        @bind-Value="@_filter.MinWeight"/>
+                </div>
 
-    <div class="col-lg-1">
-        <HxSelect
-            Label="Is approved"
-            NullText="No filter"
-            Data="[true, false]"
-            @bind-Value="@_filter.MatchIsApproved"
-        />
-    </div>
+                <div class="col-lg-1">
+                    <HxInputNumber
+                        Label="Max weight"
+                        @bind-Value="@_filter.MaxWeight"/>
+                </div>
 
-    <div class="col-lg-9">
-        <HxMultiSelect
-            Label="Columns"
-            Data="GetColumns()"
-            @bind-Value="_columns"
-            ValueSelector="@(x => x.Id)"
-            TextSelector="@(column => column.Label)"
-        />
-    </div>
-</div>
+                <div class="col-lg-1">
+                    <HxSelect
+                        Label="Is approved"
+                        NullText="N/A"
+                        Data="[true, false]"
+                        @bind-Value="@_filter.MatchIsApproved"
+                        ValueSelector="b => b"
+                        TextSelector="@(b => b ? "Yes" : "No")"
+                        />
+                </div>
 
-<div class="row">
-    <div class="col-lg-6">
-        <HxMultiSelect
-            TItem="EligibilityPlan"
-            TValue="EligibilityPlanId"
-            Label="Included eligibility plans"
-            EmptyText="No filter"
-            Data="EligibilityDescriptors"
-            @bind-Value="_filter.IncludedPlanIds"
-            ValueSelector="@(x => x.Id)"
-            TextSelector="GetEligibilityDescriptorDisplayName"
-        />
-    </div>
+                <div class="col-lg-9">
+                    <HxMultiSelect
+                        Label="Columns"
+                        Data="GetColumns()"
+                        @bind-Value="_columns"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(column => column.Label)"/>
+                </div>
+            </div>
 
-    <div class="col-lg-6">
-        <HxMultiSelect
-            TItem="EligibilityPlan"
-            TValue="EligibilityPlanId"
-            Label="Excluded eligibility plans"
-            EmptyText="No filter"
-            Data="EligibilityDescriptors"
-            @bind-Value="_filter.ExcludedPlanIds"
-            ValueSelector="@(x => x.Id)"
-            TextSelector="GetEligibilityDescriptorDisplayName"
-        />
-    </div>
-</div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        TItem="EligibilityPlan"
+                        TValue="EligibilityPlanId"
+                        Label="Included eligibility plans"
+                        EmptyText="No filter"
+                        Data="EligibilityDescriptors"
+                        @bind-Value="_filter.IncludedPlanIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="GetEligibilityDescriptorDisplayName"/>
+                </div>
 
-<div class="row">
-    <div class="col-lg-6">
-        <HxMultiSelect
-            Label="Included labels"
-            EmptyText="No filter"
-            Data="PossibleLabels"
-            @bind-Value="_filter.IncludedLabelIds"
-            ValueSelector="@(x => x.Id)"
-            TextSelector="@(label => label.Text)"
-        />
-    </div>
-    <div class="col-lg-6">
-        <HxMultiSelect
-            Label="Excluded labels"
-            EmptyText="No filter"
-            Data="PossibleLabels"
-            @bind-Value="_filter.ExcludedLabelIds"
-            ValueSelector="@(x => x.Id)"
-            TextSelector="@(label => label.Text)"
-        />
-    </div>
-</div>
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        TItem="EligibilityPlan"
+                        TValue="EligibilityPlanId"
+                        Label="Excluded eligibility plans"
+                        EmptyText="No filter"
+                        Data="EligibilityDescriptors"
+                        @bind-Value="_filter.ExcludedPlanIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="GetEligibilityDescriptorDisplayName"/>
+                </div>
+            </div>
 
-<HxGrid
-    TItem="SubmissionTableItemModel"
-    DataProvider="GetGridData"
-    PageSize="25"
-    Responsive="true"
->
-    <Columns>
-        @* TODO: rework to use HxGridColumn.Visible instead *@
+            <div class="row">
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Included labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="_filter.IncludedLabelIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"/>
+                </div>
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Excluded labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="_filter.ExcludedLabelIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"/>
+                </div>
+            </div>
+        </div>
+    </SearchTemplate>
 
-        @foreach (SubmissionsColumnId columnId in _columns)
-        {
-            @switch (columnId.Type)
-            {
-                case SubmissionsColumnType.SubmissionNumber:
-                    <HxGridColumn
-                        HeaderText="Number"
-                        ItemTextSelector="@(item => "#" + item.Number)"
-                        SortKeySelector="item => item.Number"
-                        IsDefaultSortColumn="true"/>
-                    break;
+    <DataTemplate>
+        <HxGrid
+            TItem="SubmissionTableItemModel"
+            DataProvider="GetGridData"
+            PageSize="25"
+            Responsive="true"
+        >
+            <Columns>
+                @* TODO: rework to use HxGridColumn.Visible instead *@
 
-                case SubmissionsColumnType.UserDisplayName:
-                    <HxGridColumn
-                        HeaderText="User"
-                        ItemTextSelector="item => item.UserDisplayName"/>
-                    break;
+                @foreach (SubmissionsColumnId columnId in _columns)
+                {
+                    @switch (columnId.Type)
+                    {
+                        case SubmissionsColumnType.SubmissionNumber:
+                            <HxGridColumn
+                                HeaderText="Number"
+                                ItemTextSelector="@(item => "#" + item.Number)"
+                                SortKeySelector="item => item.Number"
+                                IsDefaultSortColumn="true"/>
+                            break;
 
-                case SubmissionsColumnType.InitiallySubmittedAt:
-                    <HxGridColumn
-                        HeaderText="Submitted at"
-                        SortKeySelector="item => item.InitiallySubmittedAt">
-                        <ItemTemplate>
-                            <RelativeTime Value="context.InitiallySubmittedAt"/>
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
+                        case SubmissionsColumnType.UserDisplayName:
+                            <HxGridColumn
+                                HeaderText="User"
+                                ItemTextSelector="item => item.UserDisplayName"/>
+                            break;
 
-                case SubmissionsColumnType.LastUpdateAt:
-                    <HxGridColumn
-                        HeaderText="Last updated"
-                        SortKeySelector="item => item.LastUpdateAt">
-                        <ItemTemplate>
-                            <RelativeTime Value="context.LastUpdateAt"/>
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
+                        case SubmissionsColumnType.InitiallySubmittedAt:
+                            <HxGridColumn
+                                HeaderText="Submitted at"
+                                SortKeySelector="item => item.InitiallySubmittedAt">
+                                <ItemTemplate>
+                                    <RelativeTime Value="context.InitiallySubmittedAt"/>
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
 
-                case SubmissionsColumnType.IsApproved:
-                    <HxGridColumn
-                        HeaderText="Is approved"
-                        SortKeySelector="item => item.IsApproved">
-                        <ItemTemplate>
-                            <YesNoBadge Value="context.IsApproved"/>
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
+                        case SubmissionsColumnType.LastUpdateAt:
+                            <HxGridColumn
+                                HeaderText="Last updated"
+                                SortKeySelector="item => item.LastUpdateAt">
+                                <ItemTemplate>
+                                    <RelativeTime Value="context.LastUpdateAt"/>
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
 
-                case SubmissionsColumnType.Weight:
-                    <HxGridColumn
-                        HeaderText="Weight"
-                        ItemTextSelector="@(item => item.Eligibility.Modifier.ToString())"
-                        SortKeySelector="item => item.Eligibility.Modifier"/>
-                    break;
+                        case SubmissionsColumnType.IsApproved:
+                            <HxGridColumn
+                                HeaderText="Is approved"
+                                SortKeySelector="item => item.IsApproved">
+                                <ItemTemplate>
+                                    <YesNoBadge Value="context.IsApproved"/>
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
 
-                case SubmissionsColumnType.Labels:
-                    <HxGridColumn HeaderText="Labels">
-                        <ItemTemplate>
-                            <div class="d-flex flex-row gap-1 flex-wrap">
-                                @foreach (SubmissionLabelModel label in context.Labels)
-                                {
-                                    <SubmissionLabelPresenter Label="label"/>
-                                }
+                        case SubmissionsColumnType.Weight:
+                            <HxGridColumn
+                                HeaderText="Weight"
+                                ItemTextSelector="@(item => item.Eligibility.Modifier.ToString())"
+                                SortKeySelector="item => item.Eligibility.Modifier"/>
+                            break;
 
-                                @if (context.Labels.Count == 0)
-                                {
-                                    <i>N/A</i>
-                                }
-                            </div>
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
+                        case SubmissionsColumnType.Labels:
+                            <HxGridColumn HeaderText="Labels">
+                                <ItemTemplate>
+                                    <div class="d-flex flex-row gap-1 flex-wrap">
+                                        @foreach (SubmissionLabelModel label in context.Labels)
+                                        {
+                                            <SubmissionLabelPresenter Label="label"/>
+                                        }
 
-                case SubmissionsColumnType.EligibilityPlans:
-                    <HxGridColumn HeaderText="Eligible plans">
-                        <ItemTemplate>
-                            <div class="d-flex flex-row gap-1 flex-wrap">
-                                @foreach (EligibilityPlanId planId in context.Eligibility.EligiblePlanIds)
-                                {
+                                        @if (context.Labels.Count == 0)
+                                        {
+                                            <i>N/A</i>
+                                        }
+                                    </div>
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
+
+                        case SubmissionsColumnType.EligibilityPlans:
+                            <HxGridColumn HeaderText="Eligible plans">
+                                <ItemTemplate>
+                                    <div class="d-flex flex-row gap-1 flex-wrap">
+                                        @foreach (EligibilityPlanId planId in context.Eligibility.EligiblePlanIds)
+                                        {
+                                            /* TODO */
+                                            <HxBadge>@planId</HxBadge>
+                                        }
+
+                                        @if (context.Labels.Count == 0)
+                                        {
+                                            <i>N/A</i>
+                                        }
+                                    </div>
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
+
+                        case SubmissionsColumnType.FieldValue:
+                            <HxGridColumn>
+                                <HeaderTemplate>
+                                    @{
+                                        QuestionnaireConfigFieldModel? field = QuestionnaireConfig?.Fields
+                                            .SingleOrDefault(field => field.Id == columnId.FieldId);
+                                    }
+
+                                    @if (field != null)
+                                    {
+                                        @field.Title
+                                    }
+                                    else
+                                    {
+                                        <i>Unknown field</i>
+                                    }
+                                </HeaderTemplate>
+
+                                <ItemTemplate>
                                     /* TODO */
-                                    <HxBadge>@planId</HxBadge>
-                                }
+                                    @context.Values.GetValueOrDefault(columnId.FieldId!.Value)?.StringValue
+                                </ItemTemplate>
+                            </HxGridColumn>
+                            break;
 
-                                @if (context.Labels.Count == 0)
-                                {
-                                    <i>N/A</i>
-                                }
-                            </div>
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
-
-                case SubmissionsColumnType.FieldValue:
-                    <HxGridColumn>
-                        <HeaderTemplate>
-                            @{
-                                QuestionnaireConfigFieldModel? field = QuestionnaireConfig?.Fields
-                                    .SingleOrDefault(field => field.Id == columnId.FieldId);
-                            }
-
-                            @if (field != null)
-                            {
-                                @field.Title
-                            }
-                            else
-                            {
-                                <i>Unknown field</i>
-                            }
-                        </HeaderTemplate>
-
-                        <ItemTemplate>
-                            /* TODO */
-                            @context.Values.GetValueOrDefault(columnId.FieldId!.Value)?.StringValue
-                        </ItemTemplate>
-                    </HxGridColumn>
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            //
-        }
-    </Columns>
-</HxGrid>
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            </Columns>
+        </HxGrid>
+    </DataTemplate>
+</HxListLayout>
 
 @code {
 
