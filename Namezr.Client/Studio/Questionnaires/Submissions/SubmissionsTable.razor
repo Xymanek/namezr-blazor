@@ -234,12 +234,27 @@
                             throw new ArgumentOutOfRangeException();
                     }
                 }
+
+                <HxGridColumn ItemCssClass="width-1percent">
+                    <ItemTemplate>
+                        <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@context.Id.NoHyphens()"
+                           class="btn btn-primary py-0 px-1">
+                            <i class="bi bi-search"></i>
+                        </a>
+                    </ItemTemplate>
+                </HxGridColumn>
             </Columns>
         </HxGrid>
     </DataTemplate>
 </HxListLayout>
 
 @code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
 
     [Parameter]
     public List<EligibilityPlan> EligibilityDescriptors { get; set; } = [];
