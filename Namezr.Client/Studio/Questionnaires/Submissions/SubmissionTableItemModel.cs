@@ -17,6 +17,6 @@ public class SubmissionTableItemModel
 
     public required bool IsApproved { get; init; }
 
-    public required IReadOnlyList<SubmissionLabelModel> Labels { get; init; }
-    public required IReadOnlyDictionary<Guid, SubmissionValueModel> Values { get; set; }
+    public required List<SubmissionLabelModel> Labels { get; init; }
+    public required Dictionary<Guid, SubmissionValueModel> Values { get; set; }
 }

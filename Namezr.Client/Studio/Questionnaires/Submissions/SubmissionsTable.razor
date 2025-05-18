@@ -182,8 +182,10 @@
                                     <div class="d-flex flex-row gap-1 flex-wrap">
                                         @foreach (EligibilityPlanId planId in context.Eligibility.EligiblePlanIds)
                                         {
-                                            /* TODO */
-                                            <HxBadge>@planId</HxBadge>
+                                            <HxBadge Color="ThemeColor.Secondary">
+                                                @* TODO *@
+                                                @planId
+                                            </HxBadge>
                                         }
 
                                         @if (context.Labels.Count == 0)
@@ -214,7 +216,7 @@
                                 </HeaderTemplate>
 
                                 <ItemTemplate>
-                                    /* TODO */
+                                    @* TODO *@
                                     @context.Values.GetValueOrDefault(columnId.FieldId!.Value)?.StringValue
                                 </ItemTemplate>
                             </HxGridColumn>
