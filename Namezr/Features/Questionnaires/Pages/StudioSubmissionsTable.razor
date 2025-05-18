@@ -18,6 +18,7 @@
 @using Namezr.Features.Questionnaires.Mappers
 @using Namezr.Features.Questionnaires.Services
 @using Namezr.Infrastructure.Data
+@using NodaTime
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -113,8 +114,8 @@
             {
                 submission,
 
-                // TODO: crashes in post-query marshalling if there was no matched record
-                LastUpdate = submission.History!
+                // Cast is needed otherwise we crash in post-query marshalling if there was no matched record
+                LastUpdate = (Instant?)submission.History!
                     .Where(entry =>
                         !(entry is SubmissionHistoryStaffViewedEntity) &&
                         !(entry is SubmissionHistoryFileDownloadedEntity)
@@ -139,14 +140,16 @@
                     UserStatusSyncEagerness.NoSyncSkipConsumerIfMissing
                 );
 
+            DateTimeOffset initiallySubmittedAt = entry.submission.SubmittedAt.ToDateTimeOffset();
+
             return new SubmissionTableItemModel
             {
                 Id = entry.submission.Id,
                 Number = entry.submission.Number,
                 UserDisplayName = entry.submission.User.UserName!,
                 Eligibility = eligibility.ToModel(),
-                InitiallySubmittedAt = entry.submission.SubmittedAt.ToDateTimeOffset(),
-                LastUpdateAt = entry.LastUpdate.ToDateTimeOffset(),
+                InitiallySubmittedAt = initiallySubmittedAt,
+                LastUpdateAt = entry.LastUpdate?.ToDateTimeOffset() ?? initiallySubmittedAt,
                 IsApproved = entry.submission.ApprovedAt != null,
 
                 Labels = entry.submission.Labels!
