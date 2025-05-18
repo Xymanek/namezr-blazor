@@ -31,7 +31,7 @@
                         @bind-Value="@_filter.MatchIsApproved"
                         ValueSelector="b => b"
                         TextSelector="@(b => b ? "Yes" : "No")"
-                        />
+                    />
                 </div>
 
                 <div class="col-lg-9">
@@ -183,12 +183,11 @@
                                         @foreach (EligibilityPlanId planId in context.Eligibility.EligiblePlanIds)
                                         {
                                             <HxBadge Color="ThemeColor.Secondary">
-                                                @* TODO *@
-                                                @planId
+                                                @GetEligibilityDescriptorDisplayName(EligibilityDescriptors.Single(x => x.Id == planId))
                                             </HxBadge>
                                         }
 
-                                        @if (context.Labels.Count == 0)
+                                        @if (context.Eligibility.EligiblePlanIds.Count == 0)
                                         {
                                             <i>N/A</i>
                                         }
