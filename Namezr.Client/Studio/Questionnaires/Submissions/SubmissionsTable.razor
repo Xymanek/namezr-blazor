@@ -4,6 +4,7 @@
 @using Humanizer
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
 
 <HxListLayout TFilterModel="HxListLayout.NoFilter">
@@ -224,8 +225,38 @@
                                 </HeaderTemplate>
 
                                 <ItemTemplate>
-                                    @* TODO *@
-                                    @context.Values.GetValueOrDefault(columnId.FieldId!.Value)?.StringValue
+                                    @{
+                                        SubmissionValueModel? value = context.Values
+                                            .GetValueOrDefault(columnId.FieldId!.Value);
+
+                                        // QuestionnaireConfig.Fields is the source of the column list,
+                                        // so it's fine to make this assumption here
+                                        QuestionnaireConfigFieldModel fieldConfig = QuestionnaireConfig.Fields
+                                            .Single(field => field.Id == columnId.FieldId);
+
+                                        if (value == null) return;
+                                    }
+
+                                    @switch (fieldConfig.Type)
+                                    {
+                                        case QuestionnaireFieldType.Text:
+                                            @value.StringValue
+                                            break;
+
+                                        case QuestionnaireFieldType.Number:
+                                            @value.NumberValue
+                                            break;
+
+                                        case QuestionnaireFieldType.FileUpload:
+                                            <SubmissionTableFileValue
+                                                SubmissionId="context.Id"
+                                                Value="value"
+                                            />
+                                            break;
+
+                                        default:
+                                            throw new UnreachableException();
+                                    }
                                 </ItemTemplate>
                             </HxGridColumn>
                             break;
@@ -260,7 +291,7 @@
     public List<EligibilityPlan> EligibilityDescriptors { get; set; } = [];
 
     [Parameter]
-    public QuestionnaireConfigModel? QuestionnaireConfig { get; set; }
+    public required QuestionnaireConfigModel QuestionnaireConfig { get; set; }
 
     [Parameter]
     public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
