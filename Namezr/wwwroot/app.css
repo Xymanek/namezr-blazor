@@ -79,3 +79,7 @@ a, .btn-link {
 .unset-max-height {
     max-height: unset !important;
 }
+
+.width-1percent {
+    width: 1%;
+}

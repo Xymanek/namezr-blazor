@@ -1,0 +1,23 @@
+﻿@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
+
+@foreach (SubmissionFileData file in Value?.FileValue ?? [])
+{
+    <div>
+        <a href="@GetDownloadUrl(file)" target="_blank">
+            <TruncatedText Text="@file.Name" MaxLength="25"/>
+        </a>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public required Guid SubmissionId { get; set; }
+
+    [Parameter]
+    public SubmissionValueModel? Value { get; set; }
+
+    private string GetDownloadUrl(SubmissionFileData file) 
+        => $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId}&fileId={file.Id}";
+}

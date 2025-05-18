@@ -51,13 +51,7 @@
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <QuestionnaireBreadcrumbs
-            Questionnaire="_submission.Version.Questionnaire"
-        />
-
-        <HxBreadcrumbItem
-            Text="Submissions"
-        />
+        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire" />
 
         <HxBreadcrumbItem
             Href=@(NavigationManager.Uri)

@@ -1,0 +1,393 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using System.Diagnostics
+@using Humanizer
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Types
+
+<HxListLayout TFilterModel="HxListLayout.NoFilter">
+    <SearchTemplate>
+        <div class="w-100">
+            <div class="row">
+                <div class="col-lg-1">
+                    <HxInputNumber
+                        Label="Min weight"
+                        @bind-Value="@_filter.MinWeight"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                    />
+                </div>
+
+                <div class="col-lg-1">
+                    <HxInputNumber
+                        Label="Max weight"
+                        @bind-Value="@_filter.MaxWeight"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                    />
+                </div>
+
+                <div class="col-lg-1">
+                    <HxSelect
+                        Label="Is approved"
+                        NullText="N/A"
+                        Data="[true, false]"
+                        @bind-Value="@_filter.MatchIsApproved"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                        ValueSelector="b => b"
+                        TextSelector="@(b => b ? "Yes" : "No")"
+                    />
+                </div>
+
+                <div class="col-lg-9">
+                    <HxMultiSelect
+                        Label="Columns"
+                        Data="GetColumns()"
+                        @bind-Value="_columns"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(column => column.Label)"/>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        TItem="EligibilityPlan"
+                        TValue="EligibilityPlanId"
+                        Label="Included eligibility plans"
+                        EmptyText="No filter"
+                        Data="EligibilityDescriptors"
+                        @bind-Value="_filter.IncludedPlanIds"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="GetEligibilityDescriptorDisplayName"/>
+                </div>
+
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        TItem="EligibilityPlan"
+                        TValue="EligibilityPlanId"
+                        Label="Excluded eligibility plans"
+                        EmptyText="No filter"
+                        Data="EligibilityDescriptors"
+                        @bind-Value="_filter.ExcludedPlanIds"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="GetEligibilityDescriptorDisplayName"/>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Included labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="_filter.IncludedLabelIds"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"/>
+                </div>
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Excluded labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="_filter.ExcludedLabelIds"
+                        @bind-Value:after="AfterGridFiltersChanged"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"/>
+                </div>
+            </div>
+        </div>
+    </SearchTemplate>
+
+    <DataTemplate>
+        <HxGrid
+            TItem="SubmissionTableItemModel"
+            @ref="_grid"
+            DataProvider="GetGridData"
+            PageSize="25"
+            Responsive="true"
+        >
+            <Columns>
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.SubmissionNumber))"
+                    HeaderText="Number"
+                    ItemTextSelector="@(item => "#" + item.Number)"
+                    SortKeySelector="item => item.Number"
+                    IsDefaultSortColumn="true"
+                />
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.UserDisplayName))"
+                    HeaderText="User"
+                    ItemTextSelector="item => item.UserDisplayName"
+                />
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.InitiallySubmittedAt))"
+                    HeaderText="Submitted at"
+                    SortKeySelector="item => item.InitiallySubmittedAt"
+                >
+                    <ItemTemplate>
+                        <RelativeTime Value="context.InitiallySubmittedAt"/>
+                    </ItemTemplate>
+                </HxGridColumn>
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.LastUpdateAt))"
+                    HeaderText="Last updated"
+                    SortKeySelector="item => item.LastUpdateAt"
+                >
+                    <ItemTemplate>
+                        <RelativeTime Value="context.LastUpdateAt"/>
+                    </ItemTemplate>
+                </HxGridColumn>
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.IsApproved))"
+                    HeaderText="Is approved"
+                    SortKeySelector="item => item.IsApproved">
+                    <ItemTemplate>
+                        <YesNoBadge Value="context.IsApproved"/>
+                    </ItemTemplate>
+                </HxGridColumn>
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.Weight))"
+                    HeaderText="Weight"
+                    ItemTextSelector="@(item => item.Eligibility.Modifier.ToString())"
+                    SortKeySelector="item => item.Eligibility.Modifier"
+                />
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.Labels))"
+                    HeaderText="Labels"
+                >
+                    <ItemTemplate>
+                        <div class="d-flex flex-row gap-1 flex-wrap">
+                            @foreach (SubmissionLabelModel label in context.Labels)
+                            {
+                                <SubmissionLabelPresenter Label="label"/>
+                            }
+
+                            @if (context.Labels.Count == 0)
+                            {
+                                <i>N/A</i>
+                            }
+                        </div>
+                    </ItemTemplate>
+                </HxGridColumn>
+
+                <HxGridColumn
+                    Visible="_columns.Contains(new SubmissionsColumnId(SubmissionsColumnType.EligibilityPlans))"
+                    HeaderText="Eligible plans"
+                >
+                    <ItemTemplate>
+                        <div class="d-flex flex-row gap-1 flex-wrap">
+                            @foreach (EligibilityPlanId planId in context.Eligibility.EligiblePlanIds)
+                            {
+                                <HxBadge Color="ThemeColor.Secondary">
+                                    @GetEligibilityDescriptorDisplayName(EligibilityDescriptors.Single(x => x.Id == planId))
+                                </HxBadge>
+                            }
+
+                            @if (context.Eligibility.EligiblePlanIds.Count == 0)
+                            {
+                                <i>N/A</i>
+                            }
+                        </div>
+                    </ItemTemplate>
+                </HxGridColumn>
+
+                @foreach (QuestionnaireConfigFieldModel field in QuestionnaireConfig.Fields)
+                {
+                    SubmissionsColumnId columnId = new()
+                    {
+                        Type = SubmissionsColumnType.FieldValue,
+                        FieldId = field.Id,
+                    };
+
+                    <HxGridColumn
+                        Visible="_columns.Contains(columnId)"
+                        HeaderText="@field.Title"
+                    >
+                        <ItemTemplate>
+                            @{
+                                SubmissionValueModel? value = context.Values
+                                    .GetValueOrDefault(columnId.FieldId!.Value);
+
+                                if (value == null) return;
+                            }
+
+                            @switch (field.Type)
+                            {
+                                case QuestionnaireFieldType.Text:
+                                    @value.StringValue
+                                    break;
+
+                                case QuestionnaireFieldType.Number:
+                                    @value.NumberValue
+                                    break;
+
+                                case QuestionnaireFieldType.FileUpload:
+                                    <SubmissionTableFileValue
+                                        SubmissionId="context.Id"
+                                        Value="value"/>
+                                    break;
+
+                                default:
+                                    throw new UnreachableException();
+                            }
+                        </ItemTemplate>
+                    </HxGridColumn>
+                }
+
+                <HxGridColumn ItemCssClass="width-1percent">
+                    <ItemTemplate>
+                        <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@context.Id.NoHyphens()"
+                           class="btn btn-primary py-0 px-1">
+                            <i class="bi bi-search"></i>
+                        </a>
+                    </ItemTemplate>
+                </HxGridColumn>
+            </Columns>
+        </HxGrid>
+    </DataTemplate>
+</HxListLayout>
+
+@code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public List<EligibilityPlan> EligibilityDescriptors { get; set; } = [];
+
+    [Parameter]
+    public required QuestionnaireConfigModel QuestionnaireConfig { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    [Parameter]
+    public SubmissionTableItemModel[] Items { get; set; } = [];
+
+    private HxGrid<SubmissionTableItemModel>? _grid;
+
+    private readonly SubmissionFilterModel _filter = new();
+
+    private List<SubmissionsColumnId> _columns =
+    [
+        new(SubmissionsColumnType.SubmissionNumber),
+        new(SubmissionsColumnType.UserDisplayName),
+        new(SubmissionsColumnType.InitiallySubmittedAt),
+        new(SubmissionsColumnType.Weight),
+        new(SubmissionsColumnType.IsApproved),
+    ];
+
+    private Task<GridDataProviderResult<SubmissionTableItemModel>> GetGridData(
+        GridDataProviderRequest<SubmissionTableItemModel> request
+    )
+    {
+        IEnumerable<SubmissionTableItemModel> items = Items
+            .Where(ShouldShowItem);
+
+        return Task.FromResult(request.ApplyTo(items));
+    }
+
+    private bool ShouldShowItem(SubmissionTableItemModel item)
+    {
+        if (_filter.MinWeight != null && item.Eligibility.Modifier < _filter.MinWeight) return false;
+        if (_filter.MaxWeight != null && item.Eligibility.Modifier > _filter.MaxWeight) return false;
+
+        // Check included plan IDs - if any are specified, at least one must match
+        if (_filter.IncludedPlanIds.Count > 0 && !_filter.IncludedPlanIds.Any(planId => item.Eligibility.EligiblePlanIds.Contains(planId)))
+            return false;
+
+        // Check excluded plan IDs - if any match, exclude the item
+        if (_filter.ExcludedPlanIds.Any(planId => item.Eligibility.EligiblePlanIds.Contains(planId)))
+            return false;
+
+        // Check included label IDs - if any are specified, at least one must match
+        if (_filter.IncludedLabelIds.Count > 0 && !_filter.IncludedLabelIds.Any(labelId => item.Labels.Any(l => l.Id == labelId)))
+            return false;
+
+        // Check excluded label IDs - if any match, exclude the item
+        if (_filter.ExcludedLabelIds.Any(labelId => item.Labels.Any(l => l.Id == labelId)))
+            return false;
+
+        // Check approved status if specified
+        if (_filter.MatchIsApproved != null && item.IsApproved != _filter.MatchIsApproved)
+            return false;
+
+        return true;
+    }
+
+    // TODO: unify with option editor
+    private string GetEligibilityDescriptorDisplayName(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => $"{plan.SupportPlan!.ServiceType} - {plan.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + plan.VirtualEligibilityType,
+
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private record Column
+    {
+        public required string Label { get; init; }
+        public required SubmissionsColumnId Id { get; init; }
+    }
+
+    private IEnumerable<Column> GetColumns()
+    {
+        yield return ColumnForType(SubmissionsColumnType.SubmissionNumber);
+        yield return ColumnForType(SubmissionsColumnType.UserDisplayName);
+        yield return ColumnForType(SubmissionsColumnType.InitiallySubmittedAt);
+        yield return ColumnForType(SubmissionsColumnType.LastUpdateAt);
+        yield return ColumnForType(SubmissionsColumnType.IsApproved);
+        yield return ColumnForType(SubmissionsColumnType.Labels);
+        yield return ColumnForType(SubmissionsColumnType.Weight);
+        yield return ColumnForType(SubmissionsColumnType.EligibilityPlans);
+
+        foreach (QuestionnaireConfigFieldModel field in QuestionnaireConfig!.Fields)
+        {
+            yield return new Column
+            {
+                Label = field.Title,
+                Id = new SubmissionsColumnId
+                {
+                    Type = SubmissionsColumnType.FieldValue,
+                    FieldId = field.Id,
+                },
+            };
+        }
+
+        yield break;
+
+        static Column ColumnForType(SubmissionsColumnType type)
+        {
+            return new Column
+            {
+                Id = new SubmissionsColumnId(type),
+                Label = type.Humanize(),
+            };
+        }
+    }
+
+    private async Task AfterGridFiltersChanged()
+    {
+        if (_grid == null) return;
+
+        await _grid.RefreshDataAsync();
+    }
+
+}
