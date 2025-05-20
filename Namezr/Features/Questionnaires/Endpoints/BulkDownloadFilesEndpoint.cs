@@ -3,6 +3,7 @@ using FluentValidation;
 using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
@@ -24,6 +25,8 @@ internal partial class BulkDownloadFilesEndpoint
     {
         public required Guid QuestionnaireId { get; init; }
         public required Guid FieldId { get; init; }
+
+        [FromQuery(Name = "n")]
         public required int[] SubmissionNumbers { get; init; }
 
         [RegisterSingleton(typeof(IValidator<Request>))]
