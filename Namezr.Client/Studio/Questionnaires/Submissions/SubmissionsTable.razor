@@ -109,6 +109,8 @@
             DataProvider="GetGridData"
             PageSize="25"
             Responsive="true"
+            MultiSelectionEnabled="true"
+            @bind-SelectedDataItems="_selectedItems"
         >
             <Columns>
 
@@ -246,6 +248,15 @@
                 }
 
                 <HxGridColumn ItemCssClass="width-1percent">
+                    <HeaderTemplate>
+                        @* TODO: dropdown with actions *@
+                        <a href="@ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles?QuestionnaireId=@QuestionnaireId.NoHyphens()&FieldId=01964a3c-7ee0-7d78-9113-e35df795a815&@BulkDownloadsSubmissionQuery"
+                           target="_blank"
+                           class="btn btn-primary py-0 px-1">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </HeaderTemplate>
+                    
                     <ItemTemplate>
                         <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@context.Id.NoHyphens()"
                            class="btn btn-primary py-0 px-1">
@@ -290,6 +301,8 @@
         new(SubmissionsColumnType.Weight),
         new(SubmissionsColumnType.IsApproved),
     ];
+
+    private HashSet<SubmissionTableItemModel> _selectedItems = [];
 
     private Task<GridDataProviderResult<SubmissionTableItemModel>> GetGridData(
         GridDataProviderRequest<SubmissionTableItemModel> request
@@ -389,5 +402,8 @@
 
         await _grid.RefreshDataAsync();
     }
+
+    private string BulkDownloadsSubmissionQuery
+        => string.Join("&", _selectedItems.Select(item => "n=" + item.Number));
 
 }
