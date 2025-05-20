@@ -40,3 +40,11 @@ public partial class FileStorageService : IFileStorageService
         );
     }
 }
+
+public static class FileStorageServiceExtensions
+{
+    public static FileStream OpenRead(this IFileStorageService service, Guid fileId)
+    {
+        return File.OpenRead(service.GetFilePath(fileId));
+    }
+}
