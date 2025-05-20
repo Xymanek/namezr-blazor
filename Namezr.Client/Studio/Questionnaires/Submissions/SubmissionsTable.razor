@@ -249,14 +249,30 @@
 
                 <HxGridColumn ItemCssClass="width-1percent">
                     <HeaderTemplate>
-                        @* TODO: dropdown with actions *@
-                        <a href="@ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles?QuestionnaireId=@QuestionnaireId.NoHyphens()&FieldId=01964a3c-7ee0-7d78-9113-e35df795a815&@BulkDownloadsSubmissionQuery"
-                           target="_blank"
-                           class="btn btn-primary py-0 px-1">
-                            <i class="bi bi-download"></i>
-                        </a>
+                        <HxDropdown>
+                            <HxDropdownToggleElement ElementName="div" role="button">
+                                <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
+                            </HxDropdownToggleElement>
+
+                            <HxDropdownMenu>
+                                <HxDropdownItem Icon="BootstrapIcon.PlusCircleFill">
+                                    Apply labels
+                                </HxDropdownItem>
+                                <HxDropdownItem Icon="BootstrapIcon.DashCircleFill">
+                                    Remove labels
+                                </HxDropdownItem>
+
+                                <HxDropdownDivider/>
+
+                                <HxDropdownItemNavLink
+                                    Icon="BootstrapIcon.Download"
+                                    Text="Download files"
+                                    Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId=01964a3c-7ee0-7d78-9113-e35df795a815&{BulkDownloadsSubmissionQuery}")
+                                />
+                            </HxDropdownMenu>
+                        </HxDropdown>
                     </HeaderTemplate>
-                    
+
                     <ItemTemplate>
                         <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@context.Id.NoHyphens()"
                            class="btn btn-primary py-0 px-1">
