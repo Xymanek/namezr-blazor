@@ -249,6 +249,8 @@
 
                 <HxGridColumn ItemCssClass="width-1percent">
                     <HeaderTemplate>
+
+                        @* TODO: clipped by the grid. HxContextMenu wasn't *@
                         <HxDropdown>
                             <HxDropdownToggleElement ElementName="div" role="button">
                                 <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
@@ -262,13 +264,27 @@
                                     Remove labels
                                 </HxDropdownItem>
 
-                                <HxDropdownDivider/>
+                                @{
+                                    QuestionnaireConfigFieldModel[] fileFields = QuestionnaireConfig.Fields
+                                        .Where(field => field.Type == QuestionnaireFieldType.FileUpload)
+                                        .ToArray();
+                                }
 
-                                <HxDropdownItemNavLink
-                                    Icon="BootstrapIcon.Download"
-                                    Text="Download files"
-                                    Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId=01964a3c-7ee0-7d78-9113-e35df795a815&{BulkDownloadsSubmissionQuery}")
-                                />
+                                @if (fileFields.Length > 0)
+                                {
+                                    <HxDropdownDivider/>
+                                    <HxDropdownItemText Icon="BootstrapIcon.Download">
+                                        Download files
+                                    </HxDropdownItemText>
+                                }
+
+                                @foreach (QuestionnaireConfigFieldModel field in fileFields)
+                                {
+                                    <HxDropdownItemNavLink
+                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")>
+                                        <TruncatedText Text="@field.Title" MaxLength="25"/>
+                                    </HxDropdownItemNavLink>
+                                }
                             </HxDropdownMenu>
                         </HxDropdown>
                     </HeaderTemplate>
