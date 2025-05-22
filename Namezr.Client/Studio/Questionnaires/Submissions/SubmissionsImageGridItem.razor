@@ -48,13 +48,21 @@
             <div style="display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);">
                 @foreach (SubmissionFileData file in images)
                 {
-                    <div @onmouseover="() => OnHoverEnter(file)" @onmouseout="() => OnHoverExit(file)">
+                    string url = GetImageUrl(file);
+
+                    <a href="@url"
+                       target="_blank"
+                       data-fancybox=@("gallery-submission-grid-item-" + Item.Id)
+                       data-caption="@file.Name"
+                       @onmouseover="() => OnHoverEnter(file)"
+                       @onmouseout="() => OnHoverExit(file)"
+                    >
                         <img
                             style="object-fit: cover; width: 100%; height: 50px"
                             alt="@file.Name"
-                            src="@GetImageUrl(file)"
+                            src="@url"
                         />
-                    </div>
+                    </a>
                 }
             </div>
         </div>
