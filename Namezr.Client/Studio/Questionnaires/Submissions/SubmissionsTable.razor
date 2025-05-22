@@ -478,11 +478,13 @@
 
     private async Task ApplyLabel(SubmissionLabelModel label)
     {
+        await _applyLabelModal!.HideAsync();
         await MutateLabelPresence(label, true);
     }
 
     private async Task RemoveLabel(SubmissionLabelModel label)
     {
+        await _removeLabelModal!.HideAsync();
         await MutateLabelPresence(label, false);
     }
 
