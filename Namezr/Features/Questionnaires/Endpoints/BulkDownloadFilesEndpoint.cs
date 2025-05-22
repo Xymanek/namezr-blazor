@@ -101,9 +101,10 @@ internal partial class BulkDownloadFilesEndpoint
             return Results.BadRequest("Invalid submission IDs");
         }
 
+        await using ApplicationDbContext auditDbContext = await dbContextFactory.CreateDbContextAsync(ct);
         byte[] outputZipBytes = await BuildZipBytes();
 
-        // TODO: audit
+        await auditDbContext.SaveChangesAsync(ct);
 
         return TypedResults.File(outputZipBytes, "application/zip", "submissions.zip");
 
@@ -133,14 +134,13 @@ internal partial class BulkDownloadFilesEndpoint
 
             foreach (QuestionnaireSubmissionEntity submission in submissions)
             {
-                string? valueSerialized = submission.FieldValues!
-                    .SingleOrDefault(fieldValue => fieldValue.FieldId == request.FieldId)?
-                    .ValueSerialized;
+                QuestionnaireFieldValueEntity? fieldValueEntity = submission.FieldValues!
+                    .SingleOrDefault(fieldValue => fieldValue.FieldId == request.FieldId);
 
-                if (valueSerialized == null) continue;
+                if (fieldValueEntity == null) continue;
 
                 SubmissionValueModel value = fieldValueSerializer
-                    .Deserialize(QuestionnaireFieldType.FileUpload, valueSerialized);
+                    .Deserialize(QuestionnaireFieldType.FileUpload, fieldValueEntity.ValueSerialized);
 
                 string folderName = GetArchiveFolderName(submission);
 
@@ -152,6 +152,11 @@ internal partial class BulkDownloadFilesEndpoint
                     await using Stream entrySteam = entry.Open();
 
                     await fileStream.CopyToAsync(entrySteam, ct);
+
+                    // ReSharper disable once AccessToDisposedClosure
+                    auditDbContext.SubmissionHistoryEntries.Add(submissionAudit.DownloadFileStaffPrepare(
+                        submission, fieldValueEntity, fileData, inBatch: true
+                    ));
                 }
             }
 

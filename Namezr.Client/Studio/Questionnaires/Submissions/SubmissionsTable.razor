@@ -280,7 +280,9 @@
                                 @foreach (QuestionnaireConfigFieldModel field in fileFields)
                                 {
                                     <HxDropdownItemNavLink
-                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")>
+                                        target="_blank"
+                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")
+                                    >
                                         <TruncatedText Text="@field.Title" MaxLength="25"/>
                                     </HxDropdownItemNavLink>
                                 }
