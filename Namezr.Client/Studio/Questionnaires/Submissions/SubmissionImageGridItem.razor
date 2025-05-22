@@ -1,0 +1,44 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Studio.Questionnaires.Edit
+
+<div class="col-lg-2 col-md-4 col-12">
+    @if (FieldToDisplay.Type != QuestionnaireFieldType.FileUpload)
+    {
+        <HxCard>
+            <BodyTemplate>
+                <div>Not an image</div>
+            </BodyTemplate>
+        </HxCard>
+    }
+    else
+    {
+        /* TODO: border similar to HxCard */
+        <div class="border-radius-2">
+            <div style="background: red; height: 300px">
+                @* TODO: carousel *@
+            </div>
+
+            <div class="d-flex flex-row align-items-stretch" style="height: 50px">
+                <div class="flex-grow-1" style="background: green;"></div>
+                <div class="flex-grow-1" style="background: blue;"></div>
+                <div class="flex-grow-1" style="background: orange;"></div>
+            </div>
+        </div>
+
+        @* TODO: absolute-positioned div with checkbox for selection and labels (1st letter). vertical stack *@
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public required SubmissionTableItemModel Item { get; set; }
+
+    [Parameter]
+    public required QuestionnaireFieldEditModel FieldToDisplay { get; set; }
+
+    [Parameter]
+    public required long CurrentIndexCounter { get; set; }
+
+}

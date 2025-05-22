@@ -1,0 +1,67 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
+@using Namezr.Client.Types
+@implements IDisposable
+
+@* TODO: field selector *@
+@* TODO: filters *@
+
+<div class="row">
+    @foreach (SubmissionTableItemModel item in Items)
+    {
+        <SubmissionImageGridItem
+            Item="item"
+            CurrentIndexCounter="_currentIndexCounter"
+        />
+    }
+</div>
+
+@code {
+    private static readonly TimeSpan ImageSwitchInterval = TimeSpan.FromSeconds(7);
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public List<EligibilityPlan> EligibilityDescriptors { get; set; } = [];
+
+    [Parameter]
+    public required QuestionnaireConfigModel QuestionnaireConfig { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    [Parameter]
+    public SubmissionTableItemModel[] Items { get; set; } = [];
+
+    /// <summary>
+    /// Increments forever, expected to be modulo-d
+    /// </summary>
+    private long _currentIndexCounter;
+
+    private Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        if (!RendererInfo.IsInteractive) return;
+
+        _timer = new Timer(OnTimer, null, ImageSwitchInterval, ImageSwitchInterval);
+    }
+
+    private void OnTimer(object? state)
+    {
+        _currentIndexCounter++;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+}
