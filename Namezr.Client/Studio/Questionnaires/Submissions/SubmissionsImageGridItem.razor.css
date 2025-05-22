@@ -1,0 +1,10 @@
+﻿.item-checkbox-container {
+    visibility: hidden;
+}
+
+.item-container:hover .item-checkbox-container {
+    visibility: visible;
+}
+.item-container.item-selected .item-checkbox-container {
+    visibility: visible;
+}

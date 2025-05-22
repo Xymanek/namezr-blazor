@@ -27,7 +27,7 @@
     else
     {
         /* TODO: border similar to HxCard */
-        <div class="border rounded">
+        <div class="border rounded item-container item-selected" style="position: relative">
             <div style="height: 300px">
                 <HxCarousel Ride="CarouselRide.False" Controls="false" Crossfade="true">
                     @for (int i = 0; i < images.Length; i++)
@@ -65,9 +65,30 @@
                     </a>
                 }
             </div>
-        </div>
 
-        @* TODO: absolute-positioned div with checkbox for selection and labels (1st letter). vertical stack *@
+            <div
+                style="position: absolute; top: 10px; z-index: 1; left: -5px;"
+                class="d-flex flex-column gap-2"
+            >
+                <div class="item-checkbox-container">
+                    @* TODO: actually hook up to the CSS class *@
+                    <HxCheckbox
+                        @bind-Value="_tempCheckboxValue"
+                    />
+                </div>
+
+                <div class="d-flex flex-column gap-1">
+                    @* TODO: actual labels. Tooltip with name and description on label hover *@
+                    <div class="px-1 text-bg-success">
+                        L
+                    </div>
+
+                    <div class="px-1 text-bg-warning">
+                        A
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 </div>
 
@@ -81,6 +102,8 @@
 
     [Parameter]
     public required long CurrentIndexCounter { get; set; }
+
+    private bool _tempCheckboxValue;
 
     private IEnumerable<SubmissionFileData> GetImages()
     {
