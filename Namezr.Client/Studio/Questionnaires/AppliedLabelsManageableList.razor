@@ -35,49 +35,24 @@
     />
 </div>
 
-<HxModal @ref="_applyLabelModal" CloseOnEscape="!_isSubmitting" ShowCloseButton="!_isSubmitting">
-    <HeaderTemplate>
-        <div class="flex-grow-1 d-flex justify-content-between align-items-center gap-3">
-            <div>Pick label to apply</div>
-
-            <HxTooltip Text="Create new label">
-                <a href=@($"studio/{CreatorId.NoHyphens()}/config/submission-labels")
-                   target="_blank"
-                   class="btn btn-success"
-                >
-                    <HxIcon Icon="BootstrapIcon.Plus"/>
-                </a>
-            </HxTooltip>
-        </div>
-    </HeaderTemplate>
-
-    <BodyTemplate>
-        <HxListGroup Flush="true">
-            @foreach (SubmissionLabelModel label in GetApplyableLabels())
-            {
-                <HxListGroupItem OnClick="() => ApplyLabel(label)">
-                    <SubmissionLabelPresenter
-                        Label="label"/>
-                </HxListGroupItem>
-            }
-
-            @if (!GetApplyableLabels().Any())
-            {
-                <HxListGroupItem>
-                    <i>No labels available</i>
-                </HxListGroupItem>
-            }
-        </HxListGroup>
-
+<LabelPickerModal
+    @ref="_applyLabelModal"
+    HeaderText="Pick label to apply"
+    PreventInteraction="_isSubmitting"
+    CreatorId="CreatorId"
+    Options="GetApplyableLabels().ToList()"
+    OnSelected="ApplyLabel"
+>
+    <BodyEnd>
         @if (_isSubmitting)
         {
             <p>Working...</p>
         }
-    </BodyTemplate>
-</HxModal>
+    </BodyEnd>
+</LabelPickerModal>
 
 @code {
-    private HxModal? _applyLabelModal;
+    private LabelPickerModal? _applyLabelModal;
 
     [Parameter]
     public Guid CreatorId { get; set; }

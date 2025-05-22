@@ -52,6 +52,13 @@ internal interface ISubmissionAuditService
 
     [MustUseReturnValue]
     SubmissionHistoryStaffViewedEntity StaffView(QuestionnaireSubmissionEntity submission);
+
+    SubmissionHistoryFileDownloadedEntity DownloadFileStaffPrepare(
+        QuestionnaireSubmissionEntity submission,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch
+    );
 }
 
 [AutoConstructor]
@@ -155,13 +162,25 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     {
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
+        dbContext.SubmissionHistoryEntries.Add(DownloadFileStaffPrepare(submission, fieldValue, file, inBatch));
+
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryFileDownloadedEntity DownloadFileStaffPrepare(
+        QuestionnaireSubmissionEntity submission,
+        QuestionnaireFieldValueEntity fieldValue,
+        SubmissionFileData file,
+        bool inBatch
+    )
+    {
         Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
         _logger.LogInformation(
             "Staff member {UserId} downloaded file {FileId} '{FileName}' from field {FieldId} in submission {SubmissionId}, in batch: {InBatch}",
             userId, file.Id, file.Name, fieldValue.FieldId, submission.Id, inBatch);
 
-        dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryFileDownloadedEntity
+        SubmissionHistoryFileDownloadedEntity entry = new()
         {
             SubmissionId = submission.Id,
             OccuredAt = _clock.GetCurrentInstant(),
@@ -173,9 +192,9 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
             FieldId = fieldValue.FieldId,
             FileId = file.Id,
             InBatch = inBatch,
-        });
-
-        await dbContext.SaveChangesAsync(ct);
+        };
+        
+        return entry;
     }
 
     public SubmissionHistoryInitialSubmitEntity InitialSubmit(
