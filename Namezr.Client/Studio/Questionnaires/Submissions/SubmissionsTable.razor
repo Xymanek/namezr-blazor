@@ -2,10 +2,14 @@
 
 @using System.Diagnostics
 @using Humanizer
+@using Namezr.Client.Helpers
+@using Namezr.Client.Infra
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
+
+@inject ISpaHttpClientProvider HttpClientProvider
 
 <HxListLayout TFilterModel="HxListLayout.NoFilter">
     <SearchTemplate>
@@ -249,6 +253,11 @@
 
                 <HxGridColumn ItemCssClass="width-1percent">
                     <HeaderTemplate>
+                        @if (_isUpdatingLabels)
+                        {
+                            <HxSpinner/>
+                        }
+
                         @* TODO: clipped by the table *@
                         <HxDropdown>
                             <HxDropdownToggleElement ElementName="div" role="button">
@@ -256,10 +265,16 @@
                             </HxDropdownToggleElement>
 
                             <HxDropdownMenu>
-                                <HxDropdownItem Icon="BootstrapIcon.PlusCircleFill">
+                                <HxDropdownItem
+                                    Icon="BootstrapIcon.PlusCircleFill"
+                                    Enabled="!_isUpdatingLabels"
+                                >
                                     Apply labels
                                 </HxDropdownItem>
-                                <HxDropdownItem Icon="BootstrapIcon.DashCircleFill">
+                                <HxDropdownItem
+                                    Icon="BootstrapIcon.DashCircleFill"
+                                    Enabled="!_isUpdatingLabels"
+                                >
                                     Remove labels
                                 </HxDropdownItem>
 
@@ -281,8 +296,7 @@
                                 {
                                     <HxDropdownItemNavLink
                                         target="_blank"
-                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")
-                                    >
+                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")>
                                         <TruncatedText Text="@field.Title" MaxLength="25"/>
                                     </HxDropdownItemNavLink>
                                 }
@@ -438,5 +452,59 @@
 
     private string BulkDownloadsSubmissionQuery
         => string.Join("&", _selectedItems.Select(item => "n=" + item.Number));
+
+    private bool _isUpdatingLabels;
+
+    private async Task ApplyLabel(SubmissionLabelModel label)
+    {
+        await MutateLabelPresence(label, true);
+    }
+
+    private async Task RemoveLabel(SubmissionLabelModel label)
+    {
+        await MutateLabelPresence(label, false);
+    }
+
+    private async Task MutateLabelPresence(SubmissionLabelModel label, bool newPresence)
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        _isUpdatingLabels = true;
+        try
+        {
+            await _selectedItems
+                .Select(async item =>
+                {
+                    // Skip submission if there is no change to be done
+                    if (newPresence && item.Labels.Any(l => l.Id == label.Id)) return;
+                    if (!newPresence && item.Labels.All(l => l.Id != label.Id)) return;
+
+                    HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                        ApiEndpointPaths.SubmissionLabelsPresenceMutate,
+                        new MutateLabelPresenceRequest
+                        {
+                            LabelId = label.Id,
+                            SubmissionId = item.Id,
+
+                            NewPresent = newPresence,
+                        }
+                    );
+
+                    // TODO: toasts
+                    response.EnsureSuccessStatusCode();
+
+                    // Update the in-memory item to reflect the change
+                    if (newPresence) item.Labels.Add(label);
+                    else item.Labels.RemoveAll(l => l.Id == label.Id);
+                    StateHasChanged();
+                })
+                .WhenAll();
+        }
+        finally
+        {
+            _isUpdatingLabels = false;
+            StateHasChanged();
+        }
+    }
 
 }
