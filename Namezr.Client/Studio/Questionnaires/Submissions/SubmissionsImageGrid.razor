@@ -2,16 +2,19 @@
 
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires.Edit
 @using Namezr.Client.Types
+
 @implements IDisposable
 
 @* TODO: field selector *@
 @* TODO: filters *@
 
-<div class="row">
+<div class="row gx-2">
     @foreach (SubmissionTableItemModel item in Items)
     {
-        <SubmissionImageGridItem
+        <SubmissionsImageGridItem
+            FieldToDisplay="Field"
             Item="item"
             CurrentIndexCounter="_currentIndexCounter"
         />
@@ -38,6 +41,10 @@
 
     [Parameter]
     public SubmissionTableItemModel[] Items { get; set; } = [];
+
+    // TODO: dropdown
+    private QuestionnaireConfigFieldModel Field
+        => QuestionnaireConfig.Fields.First(@field => @field.Type == QuestionnaireFieldType.FileUpload);
 
     /// <summary>
     /// Increments forever, expected to be modulo-d

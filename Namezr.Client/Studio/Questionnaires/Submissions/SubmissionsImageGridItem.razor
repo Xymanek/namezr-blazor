@@ -1,0 +1,94 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Studio.Questionnaires.Edit
+
+@{
+    SubmissionFileData[] images = GetImages().ToArray();
+}
+
+<div class="col-lg-2 col-md-4 col-12">
+    @if (FieldToDisplay.Type != QuestionnaireFieldType.FileUpload)
+    {
+        <HxCard>
+            <BodyTemplate>
+                <div>Not an image</div>
+            </BodyTemplate>
+        </HxCard>
+    }
+    else if (images.Length < 1)
+    {
+        <HxCard>
+            <BodyTemplate>
+                <div>No images</div>
+            </BodyTemplate>
+        </HxCard>
+    }
+    else
+    {
+        /* TODO: border similar to HxCard */
+        <div class="border-radius-2">
+            <div style="background: red; height: 300px">
+                @* TODO: carousel *@
+
+                <HxCarousel Ride="CarouselRide.False" Controls="false" Crossfade="true">
+                    @for (int i = 0; i < images.Length; i++)
+                    {
+                        SubmissionFileData file = images[i];
+
+                        /* TOOD: different logic when hovering */
+                        <HxCarouselItem Active="CurrentIndexCounter % images.Length == i">
+                            <img class="img-fluid" alt="@file.Name" src=""/>
+                        </HxCarouselItem>
+                    }
+                </HxCarousel>
+            </div>
+
+            <div class="d-flex flex-row align-items-stretch" style="height: 50px">
+                @foreach (SubmissionFileData file in images)
+                {
+                    <div class="flex-grow-1">
+                        @* TODO *@
+                        <img class="img-fluid" alt="@file.Name" src=""/>
+                    </div>
+                }
+
+                @*<div class="flex-grow-1" style="background: green;"></div>
+                <div class="flex-grow-1" style="background: blue;"></div>
+                <div class="flex-grow-1" style="background: orange;"></div>*@
+            </div>
+        </div>
+
+        @* TODO: absolute-positioned div with checkbox for selection and labels (1st letter). vertical stack *@
+    }
+</div>
+
+@code {
+
+    [Parameter]
+    public required SubmissionTableItemModel Item { get; set; }
+
+    [Parameter]
+    public required QuestionnaireConfigFieldModel FieldToDisplay { get; set; }
+
+    [Parameter]
+    public required long CurrentIndexCounter { get; set; }
+
+    private IEnumerable<SubmissionFileData> GetImages()
+    {
+        if (!Item.Values.TryGetValue(FieldToDisplay.Id, out SubmissionValueModel? fieldValue))
+        {
+            yield break;
+        }
+
+        foreach (SubmissionFileData fileData in fieldValue.FileValue ?? [])
+        {
+            // TODO: unified with other places
+            if (fileData.Name.EndsWith(".png"))
+            {
+                yield return fileData;
+            }
+        }
+    }
+
+}
