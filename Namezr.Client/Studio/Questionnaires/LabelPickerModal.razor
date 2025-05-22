@@ -3,7 +3,13 @@
 
 @using Namezr.Client.Shared
 
-<HxModal @ref="_innerModal" CloseOnEscape="!PreventInteraction" ShowCloseButton="!PreventInteraction">
+@* Backdrop doesn't seem to update/take effect while modal is open *@
+<HxModal
+    @ref="_innerModal"
+    CloseOnEscape="!PreventInteraction"
+    ShowCloseButton="!PreventInteraction"
+    Backdrop="ModalBackdrop.Static"
+>
     <HeaderTemplate>
         <div class="flex-grow-1 d-flex justify-content-between align-items-center gap-3">
             <div>@HeaderText</div>
