@@ -34,8 +34,7 @@
                     {
                         SubmissionFileData file = images[i];
 
-                        /* TODO: different logic when hovering */
-                        <HxCarouselItem Active="CurrentIndexCounter % images.Length == i">
+                        <HxCarouselItem Active="IsImageActive(images, i)">
                             <img
                                 style="object-fit: cover; height: 300px"
                                 alt="@file.Name"
@@ -49,7 +48,7 @@
             <div style="display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);">
                 @foreach (SubmissionFileData file in images)
                 {
-                    <div>
+                    <div @onmouseover="() => OnHoverEnter(file)" @onmouseout="() => OnHoverExit(file)">
                         <img
                             style="object-fit: cover; width: 100%; height: 50px"
                             alt="@file.Name"
@@ -94,6 +93,32 @@
     private string GetImageUrl(SubmissionFileData file)
     {
         return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={Item.Id}&fileId={file.Id}";
+    }
+
+    private SubmissionFileData? _currentlyHoveredFile;
+
+    private void OnHoverEnter(SubmissionFileData file)
+    {
+        _currentlyHoveredFile = file;
+    }
+
+    private void OnHoverExit(SubmissionFileData file)
+    {
+        if (_currentlyHoveredFile == file)
+        {
+            _currentlyHoveredFile = null;
+        }
+    }
+
+    private bool IsImageActive(SubmissionFileData[] images, int i)
+    {
+        // While hovering the preview, always show the hovered image
+        if (_currentlyHoveredFile != null)
+        {
+            return _currentlyHoveredFile == images[i];
+        }
+
+        return CurrentIndexCounter % images.Length == i;
     }
 
 }
