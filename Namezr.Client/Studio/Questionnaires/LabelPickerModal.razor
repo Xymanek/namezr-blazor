@@ -1,0 +1,78 @@
+﻿@* Note: this component is meant to be used only from other WASM components, not from SSR *@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+
+<HxModal @ref="_innerModal" CloseOnEscape="!PreventInteraction" ShowCloseButton="!PreventInteraction">
+    <HeaderTemplate>
+        <div class="flex-grow-1 d-flex justify-content-between align-items-center gap-3">
+            <div>@HeaderText</div>
+
+            <HxTooltip Text="Create new label">
+                <a href=@($"studio/{CreatorId.NoHyphens()}/config/submission-labels")
+                   target="_blank"
+                   class="btn btn-success"
+                >
+                    <HxIcon Icon="BootstrapIcon.Plus"/>
+                </a>
+            </HxTooltip>
+        </div>
+    </HeaderTemplate>
+
+    <BodyTemplate>
+        <HxListGroup Flush="true">
+            @foreach (SubmissionLabelModel label in Options)
+            {
+                <HxListGroupItem OnClick="() => OnSelected.InvokeAsync(label)">
+                    <SubmissionLabelPresenter Label="label"/>
+                </HxListGroupItem>
+            }
+
+            @if (!Options.Any())
+            {
+                <HxListGroupItem>
+                    <i>No labels available</i>
+                </HxListGroupItem>
+            }
+        </HxListGroup>
+
+        @BodyEnd
+    </BodyTemplate>
+</HxModal>
+
+@code {
+
+    private HxModal? _innerModal;
+
+    [Parameter]
+    public bool PreventInteraction { get; set; }
+
+    [Parameter]
+    public string? HeaderText { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public IList<SubmissionLabelModel> Options { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<SubmissionLabelModel> OnSelected { get; set; }
+
+    [Parameter]
+    public RenderFragment? BodyEnd { get; set; }
+
+    public async Task ShowAsync()
+    {
+        // Throw error if we try to show but there is nothing
+        await _innerModal!.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if (_innerModal == null) return;
+
+        await _innerModal.HideAsync();
+    }
+
+}

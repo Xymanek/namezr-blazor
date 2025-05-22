@@ -268,12 +268,14 @@
                                 <HxDropdownItem
                                     Icon="BootstrapIcon.PlusCircleFill"
                                     Enabled="!_isUpdatingLabels"
+                                    OnClick="() => _applyLabelModal!.ShowAsync()"
                                 >
                                     Apply labels
                                 </HxDropdownItem>
                                 <HxDropdownItem
                                     Icon="BootstrapIcon.DashCircleFill"
                                     Enabled="!_isUpdatingLabels"
+                                    OnClick="() => _removeLabelModal!.ShowAsync()"
                                 >
                                     Remove labels
                                 </HxDropdownItem>
@@ -315,6 +317,22 @@
         </HxGrid>
     </DataTemplate>
 </HxListLayout>
+
+<LabelPickerModal
+    @ref="_applyLabelModal"
+    HeaderText="Pick label to apply"
+    CreatorId="CreatorId"
+    Options="PossibleLabels"
+    OnSelected="ApplyLabel"
+/>
+
+<LabelPickerModal
+    @ref="_removeLabelModal"
+    HeaderText="Pick label to remove"
+    CreatorId="CreatorId"
+    Options="PossibleLabels"
+    OnSelected="RemoveLabel"
+/>
 
 @code {
 
@@ -454,6 +472,9 @@
         => string.Join("&", _selectedItems.Select(item => "n=" + item.Number));
 
     private bool _isUpdatingLabels;
+
+    private LabelPickerModal? _applyLabelModal;
+    private LabelPickerModal? _removeLabelModal;
 
     private async Task ApplyLabel(SubmissionLabelModel label)
     {
