@@ -47,20 +47,7 @@
     [Parameter]
     public RenderFragment? ButtonContent { get; set; }
 
-    private bool IsImage
-    {
-        get
-        {
-            string[] parts = FileData.Name.Split('.');
-            if (parts.Length < 2) return false;
-
-            return parts[^1] switch
-            {
-                "jpg" or "jpeg" or "png" or "gif" => true,
-                _ => false,
-            };
-        }
-    }
+    private bool IsImage => FileData.IsDisplayableImage();
 
     private string DownloadUrl
     {

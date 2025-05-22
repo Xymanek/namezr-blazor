@@ -27,35 +27,36 @@
     else
     {
         /* TODO: border similar to HxCard */
-        <div class="border-radius-2">
-            <div style="background: red; height: 300px">
-                @* TODO: carousel *@
-
+        <div class="border rounded">
+            <div style="height: 300px">
                 <HxCarousel Ride="CarouselRide.False" Controls="false" Crossfade="true">
                     @for (int i = 0; i < images.Length; i++)
                     {
                         SubmissionFileData file = images[i];
 
-                        /* TOOD: different logic when hovering */
+                        /* TODO: different logic when hovering */
                         <HxCarouselItem Active="CurrentIndexCounter % images.Length == i">
-                            <img class="img-fluid" alt="@file.Name" src=""/>
+                            <img
+                                style="object-fit: cover; height: 300px"
+                                alt="@file.Name"
+                                src="@GetImageUrl(file)"
+                            />
                         </HxCarouselItem>
                     }
                 </HxCarousel>
             </div>
 
-            <div class="d-flex flex-row align-items-stretch" style="height: 50px">
+            <div style="display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);">
                 @foreach (SubmissionFileData file in images)
                 {
-                    <div class="flex-grow-1">
-                        @* TODO *@
-                        <img class="img-fluid" alt="@file.Name" src=""/>
+                    <div>
+                        <img
+                            style="object-fit: cover; width: 100%; height: 50px"
+                            alt="@file.Name"
+                            src="@GetImageUrl(file)"
+                        />
                     </div>
                 }
-
-                @*<div class="flex-grow-1" style="background: green;"></div>
-                <div class="flex-grow-1" style="background: blue;"></div>
-                <div class="flex-grow-1" style="background: orange;"></div>*@
             </div>
         </div>
 
@@ -83,12 +84,16 @@
 
         foreach (SubmissionFileData fileData in fieldValue.FileValue ?? [])
         {
-            // TODO: unified with other places
-            if (fileData.Name.EndsWith(".png"))
+            if (fileData.IsDisplayableImage())
             {
                 yield return fileData;
             }
         }
+    }
+
+    private string GetImageUrl(SubmissionFileData file)
+    {
+        return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={Item.Id}&fileId={file.Id}";
     }
 
 }
