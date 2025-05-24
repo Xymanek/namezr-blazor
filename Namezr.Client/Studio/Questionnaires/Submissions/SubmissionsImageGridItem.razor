@@ -72,13 +72,24 @@
 
             <div
                 style="position: absolute; top: 10px; z-index: 1; left: -5px;"
-                class="d-flex flex-column gap-2"
+                class="d-flex flex-column align-items-start gap-2"
             >
-                <div class="item-checkbox-container">
-                    <HxCheckbox
-                        @bind-Value="IsSelected"
-                        @bind-Value:after="() => IsSelectedChanged.InvokeAsync(IsSelected)"
-                    />
+                <div class="d-flex align-items-center gap-2">
+                    <div class="show-on-item-hover show-on-item-selected">
+                        <HxCheckbox
+                            @bind-Value="IsSelected"
+                            @bind-Value:after="() => IsSelectedChanged.InvokeAsync(IsSelected)"
+                        />
+                    </div>
+                    
+                    <div class="px-1 text-bg-dark show-on-item-hover show-on-item-selected">
+                        #@Item.Number
+                    </div>
+                    
+                    <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@Item.Id.NoHyphens()"
+                       class="btn btn-primary py-0 px-1 show-on-item-hover">
+                        <i class="bi bi-search"></i>
+                    </a>
                 </div>
 
                 @* TODO: handle the case of too many labels. Vertical scrollbar that appears onhover? *@
@@ -94,6 +105,12 @@
 </div>
 
 @code {
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
 
     [Parameter]
     public required SubmissionTableItemModel Item { get; set; }

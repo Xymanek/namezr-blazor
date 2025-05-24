@@ -1,10 +1,10 @@
-﻿.item-checkbox-container {
+﻿.show-on-item-hover, .show-on-item-selected {
     visibility: hidden;
 }
 
-.item-container:hover .item-checkbox-container {
+.item-container:hover .show-on-item-hover {
     visibility: visible;
 }
-.item-container.item-selected .item-checkbox-container {
+.item-container.item-selected .show-on-item-selected {
     visibility: visible;
 }
