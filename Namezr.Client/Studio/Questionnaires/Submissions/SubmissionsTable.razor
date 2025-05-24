@@ -379,6 +379,7 @@
         return Task.FromResult(request.ApplyTo(items));
     }
 
+    // TODO: unify with image grid
     private bool ShouldShowItem(SubmissionTableItemModel item)
     {
         if (_filter.MinWeight != null && item.Eligibility.Modifier < _filter.MinWeight) return false;
