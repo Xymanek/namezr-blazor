@@ -1,5 +1,6 @@
 ﻿@rendermode InteractiveWebAssembly
 
+@using Namezr.Client.Helpers
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Types
@@ -26,6 +27,8 @@
             FieldToDisplay="_fieldToDisplay"
             Item="item"
             CurrentIndexCounter="_currentIndexCounter"
+            IsSelected="_selectedSubmissionIds.Contains(item.Id)"
+            IsSelectedChanged="isSelected => _selectedSubmissionIds.SetIsPresent(isSelected, item.Id)"
         />
     }
 </div>
@@ -52,6 +55,7 @@
     public SubmissionTableItemModel[] Items { get; set; } = [];
 
     private QuestionnaireConfigFieldModel? _fieldToDisplay;
+    private HashSet<Guid> _selectedSubmissionIds = [];
 
     /// <summary>
     /// Increments forever, expected to be modulo-d

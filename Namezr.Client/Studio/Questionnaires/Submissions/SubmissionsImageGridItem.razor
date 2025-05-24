@@ -27,7 +27,10 @@
     else
     {
         /* TODO: border similar to HxCard */
-        <div class="border rounded item-container item-selected" style="position: relative">
+        <div
+            class="border rounded item-container @(IsSelected ? "item-selected" : "")"
+            style="position: relative"
+        >
             <div style="height: 300px">
                 <HxCarousel Ride="CarouselRide.False" Controls="false" Crossfade="true">
                     @for (int i = 0; i < images.Length; i++)
@@ -71,9 +74,9 @@
                 class="d-flex flex-column gap-2"
             >
                 <div class="item-checkbox-container">
-                    @* TODO: actually hook up to the CSS class *@
                     <HxCheckbox
-                        @bind-Value="_tempCheckboxValue"
+                        @bind-Value="IsSelected"
+                        @bind-Value:after="() => IsSelectedChanged.InvokeAsync(IsSelected)"
                     />
                 </div>
 
@@ -103,7 +106,11 @@
     [Parameter]
     public required long CurrentIndexCounter { get; set; }
 
-    private bool _tempCheckboxValue;
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsSelectedChanged { get; set; }
 
     private IEnumerable<SubmissionFileData> GetImages()
     {
