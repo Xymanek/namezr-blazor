@@ -1,6 +1,7 @@
 ﻿@rendermode InteractiveWebAssembly
 
 @using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
 @using Namezr.Client.Studio.Questionnaires.Edit
 
 @{
@@ -80,15 +81,12 @@
                     />
                 </div>
 
+                @* TODO: handle the case of too many labels. Vertical scrollbar that appears onhover? *@
                 <div class="d-flex flex-column gap-1">
-                    @* TODO: actual labels. Tooltip with name and description on label hover *@
-                    <div class="px-1 text-bg-success">
-                        L
-                    </div>
-
-                    <div class="px-1 text-bg-warning">
-                        A
-                    </div>
+                    @foreach (SubmissionLabelModel label in Item.Labels)
+                    {
+                        <SubmissionImageGridLabel Label="label"/>
+                    }
                 </div>
             </div>
         </div>
