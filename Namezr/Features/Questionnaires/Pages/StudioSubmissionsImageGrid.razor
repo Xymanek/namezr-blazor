@@ -1,4 +1,4 @@
-﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions"
+﻿@page "/studio/{creatorId:guid}/questionnaires/{questionnaireId:guid}/submissions/image-grid"
 
 @using Microsoft.AspNetCore.Authorization
 @using Namezr.Components.Layout
@@ -42,24 +42,20 @@
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <SubmissionsBreadcrumbs Questionnaire="_questionnaire" />
+        <SubmissionsBreadcrumbs Questionnaire="_questionnaire"/>
+
+        <HxBreadcrumbItem
+            href=@($"studio/{_questionnaire.CreatorId.NoHyphens()}/questionnaires/{_questionnaire.Id.NoHyphens()}/submissions/image-grid")
+            Text="Image grid"
+        />
     </HxBreadcrumb>
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
-    Submissions
+    Submissions image grid
 </SectionContent>
 
-<SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
-    <a
-        href=@($"studio/{_questionnaire.CreatorId.NoHyphens()}/questionnaires/{_questionnaire.Id.NoHyphens()}/submissions/image-grid")
-        class="btn btn-secondary"
-    >
-        Image grid
-    </a>
-</SectionContent>
-
-<SubmissionsTable
+<SubmissionsImageGrid
     CreatorId="CreatorId"
     QuestionnaireId="QuestionnaireId"
     EligibilityDescriptors="_eligibilityDescriptors"
@@ -93,6 +89,8 @@
     {
         await StudioContext.SetCurrentCreatorAndValidateAccess(CreatorId);
 
+        // TODO: unify all of this with table page
+        
         await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
 
         _questionnaire = await dbContext.Questionnaires

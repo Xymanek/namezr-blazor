@@ -30,4 +30,8 @@
         <PackageReference Include="vNext.BlazorComponents.FluentValidation" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Namzer.BlazorPortals\Namzer.BlazorPortals.csproj" />
+    </ItemGroup>
+
 </Project>

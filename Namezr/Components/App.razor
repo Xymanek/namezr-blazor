@@ -1,6 +1,7 @@
 ﻿@using System.Text.Json
 @using Namezr.Client
 @using Namezr.Client.Shared
+@using Namzer.BlazorPortals
 
 @inject IConfiguration Configuration
 
@@ -37,7 +38,10 @@
 </head>
 
 <body>
+
 <Routes/>
+<BodyEndOutlet @rendermode="InteractiveWebAssembly" />
+
 <script src="_framework/blazor.web.js"></script>
 @((MarkupString)HxSetup.RenderBootstrapJavaScriptReference())
 <WasmTrigger/>

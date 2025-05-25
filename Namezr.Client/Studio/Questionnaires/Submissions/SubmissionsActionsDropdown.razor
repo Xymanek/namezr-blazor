@@ -1,0 +1,163 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+@using Namezr.Client.Helpers
+@using Namezr.Client.Infra
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Types
+@using Namzer.BlazorPortals
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<HxDropdown>
+    <HxDropdownToggleElement ElementName="div" role="button">
+        <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
+    </HxDropdownToggleElement>
+
+    <HxDropdownMenu>
+        <HxDropdownItem
+            Icon="BootstrapIcon.PlusCircleFill"
+            Enabled="!IsUpdatingLabels"
+            OnClick="() => _applyLabelModal!.ShowAsync()"
+        >
+            Apply labels
+        </HxDropdownItem>
+        <HxDropdownItem
+            Icon="BootstrapIcon.DashCircleFill"
+            Enabled="!IsUpdatingLabels"
+            OnClick="() => _removeLabelModal!.ShowAsync()"
+        >
+            Remove labels
+        </HxDropdownItem>
+
+        @{
+            QuestionnaireConfigFieldModel[] fileFields = QuestionnaireConfig.Fields
+                .Where(field => field.Type == QuestionnaireFieldType.FileUpload)
+                .ToArray();
+        }
+
+        @if (fileFields.Length > 0)
+        {
+            <HxDropdownDivider/>
+            <HxDropdownItemText Icon="BootstrapIcon.Download">
+                Download files
+            </HxDropdownItemText>
+        }
+
+        @foreach (QuestionnaireConfigFieldModel field in fileFields)
+        {
+            <HxDropdownItemNavLink
+                target="_blank"
+                Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")>
+                <TruncatedText Text="@field.Title" MaxLength="25"/>
+            </HxDropdownItemNavLink>
+        }
+    </HxDropdownMenu>
+</HxDropdown>
+
+<BodyEndPortal>
+    <LabelPickerModal
+        @ref="_applyLabelModal"
+        HeaderText="Pick label to apply"
+        CreatorId="CreatorId"
+        Options="PossibleLabels"
+        OnSelected="ApplyLabel"
+    />
+
+    <LabelPickerModal
+        @ref="_removeLabelModal"
+        HeaderText="Pick label to remove"
+        CreatorId="CreatorId"
+        Options="PossibleLabels"
+        OnSelected="RemoveLabel"
+    />    
+</BodyEndPortal>
+
+@code {
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public required QuestionnaireConfigModel QuestionnaireConfig { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    [Parameter] 
+    public bool IsUpdatingLabels { get; set; }
+    
+    [Parameter]
+    public EventCallback<bool> IsUpdatingLabelsChanged { get; set; }
+    
+    [Parameter]
+    public IEnumerable<SubmissionTableItemModel> SelectedItems { get; set; } = [];
+    
+    [Parameter]
+    public EventCallback<(SubmissionTableItemModel, SubmissionLabelModel)> OnLabelAdded { get; set; }
+    
+    [Parameter]
+    public EventCallback<(SubmissionTableItemModel, SubmissionLabelModel)> OnLabelRemoved { get; set; }
+
+    private LabelPickerModal? _applyLabelModal;
+    private LabelPickerModal? _removeLabelModal;
+
+    private string BulkDownloadsSubmissionQuery
+        => string.Join("&", SelectedItems.Select(item => "n=" + item.Number));
+
+    private async Task ApplyLabel(SubmissionLabelModel label)
+    {
+        await _applyLabelModal!.HideAsync();
+        await MutateLabelPresence(label, true);
+    }
+
+    private async Task RemoveLabel(SubmissionLabelModel label)
+    {
+        await _removeLabelModal!.HideAsync();
+        await MutateLabelPresence(label, false);
+    }
+
+    private async Task MutateLabelPresence(SubmissionLabelModel label, bool newPresence)
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        await IsUpdatingLabelsChanged.InvokeAsync(true);
+        try
+        {
+            await SelectedItems
+                .Select(async item =>
+                {
+                    // Skip submission if there is no change to be done
+                    if (newPresence && item.Labels.Any(l => l.Id == label.Id)) return;
+                    if (!newPresence && item.Labels.All(l => l.Id != label.Id)) return;
+
+                    HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                        ApiEndpointPaths.SubmissionLabelsPresenceMutate,
+                        new MutateLabelPresenceRequest
+                        {
+                            LabelId = label.Id,
+                            SubmissionId = item.Id,
+
+                            NewPresent = newPresence,
+                        }
+                    );
+
+                    // TODO: toasts
+                    response.EnsureSuccessStatusCode();
+
+                    // Update the in-memory item to reflect the change
+                    if (newPresence) await OnLabelAdded.InvokeAsync((item, label));
+                    else await OnLabelRemoved.InvokeAsync((item, label));
+                })
+                .WhenAll();
+        }
+        finally
+        {
+            await IsUpdatingLabelsChanged.InvokeAsync(false);
+            StateHasChanged();
+        }
+    }
+}

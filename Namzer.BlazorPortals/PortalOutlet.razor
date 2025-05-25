@@ -1,0 +1,42 @@
+﻿@implements IDisposable
+@inject PortalRegistration PortalRegistration
+
+@foreach(var fragment in _fragments)
+{
+    @fragment
+}
+
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = default!;
+
+    private List<RenderFragment> _fragments = new List<RenderFragment>();
+    private IDisposable? _subscription;
+    private string? _subscribedName;
+
+    protected override void OnParametersSet()
+    {
+        if (Name != _subscribedName)
+        {
+            if (_subscription is not null)
+            {
+                _subscription.Dispose();
+            }
+
+            _fragments = PortalRegistration.GetRenderFragments(Name).ToList();
+            _subscription = PortalRegistration.Subscribe(Name, UpdateFragments);
+            _subscribedName = Name;
+        }
+    }
+
+    private void UpdateFragments()
+    {
+        _fragments = PortalRegistration.GetRenderFragments(Name).ToList();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
+    }
+}

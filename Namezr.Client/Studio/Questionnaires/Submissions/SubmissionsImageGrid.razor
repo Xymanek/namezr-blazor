@@ -1,0 +1,242 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using System.Diagnostics
+@using Namezr.Client.Helpers
+@using Namezr.Client.Public.Questionnaires
+@using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Studio.Questionnaires.Submissions
+@using Namezr.Client.Types
+
+@implements IDisposable
+
+<HxCard>
+    <BodyTemplate>
+        <div class="row">
+            <div class="col-lg-1">
+                <HxInputNumber
+                    Label="Min weight"
+                    @bind-Value="@_filter.MinWeight"
+                />
+            </div>
+
+            <div class="col-lg-1">
+                <HxInputNumber
+                    Label="Max weight"
+                    @bind-Value="@_filter.MaxWeight"
+                />
+            </div>
+
+            <div class="col-lg-1">
+                <HxSelect
+                    Label="Is approved"
+                    NullText="N/A"
+                    Data="[true, false]"
+                    @bind-Value="@_filter.MatchIsApproved"
+                    ValueSelector="b => b"
+                    TextSelector="@(b => b ? "Yes" : "No")"
+                />
+            </div>
+
+            <div class="col-lg-9">
+                <HxSelect
+                    Label="Field to display"
+                    Nullable="false"
+                    Data="QuestionnaireConfig.Fields.Where(field => field.Type == QuestionnaireFieldType.FileUpload)"
+                    @bind-Value="_fieldToDisplay"
+                    ValueSelector="field => field"
+                    TextSelector="field => field.Title"
+                />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <HxMultiSelect
+                    TItem="EligibilityPlan"
+                    TValue="EligibilityPlanId"
+                    Label="Included eligibility plans"
+                    EmptyText="No filter"
+                    Data="EligibilityDescriptors"
+                    @bind-Value="_filter.IncludedPlanIds"
+                    ValueSelector="@(x => x.Id)"
+                    TextSelector="GetEligibilityDescriptorDisplayName"/>
+            </div>
+
+            <div class="col-lg-6">
+                <HxMultiSelect
+                    TItem="EligibilityPlan"
+                    TValue="EligibilityPlanId"
+                    Label="Excluded eligibility plans"
+                    EmptyText="No filter"
+                    Data="EligibilityDescriptors"
+                    @bind-Value="_filter.ExcludedPlanIds"
+                    ValueSelector="@(x => x.Id)"
+                    TextSelector="GetEligibilityDescriptorDisplayName"/>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <HxMultiSelect
+                    Label="Included labels"
+                    EmptyText="No filter"
+                    Data="PossibleLabels"
+                    @bind-Value="_filter.IncludedLabelIds"
+                    ValueSelector="@(x => x.Id)"
+                    TextSelector="@(label => label.Text)"/>
+            </div>
+            <div class="col-lg-6">
+                <HxMultiSelect
+                    Label="Excluded labels"
+                    EmptyText="No filter"
+                    Data="PossibleLabels"
+                    @bind-Value="_filter.ExcludedLabelIds"
+                    ValueSelector="@(x => x.Id)"
+                    TextSelector="@(label => label.Text)"/>
+            </div>
+        </div>
+    </BodyTemplate>
+</HxCard>
+
+@* 65px is the rough height of the top navbar *@
+<div style="position: sticky; top: 65px; width: 100%">
+    <div class="d-flex justify-content-end">
+        <HxCard>
+            <BodyTemplate>
+                <div class="d-flex align-items-center gap-1">
+                    @if (_isUpdatingLabels)
+                    {
+                        <HxSpinner/>
+                    }
+                    
+                    <div>Selected (@_selectedSubmissionIds.Count)</div>
+
+                    <SubmissionsActionsDropdown
+                        CreatorId="CreatorId"
+                        QuestionnaireId="QuestionnaireId"
+                        QuestionnaireConfig="QuestionnaireConfig"
+                        PossibleLabels="PossibleLabels"
+                        @bind-IsUpdatingLabels="_isUpdatingLabels"
+                        SelectedItems="@Items.Where(item => _selectedSubmissionIds.Contains(item.Id))"
+                        OnLabelAdded="tuple => tuple.Item1.Labels.Add(tuple.Item2)"
+                        OnLabelRemoved="tuple => tuple.Item1.Labels.RemoveAll(label => label.Id == tuple.Item2.Id)"/>
+                </div>
+            </BodyTemplate>
+        </HxCard>
+    </div>
+</div>
+
+@if (_fieldToDisplay == null) return;
+
+<div class="row gx-2">
+    @foreach (SubmissionTableItemModel item in Items.Where(ShouldShowItem))
+    {
+        <SubmissionsImageGridItem
+            CreatorId="CreatorId"
+            QuestionnaireId="QuestionnaireId"
+            FieldToDisplay="_fieldToDisplay"
+            Item="item"
+            CurrentIndexCounter="_currentIndexCounter"
+            IsSelected="_selectedSubmissionIds.Contains(item.Id)"
+            IsSelectedChanged="isSelected => _selectedSubmissionIds.SetIsPresent(isSelected, item.Id)"
+        />
+    }
+</div>
+
+@code {
+    private static readonly TimeSpan ImageSwitchInterval = TimeSpan.FromSeconds(5);
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public List<EligibilityPlan> EligibilityDescriptors { get; set; } = [];
+
+    [Parameter]
+    public required QuestionnaireConfigModel QuestionnaireConfig { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    [Parameter]
+    public SubmissionTableItemModel[] Items { get; set; } = [];
+
+    private QuestionnaireConfigFieldModel? _fieldToDisplay;
+    private readonly SubmissionFilterModel _filter = new();
+
+    private HashSet<Guid> _selectedSubmissionIds = [];
+
+    /// <summary>
+    /// Increments forever, expected to be modulo-d
+    /// </summary>
+    private long _currentIndexCounter;
+
+    private Timer? _timer;
+
+    private bool _isUpdatingLabels;
+
+    protected override void OnInitialized()
+    {
+        if (!RendererInfo.IsInteractive) return;
+
+        _timer = new Timer(OnTimer, null, ImageSwitchInterval, ImageSwitchInterval);
+    }
+
+    private void OnTimer(object? state)
+    {
+        _currentIndexCounter++;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+    // TODO: unify with table
+    private bool ShouldShowItem(SubmissionTableItemModel item)
+    {
+        if (_filter.MinWeight != null && item.Eligibility.Modifier < _filter.MinWeight) return false;
+        if (_filter.MaxWeight != null && item.Eligibility.Modifier > _filter.MaxWeight) return false;
+
+        // Check included plan IDs - if any are specified, at least one must match
+        if (_filter.IncludedPlanIds.Count > 0 && !_filter.IncludedPlanIds.Any(planId => item.Eligibility.EligiblePlanIds.Contains(planId)))
+            return false;
+
+        // Check excluded plan IDs - if any match, exclude the item
+        if (_filter.ExcludedPlanIds.Any(planId => item.Eligibility.EligiblePlanIds.Contains(planId)))
+            return false;
+
+        // Check included label IDs - if any are specified, at least one must match
+        if (_filter.IncludedLabelIds.Count > 0 && !_filter.IncludedLabelIds.Any(labelId => item.Labels.Any(l => l.Id == labelId)))
+            return false;
+
+        // Check excluded label IDs - if any match, exclude the item
+        if (_filter.ExcludedLabelIds.Any(labelId => item.Labels.Any(l => l.Id == labelId)))
+            return false;
+
+        // Check approved status if specified
+        if (_filter.MatchIsApproved != null && item.IsApproved != _filter.MatchIsApproved)
+            return false;
+
+        return true;
+    }
+
+    // TODO: unify with option editor
+    private string GetEligibilityDescriptorDisplayName(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => $"{plan.SupportPlan!.ServiceType} - {plan.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + plan.VirtualEligibilityType,
+
+            _ => throw new UnreachableException(),
+        };
+    }
+
+
+}

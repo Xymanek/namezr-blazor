@@ -1,0 +1,26 @@
+﻿@implements IDisposable
+@inject PortalRegistration PortalRegistration
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+
+    private string _identifier = Guid.NewGuid().ToString();
+    private string? _previousName;
+
+    protected override void OnParametersSet()
+    {
+        if(_previousName != Name)
+        {
+            PortalRegistration.RemoveFromPortal(Name, _identifier);
+        }
+
+        _previousName = Name;
+        PortalRegistration.AddToPortal(Name, _identifier, ChildContent);
+    }
+
+    public void Dispose()
+    {
+        PortalRegistration.RemoveFromPortal(Name, _identifier);
+    }
+}
