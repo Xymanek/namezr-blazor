@@ -98,6 +98,24 @@
     </BodyTemplate>
 </HxCard>
 
+<div style="position: sticky; top: 20px; width: 100%">
+    <div class="d-flex justify-content-end">
+        <HxCard>
+            <BodyTemplate>
+                <div class="d-flex align-items-center gap-1">
+                    <div>Selected (@_selectedSubmissionIds.Count)</div>
+
+                    <HxDropdown>
+                        <HxDropdownToggleElement ElementName="div" role="button">
+                            <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
+                        </HxDropdownToggleElement>
+                    </HxDropdown>
+                </div>
+            </BodyTemplate>
+        </HxCard>
+    </div>
+</div>
+
 @if (_fieldToDisplay == null) return;
 
 <div class="row gx-2">
@@ -194,7 +212,7 @@
 
         return true;
     }
-    
+
     // TODO: unify with option editor
     private string GetEligibilityDescriptorDisplayName(EligibilityPlan plan)
     {
