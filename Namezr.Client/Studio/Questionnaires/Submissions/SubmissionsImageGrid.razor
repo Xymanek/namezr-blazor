@@ -5,6 +5,7 @@
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Studio.Questionnaires.Submissions
 @using Namezr.Client.Types
 
 @implements IDisposable
@@ -98,18 +99,28 @@
     </BodyTemplate>
 </HxCard>
 
-<div style="position: sticky; top: 20px; width: 100%">
+@* 65px is the rough height of the top navbar *@
+<div style="position: sticky; top: 65px; width: 100%">
     <div class="d-flex justify-content-end">
         <HxCard>
             <BodyTemplate>
                 <div class="d-flex align-items-center gap-1">
+                    @if (_isUpdatingLabels)
+                    {
+                        <HxSpinner/>
+                    }
+                    
                     <div>Selected (@_selectedSubmissionIds.Count)</div>
 
-                    <HxDropdown>
-                        <HxDropdownToggleElement ElementName="div" role="button">
-                            <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
-                        </HxDropdownToggleElement>
-                    </HxDropdown>
+                    <SubmissionsActionsDropdown
+                        CreatorId="CreatorId"
+                        QuestionnaireId="QuestionnaireId"
+                        QuestionnaireConfig="QuestionnaireConfig"
+                        PossibleLabels="PossibleLabels"
+                        @bind-IsUpdatingLabels="_isUpdatingLabels"
+                        SelectedItems="@Items.Where(item => _selectedSubmissionIds.Contains(item.Id))"
+                        OnLabelAdded="tuple => tuple.Item1.Labels.Add(tuple.Item2)"
+                        OnLabelRemoved="tuple => tuple.Item1.Labels.Remove(tuple.Item2)"/>
                 </div>
             </BodyTemplate>
         </HxCard>
@@ -165,6 +176,8 @@
     private long _currentIndexCounter;
 
     private Timer? _timer;
+
+    private bool _isUpdatingLabels;
 
     protected override void OnInitialized()
     {

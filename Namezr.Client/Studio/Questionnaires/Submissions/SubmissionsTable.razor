@@ -7,6 +7,7 @@
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Shared
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Studio.Questionnaires.Submissions
 @using Namezr.Client.Types
 
 @inject ISpaHttpClientProvider HttpClientProvider
@@ -259,51 +260,16 @@
                         }
 
                         @* TODO: clipped by the table *@
-                        <HxDropdown>
-                            <HxDropdownToggleElement ElementName="div" role="button">
-                                <HxIcon Icon="BootstrapIcon.ThreeDotsVertical"/>
-                            </HxDropdownToggleElement>
-
-                            <HxDropdownMenu>
-                                <HxDropdownItem
-                                    Icon="BootstrapIcon.PlusCircleFill"
-                                    Enabled="!_isUpdatingLabels"
-                                    OnClick="() => _applyLabelModal!.ShowAsync()"
-                                >
-                                    Apply labels
-                                </HxDropdownItem>
-                                <HxDropdownItem
-                                    Icon="BootstrapIcon.DashCircleFill"
-                                    Enabled="!_isUpdatingLabels"
-                                    OnClick="() => _removeLabelModal!.ShowAsync()"
-                                >
-                                    Remove labels
-                                </HxDropdownItem>
-
-                                @{
-                                    QuestionnaireConfigFieldModel[] fileFields = QuestionnaireConfig.Fields
-                                        .Where(field => field.Type == QuestionnaireFieldType.FileUpload)
-                                        .ToArray();
-                                }
-
-                                @if (fileFields.Length > 0)
-                                {
-                                    <HxDropdownDivider/>
-                                    <HxDropdownItemText Icon="BootstrapIcon.Download">
-                                        Download files
-                                    </HxDropdownItemText>
-                                }
-
-                                @foreach (QuestionnaireConfigFieldModel field in fileFields)
-                                {
-                                    <HxDropdownItemNavLink
-                                        target="_blank"
-                                        Href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles}?QuestionnaireId={QuestionnaireId.NoHyphens()}&FieldId={field.Id.NoHyphens()}&{BulkDownloadsSubmissionQuery}")>
-                                        <TruncatedText Text="@field.Title" MaxLength="25"/>
-                                    </HxDropdownItemNavLink>
-                                }
-                            </HxDropdownMenu>
-                        </HxDropdown>
+                        <SubmissionsActionsDropdown
+                            CreatorId="CreatorId"
+                            QuestionnaireId="QuestionnaireId"
+                            QuestionnaireConfig="QuestionnaireConfig"
+                            PossibleLabels="PossibleLabels"
+                            @bind-IsUpdatingLabels="_isUpdatingLabels"
+                            SelectedItems="_selectedItems"
+                            OnLabelAdded="tuple => tuple.Item1.Labels.Add(tuple.Item2)"
+                            OnLabelRemoved="tuple => tuple.Item1.Labels.Remove(tuple.Item2)"
+                        />
                     </HeaderTemplate>
 
                     <ItemTemplate>
@@ -317,22 +283,6 @@
         </HxGrid>
     </DataTemplate>
 </HxListLayout>
-
-<LabelPickerModal
-    @ref="_applyLabelModal"
-    HeaderText="Pick label to apply"
-    CreatorId="CreatorId"
-    Options="PossibleLabels"
-    OnSelected="ApplyLabel"
-/>
-
-<LabelPickerModal
-    @ref="_removeLabelModal"
-    HeaderText="Pick label to remove"
-    CreatorId="CreatorId"
-    Options="PossibleLabels"
-    OnSelected="RemoveLabel"
-/>
 
 @code {
 
@@ -469,66 +419,5 @@
         await _grid.RefreshDataAsync();
     }
 
-    private string BulkDownloadsSubmissionQuery
-        => string.Join("&", _selectedItems.Select(item => "n=" + item.Number));
-
     private bool _isUpdatingLabels;
-
-    private LabelPickerModal? _applyLabelModal;
-    private LabelPickerModal? _removeLabelModal;
-
-    private async Task ApplyLabel(SubmissionLabelModel label)
-    {
-        await _applyLabelModal!.HideAsync();
-        await MutateLabelPresence(label, true);
-    }
-
-    private async Task RemoveLabel(SubmissionLabelModel label)
-    {
-        await _removeLabelModal!.HideAsync();
-        await MutateLabelPresence(label, false);
-    }
-
-    private async Task MutateLabelPresence(SubmissionLabelModel label, bool newPresence)
-    {
-        HttpClient httpClient = HttpClientProvider.HttpClient;
-
-        _isUpdatingLabels = true;
-        try
-        {
-            await _selectedItems
-                .Select(async item =>
-                {
-                    // Skip submission if there is no change to be done
-                    if (newPresence && item.Labels.Any(l => l.Id == label.Id)) return;
-                    if (!newPresence && item.Labels.All(l => l.Id != label.Id)) return;
-
-                    HttpResponseMessage response = await httpClient.PostAsJsonAsync(
-                        ApiEndpointPaths.SubmissionLabelsPresenceMutate,
-                        new MutateLabelPresenceRequest
-                        {
-                            LabelId = label.Id,
-                            SubmissionId = item.Id,
-
-                            NewPresent = newPresence,
-                        }
-                    );
-
-                    // TODO: toasts
-                    response.EnsureSuccessStatusCode();
-
-                    // Update the in-memory item to reflect the change
-                    if (newPresence) item.Labels.Add(label);
-                    else item.Labels.RemoveAll(l => l.Id == label.Id);
-                    StateHasChanged();
-                })
-                .WhenAll();
-        }
-        finally
-        {
-            _isUpdatingLabels = false;
-            StateHasChanged();
-        }
-    }
-
 }
