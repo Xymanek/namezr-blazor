@@ -59,6 +59,13 @@ internal interface ISubmissionAuditService
         SubmissionFileData file,
         bool inBatch
     );
+
+    SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string oldValue,
+        string newValue
+    );
 }
 
 [AutoConstructor]
@@ -70,6 +77,36 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
     private readonly ILogger<SubmissionAuditService> _logger;
     private readonly IdentityUserAccessor _userAccessor;
     private readonly IClock _clock;
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string oldValue,
+        string newValue
+    )
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} updated attribute '{attributeKey}' on submission {SubmissionId}. " +
+            "Old value: {oldValue}. New value: {newValue}",
+            userId, key, submission.Id, oldValue, newValue
+        );
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submission.Id,
+            OccuredAt = _clock.GetCurrentInstant(),
+
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+
+            AttributeKey = key,
+            OldValue = oldValue,
+            NewValue = newValue,
+        };
+    }
 
     public SubmissionHistoryLabelAppliedEntity LabelAddedStaff(
         QuestionnaireSubmissionEntity submission,
@@ -193,7 +230,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
             FileId = file.Id,
             InBatch = inBatch,
         };
-        
+
         return entry;
     }
 
