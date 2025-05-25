@@ -51,7 +51,7 @@
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire" />
+        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire"/>
 
         <HxBreadcrumbItem
             Href=@(NavigationManager.Uri)
@@ -286,6 +286,38 @@
 
     <HxCard>
         <HeaderTemplate>
+            Attributes
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            @* TODO: wasm *@
+            
+            <div class="table">
+                <div class="table-row">
+                    <div class="table-head">Key</div>
+                    <div class="table-head">Value</div>
+                    <div class="table-head"></div>
+                </div>
+
+                @foreach (SubmissionAttributeEntity attribute in _submission.Attributes!)
+                {
+                    /* TODO: model */
+                    <EditForm FormName=@("submission-attribute-" + attribute.Key)>
+                        <div class="table-row">
+                            <div class="table-cell">@attribute.Key</div>
+                            <div class="table-cell">@attribute.Value</div>
+                            <div class="table-cell">
+                                <HxSubmit/>
+                            </div>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </BodyTemplate>
+    </HxCard>
+
+    <HxCard>
+        <HeaderTemplate>
             Leave a comment
         </HeaderTemplate>
 
@@ -371,6 +403,7 @@
             .Include(x => x.FieldValues)
             .Include(x => x.User)
             .Include(x => x.Labels)
+            .Include(x => x.Attributes)
             .Include(x => x.History!).ThenInclude(entry => entry.InstigatorUser)
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
