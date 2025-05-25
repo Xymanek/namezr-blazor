@@ -100,7 +100,7 @@
     {
         <SubmissionEditor
             Config="ConfigModel"
-            SubmissionId="SubmissionId"
+            SubmissionId="_existingSubmission?.Id"
             InitialValues="_initialValues"
             FileUploadTickets="_fileUploadTickets"
             AllDisabled="_disabledReason.HasValue"
@@ -131,17 +131,19 @@
     </HxCard>
 }
 
-@* TODO: hide this if no existing submission? *@
-<HxCard>
-    <BodyTemplate>
-        <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
-            <FluentValidationValidator/>
+@if (_existingSubmission is not null)
+{
+    <HxCard>
+        <BodyTemplate>
+            <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
+                <FluentValidationValidator/>
 
-            <HxInputTextArea @bind-Value="NewComment.Content"/>
-            <HxSubmit Text="Submit"/>
-        </EditForm>
-    </BodyTemplate>
-</HxCard>
+                <HxInputTextArea @bind-Value="NewComment.Content"/>
+                <HxSubmit Color="ThemeColor.Primary" Text="Post comment"/>
+            </EditForm>
+        </BodyTemplate>
+    </HxCard>
+}
 
 @foreach (SubmissionHistoryPublicCommentEntity comment in SubmissionComments)
 {
@@ -179,7 +181,6 @@
 
     private QuestionnaireConfigModel? ConfigModel { get; set; }
     private Guid? QuestionnaireVersionId { get; set; }
-    private Guid? SubmissionId { get; set; }
 
     private SubmissionHistoryPublicCommentEntity[] SubmissionComments { get; set; } = [];
 
@@ -319,7 +320,7 @@
     {
         SubmissionHistoryPublicCommentEntity comment = new()
         {
-            SubmissionId = SubmissionId!.Value,
+            SubmissionId = _existingSubmission!.Id,
             OccuredAt = Clock.GetCurrentInstant(),
 
             InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
