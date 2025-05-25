@@ -268,7 +268,7 @@
                             @bind-IsUpdatingLabels="_isUpdatingLabels"
                             SelectedItems="_selectedItems"
                             OnLabelAdded="tuple => tuple.Item1.Labels.Add(tuple.Item2)"
-                            OnLabelRemoved="tuple => tuple.Item1.Labels.Remove(tuple.Item2)"
+                            OnLabelRemoved="tuple => tuple.Item1.Labels.RemoveAll(label => label.Id == tuple.Item2.Id)"
                         />
                     </HeaderTemplate>
 

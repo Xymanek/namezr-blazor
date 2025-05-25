@@ -120,7 +120,7 @@
                         @bind-IsUpdatingLabels="_isUpdatingLabels"
                         SelectedItems="@Items.Where(item => _selectedSubmissionIds.Contains(item.Id))"
                         OnLabelAdded="tuple => tuple.Item1.Labels.Add(tuple.Item2)"
-                        OnLabelRemoved="tuple => tuple.Item1.Labels.Remove(tuple.Item2)"/>
+                        OnLabelRemoved="tuple => tuple.Item1.Labels.RemoveAll(label => label.Id == tuple.Item2.Id)"/>
                 </div>
             </BodyTemplate>
         </HxCard>
