@@ -84,8 +84,8 @@
     <hr class="my-4"/>
 
     <div class="d-flex justify-content-between align-items-center">
-        <h4>Submissions</h4>
-        
+        <h4>Latest updated submissions</h4>
+
         <div>
             <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions"
                class="btn btn-primary">
@@ -107,10 +107,8 @@
         </thead>
 
         <tbody>
-        @foreach (QuestionnaireSubmissionEntity submission in _submissions)
+        @foreach (QuestionnaireSubmissionEntity submission in _lastUpdatedSubmissions)
         {
-            /* TODO: pagination */
-
             <tr>
                 <td>
                     #@submission.Number
@@ -153,7 +151,7 @@
     public Guid Id { get; set; }
 
     private QuestionnaireEntity? _questionnaire;
-    private QuestionnaireSubmissionEntity[] _submissions = [];
+    private QuestionnaireSubmissionEntity[] _lastUpdatedSubmissions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -171,11 +169,22 @@
 
         // TODO: 404 if not found
 
-        _submissions = await dbContext.QuestionnaireSubmissions
+        _lastUpdatedSubmissions = await dbContext.QuestionnaireSubmissions
             .Include(s => s.User)
             .Include(s => s.Version)
             .Where(s => s.Version.QuestionnaireId == Id)
+            .OrderByDescending(submission => submission.History!
+                .Where(entry =>
+                    !(entry is SubmissionHistoryStaffViewedEntity) &&
+                    !(entry is SubmissionHistoryFileDownloadedEntity)
+                )
+                // No need to also check SubmittedAt - it will be covered by SubmissionHistoryInitialSubmitEntity
+                .Max(entry => entry.OccuredAt)
+            )
+            .Take(MaxLatestSubmissionsToDisplay)
             .ToArrayAsync();
     }
+
+    private const int MaxLatestSubmissionsToDisplay = 5;
 
 }
