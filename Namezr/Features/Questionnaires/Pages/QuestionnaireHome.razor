@@ -18,6 +18,7 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using Namezr.Features.Questionnaires.Mappers
 @using NodaTime
 @using vNext.BlazorComponents.FluentValidation
 
@@ -108,6 +109,29 @@
     }
 }
 
+@* Assumes _existingSubmission.Labels were filtered for submitter-visibile only *@
+@if (_existingSubmission is { ApprovedAt: not null } or { Labels.Count: > 0 })
+{
+    <HxCard>
+        <BodyTemplate>
+            <div class="d-flex flex-wrap gap-2">
+                @if (_existingSubmission.ApprovedAt != null)
+                {
+                    <HxBadge Color="ThemeColor.Success">
+                        Approved
+                    </HxBadge>
+                }
+
+                @foreach (SubmissionLabelEntity label in _existingSubmission.Labels!)
+                {
+                    <SubmissionLabelPresenter Label="label.ToModel()"/>
+                }
+            </div>
+        </BodyTemplate>
+    </HxCard>
+}
+
+@* TODO: hide this if no existing submission? *@
 <HxCard>
     <BodyTemplate>
         <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
@@ -168,6 +192,7 @@
     private Dictionary<Guid, string> _fileUploadTickets = new();
 
     private DisabledReason? _disabledReason;
+    private QuestionnaireSubmissionEntity? _existingSubmission;
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,12 +238,15 @@
                 _disabledReason ??= DisabledReason.NotEligible;
             }
 
-            QuestionnaireSubmissionEntity? submission = await DbContext.QuestionnaireSubmissions
+            _existingSubmission = await DbContext.QuestionnaireSubmissions
+                .AsSplitQuery()
                 .Include(x => x.FieldValues)
+                // If these filters are ever adjusted, other code will need to change
                 .Include(x => x.History!.Where(entry => entry is SubmissionHistoryPublicCommentEntity))
+                .Include(x => x.Labels!.Where(label => label.IsSubmitterVisible))
                 .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
 
-            if (submission is null)
+            if (_existingSubmission is null)
             {
                 if (_versionEntity.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly)
                 {
@@ -228,7 +256,7 @@
             else
             {
                 if (
-                    submission.ApprovedAt is not null &&
+                    _existingSubmission.ApprovedAt is not null &&
                     _versionEntity.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
                 )
                 {
@@ -236,14 +264,13 @@
                 }
 
                 _initialValues = new Dictionary<string, SubmissionValueModel>();
-                SubmissionId = submission.Id;
-
-                SubmissionComments = submission.History!
+                SubmissionComments = _existingSubmission.History!
                     .Cast<SubmissionHistoryPublicCommentEntity>()
                     .OrderByDescending(comment => comment.OccuredAt)
                     .ToArray();
 
-                foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
+
+                foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
                 {
                     QuestionnaireFieldType? fieldType = _versionEntity.Fields!
                         .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
