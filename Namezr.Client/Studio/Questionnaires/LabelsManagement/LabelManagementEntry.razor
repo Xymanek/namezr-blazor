@@ -9,56 +9,82 @@
 
 @if (_labelForEdit != null)
 {
-    <EditForm Model="_labelForEdit" OnValidSubmit="HandleValidSubmit">
-        <div class="row g-3">
-            <div class="col-12">
-                <HxInputText Label="Text" @bind-Value="@_labelForEdit.Text"/>
-            </div>
+    <HxCard>
+        <HeaderTemplate>
+            @if (LabelStored != null)
+            {
+                <span>Edit Label</span>
+            }
+            else
+            {
+                <span>New Label</span>
+            }
+        </HeaderTemplate>
 
-            <div class="col-12">
-                <HxInputText
-                    Label="Description"
-                    @bind-Value="@_labelForEdit.Description"
-                    Hint="Shown on hover"
-                />
-            </div>
+        <BodyTemplate>
+            <EditForm Model="_labelForEdit" OnValidSubmit="HandleValidSubmit">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <HxInputText Label="Text" @bind-Value="@_labelForEdit.Text"/>
+                    </div>
 
-            <div class="col-12">
-                <button type="button" class="btn btn-primary" @onclick="OpenColourPicker">
-                    <div style="background-color:@_labelForEdit.Colour" class="buttonColor"></div>
-                    Select a Color
-                </button>
+                    <div class="col-lg-3">
+                        <button type="button" class="btn btn-primary" @onclick="OpenColourPicker">
+                            <div style="background-color:@_labelForEdit.Colour" class="buttonColor"></div>
+                            Select a Color
+                        </button>
 
-                <HxValidationMessage For="() => _labelForEdit.Colour"/>
-            </div>
+                        <HxValidationMessage For="() => _labelForEdit.Colour"/>
+                    </div>
 
-            @*
-            <div class="col-12">
-                <HxAutosuggest
-                    TValue="BootstrapIcon?"
-                    TItem="BootstrapIcon"
-                    Label="Icon"
-                    Placeholder="Type to search"
-                    @bind-Value="@_labelForEdit.Icon"
-                    DataProvider="ProvideIconSuggestions"
-                    >
-                    
-                </HxAutosuggest>
-                
-                <HxInputEnum Label="Icon" @bind-Value="@_labelForEdit.Icon"
-                             Nullable="true"/>
-            </div>
-            *@
+                    <div class="col-lg-3">
+                        <HxCheckbox Label="Submitter Visible" @bind-Value="@_labelForEdit.IsSubmitterVisible"/>
+                    </div>
 
-            <div class="col-12">
-                <HxCheckbox Label="Submitter Visible" @bind-Value="@_labelForEdit.IsSubmitterVisible"/>
-            </div>
+                    <div class="col-12">
+                        <HxInputText
+                            Label="Description"
+                            @bind-Value="@_labelForEdit.Description"
+                            Hint="Shown on hover"
+                        />
+                    </div>
 
-            <div class="col1-12">
-                <HxSubmit Text="Save" Color="ThemeColor.Primary" Enabled="!_isSaving"/>
-            </div>
-        </div>
-    </EditForm>
+                    @*
+                    <div class="col-12">
+                        <HxAutosuggest
+                            TValue="BootstrapIcon?"
+                            TItem="BootstrapIcon"
+                            Label="Icon"
+                            Placeholder="Type to search"
+                            @bind-Value="@_labelForEdit.Icon"
+                            DataProvider="ProvideIconSuggestions"
+                            >
+                            
+                        </HxAutosuggest>
+                        
+                        <HxInputEnum Label="Icon" @bind-Value="@_labelForEdit.Icon"
+                                     Nullable="true"/>
+                    </div>
+                    *@
+
+                    <div class="col-12">
+                        <HxSubmit Text="Save" Color="ThemeColor.Primary" Spinner="_isSaving"/>
+
+                        @if (LabelStored != null)
+                        {
+                            <HxButton
+                                type="button"
+                                Text="Cancel"
+                                Color="ThemeColor.Secondary"
+                                Enabled="!_isSaving"
+                                OnClick="() => _labelForEdit = null"
+                            />
+                        }
+                    </div>
+                </div>
+            </EditForm>
+        </BodyTemplate>
+    </HxCard>
 }
 else if (LabelStored != null)
 {
