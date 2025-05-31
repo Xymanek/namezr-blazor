@@ -59,6 +59,12 @@ internal interface ISubmissionAuditService
         SubmissionFileData file,
         bool inBatch
     );
+
+    [MustUseReturnValue]
+    SubmissionHistoryAttributeUpdatedEntity AttributeChange(QuestionnaireSubmissionEntity submission,
+        string key,
+        string oldValue,
+        string newValue);
 }
 
 [AutoConstructor]
@@ -193,7 +199,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
             FileId = file.Id,
             InBatch = inBatch,
         };
-        
+
         return entry;
     }
 
@@ -343,5 +349,32 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         var entry = StaffView(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeChange(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string oldValue,
+        string newValue
+    )
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} changed attribute {Key} from '{OldValue}' to '{NewValue}' for submission {SubmissionId}",
+            userId, key, oldValue, newValue, submission.Id
+        );
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submission.Id,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+            AttributeKey = key,
+            OldValue = oldValue,
+            NewValue = newValue,
+        };
     }
 }

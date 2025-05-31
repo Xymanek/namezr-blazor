@@ -1,0 +1,257 @@
+﻿@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Infra
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<div class="table">
+    <div class="table-row">
+        <div class="table-head">Key</div>
+        <div class="table-head">Value</div>
+        <div class="table-head">Actions</div>
+    </div>
+
+    @foreach (var attribute in _attributes)
+    {
+        <div class="table-row">
+            <div class="table-cell">
+                <input @bind="attribute.Key" 
+                       disabled="@_isSubmitting"
+                       class="form-control" />
+            </div>
+            <div class="table-cell">
+                <input @bind="attribute.Value" 
+                       disabled="@_isSubmitting"
+                       class="form-control" />
+            </div>
+            <div class="table-cell">
+                <div class="d-flex gap-2">
+                    <button @onclick="() => SaveAttribute(attribute)" 
+                            disabled="@_isSubmitting"
+                            class="btn btn-sm btn-primary">
+                        @if (_isSubmitting && _currentSubmissionKey == attribute.Key)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Save
+                    </button>
+                    <button @onclick="() => DeleteAttribute(attribute)" 
+                            disabled="@_isSubmitting"
+                            class="btn btn-sm btn-danger">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* New row for adding attributes *@
+    <div class="table-row">
+        <div class="table-cell">
+            <input @bind="_newAttributeKey" 
+                   placeholder="Enter key"
+                   disabled="@_isSubmitting"
+                   class="form-control" />
+        </div>
+        <div class="table-cell">
+            <input @bind="_newAttributeValue" 
+                   placeholder="Enter value"
+                   disabled="@_isSubmitting"
+                   class="form-control" />
+        </div>
+        <div class="table-cell">
+            <button @onclick="AddNewAttribute" 
+                    disabled="@(_isSubmitting || string.IsNullOrWhiteSpace(_newAttributeKey))"
+                    class="btn btn-sm btn-success">
+                @if (_isSubmitting && _currentSubmissionKey == _newAttributeKey)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                Add
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger mt-3">
+        @_errorMessage
+    </div>
+}
+
+@code {
+    [Parameter] public Guid SubmissionId { get; set; }
+    [Parameter] public List<SubmissionAttributeModel> InitialAttributes { get; set; } = new();
+
+    private List<SubmissionAttributeModel> _attributes = new();
+    private string _newAttributeKey = string.Empty;
+    private string _newAttributeValue = string.Empty;
+    private bool _isSubmitting = false;
+    private string? _currentSubmissionKey = null;
+    private string? _errorMessage = null;
+
+    public class SubmissionAttributeModel
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string OriginalKey { get; set; } = string.Empty;
+    }
+
+    public class UpdateSubmissionAttributeRequest
+    {
+        public Guid SubmissionId { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _attributes = InitialAttributes.Select(attr => new SubmissionAttributeModel
+        {
+            Key = attr.Key,
+            Value = attr.Value,
+            OriginalKey = attr.Key
+        }).ToList();
+    }
+
+    private async Task SaveAttribute(SubmissionAttributeModel attribute)
+    {
+        if (string.IsNullOrWhiteSpace(attribute.Key) || string.IsNullOrWhiteSpace(attribute.Value))
+        {
+            _errorMessage = "Key and Value cannot be empty.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _currentSubmissionKey = attribute.Key;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateSubmissionAttributeRequest
+            {
+                SubmissionId = SubmissionId,
+                Key = attribute.Key,
+                Value = attribute.Value
+            };
+
+            var response = await HttpClient.PostAsJsonAsync("/api/submissions/attributes/update", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Update the original key to track future changes
+                attribute.OriginalKey = attribute.Key;
+            }
+            else
+            {
+                _errorMessage = $"Failed to save attribute: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error saving attribute: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            _currentSubmissionKey = null;
+        }
+    }
+
+    private async Task AddNewAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(_newAttributeKey) || string.IsNullOrWhiteSpace(_newAttributeValue))
+        {
+            _errorMessage = "Key and Value cannot be empty.";
+            return;
+        }
+
+        // Check if key already exists
+        if (_attributes.Any(a => a.Key.Equals(_newAttributeKey, StringComparison.OrdinalIgnoreCase)))
+        {
+            _errorMessage = "An attribute with this key already exists.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _currentSubmissionKey = _newAttributeKey;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new UpdateSubmissionAttributeRequest
+            {
+                SubmissionId = SubmissionId,
+                Key = _newAttributeKey,
+                Value = _newAttributeValue
+            };
+
+            var response = await HttpClient.PostAsJsonAsync("/api/submissions/attributes/update", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _attributes.Add(new SubmissionAttributeModel
+                {
+                    Key = _newAttributeKey,
+                    Value = _newAttributeValue,
+                    OriginalKey = _newAttributeKey
+                });
+
+                _newAttributeKey = string.Empty;
+                _newAttributeValue = string.Empty;
+            }
+            else
+            {
+                _errorMessage = $"Failed to add attribute: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error adding attribute: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            _currentSubmissionKey = null;
+        }
+    }
+
+    private async Task DeleteAttribute(SubmissionAttributeModel attribute)
+    {
+        _isSubmitting = true;
+        _currentSubmissionKey = attribute.Key;
+        _errorMessage = null;
+
+        try
+        {
+            // Send empty value to effectively delete the attribute
+            var request = new UpdateSubmissionAttributeRequest
+            {
+                SubmissionId = SubmissionId,
+                Key = attribute.Key,
+                Value = string.Empty
+            };
+
+            var response = await HttpClient.PostAsJsonAsync("/api/submissions/attributes/update", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _attributes.Remove(attribute);
+            }
+            else
+            {
+                _errorMessage = $"Failed to delete attribute: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error deleting attribute: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            _currentSubmissionKey = null;
+        }
+    }
+}

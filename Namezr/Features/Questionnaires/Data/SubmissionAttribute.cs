@@ -14,7 +14,7 @@ public class SubmissionAttributeEntity
     public required string Key { get; init; }
 
     [MaxLength(ValueMaxLength)]
-    public required string Value { get; init; }
+    public required string Value { get; set; }
 
     internal const int KeyMaxLength = 50;
     internal const int ValueMaxLength = 500;

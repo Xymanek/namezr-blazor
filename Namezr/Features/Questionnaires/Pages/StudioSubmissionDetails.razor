@@ -299,13 +299,13 @@
                     <div class="table-head"></div>
                 </div>
 
-                @foreach (SubmissionAttributeEntity attribute in _submission.Attributes!)
+                @foreach (SubmissionAttributeEntity submissionAttribute in _submission.Attributes!)
                 {
                     /* TODO: model */
-                    <EditForm FormName=@("submission-attribute-" + attribute.Key)>
+                    <EditForm FormName=@("submission-attribute-" + submissionAttribute.Key)>
                         <div class="table-row">
-                            <div class="table-cell">@attribute.Key</div>
-                            <div class="table-cell">@attribute.Value</div>
+                            <div class="table-cell">@submissionAttribute.Key</div>
+                            <div class="table-cell">@submissionAttribute.Value</div>
                             <div class="table-cell">
                                 <HxSubmit/>
                             </div>
