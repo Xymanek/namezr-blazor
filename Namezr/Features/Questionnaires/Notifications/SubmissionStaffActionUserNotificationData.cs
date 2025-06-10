@@ -24,13 +24,15 @@ internal record SubmissionStaffActionUserNotificationData
     /// or <see cref="SubmissionStaffActionType.LabelRemoved"/>.
     /// Null otherwise.
     /// </summary>
-    public SubmissionLabelModel? Label { get; set; }
+    // Not immutable, but I don't want to create a billion types to represent the same thing
+    // (blazor form requires mutable)
+    public SubmissionLabelModel? Label { get; init; }
 
     /// <summary>
     /// The content of the comment when <see cref="Type"/> is <see cref="SubmissionStaffActionType.CommentAdded"/>.
     /// Null for other action types.
     /// </summary>
-    public string? CommentBody { get; set; }
+    public string? CommentBody { get; init; }
 
     public Notification<SubmissionStaffActionUserNotificationData> ToNotification()
     {

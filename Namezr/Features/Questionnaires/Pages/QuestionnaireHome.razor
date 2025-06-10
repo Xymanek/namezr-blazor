@@ -3,6 +3,7 @@
 @using System.Collections.Immutable
 @using System.Diagnostics
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
@@ -18,7 +19,9 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
+@using Namezr.Features.Questionnaires.Notifications
 @using NodaTime
 @using vNext.BlazorComponents.FluentValidation
 
@@ -29,6 +32,7 @@
 @inject IFileUploadTicketHelper FileUploadTicketHelper
 @inject IClock Clock
 @inject NavigationManager NavigationManager
+@inject INotificationDispatcher NotificationDispatcher
 
 @if (_versionEntity is not null)
 {
@@ -318,12 +322,14 @@
 
     private async Task OnValidSubmitNewComment()
     {
+        Guid submitterId = UserAccessor.GetRequiredUserId(HttpContext);
+
         SubmissionHistoryPublicCommentEntity comment = new()
         {
             SubmissionId = _existingSubmission!.Id,
             OccuredAt = Clock.GetCurrentInstant(),
 
-            InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+            InstigatorUserId = submitterId,
             InstigatorIsStaff = false,
             InstigatorIsProgrammatic = false,
 
@@ -332,6 +338,19 @@
 
         DbContext.SubmissionHistoryEntries.Add(comment);
         await DbContext.SaveChangesAsync();
+
+        NotificationDispatcher.Dispatch(
+            new SubmitterLeftCommentNotificationData
+                {
+                    CreatorId = _existingSubmission.Version.Questionnaire.CreatorId,
+                    QuestionnaireId = _existingSubmission.Version.Questionnaire.Id,
+                    SubmitterId = submitterId,
+                    SubmissionId = _existingSubmission.Id,
+                    SubmissionUrl = NavigationManager.ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}").ToString(),
+                    CommentBody = NewComment.Content,
+                }
+                .ToNotification()
+        );
 
         NavigationManager.Refresh();
     }
