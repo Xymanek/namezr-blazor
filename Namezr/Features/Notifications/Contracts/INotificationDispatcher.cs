@@ -1,8 +1,6 @@
-﻿using Namezr.Features.Notifications.Models;
+﻿namespace Namezr.Features.Notifications.Contracts;
 
-namespace Namezr.Features.Notifications.Contracts;
-
-public interface INotificationDispatcher
+internal interface INotificationDispatcher
 {
     /// <summary>
     /// Enqueues the notification for dispatching.
@@ -11,5 +9,5 @@ public interface INotificationDispatcher
     /// <remarks>
     /// The sending logic for notifications will be processed in the background.
     /// </remarks>
-    void Dispatch(INotification notification);
+    void Dispatch(Notification notification);
 }

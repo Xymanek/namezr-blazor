@@ -1,26 +1,21 @@
-﻿using Namezr.Features.Notifications.Models;
+﻿using Namezr.Features.Notifications.Contracts;
 
 namespace Namezr.Features.Notifications.Services;
 
 internal interface INotificationSenderDiscord
 {
-    bool Supports(INotification notification);
-
     /// <returns>
     /// False if the user has disallowed DMs and no notification channel is configured.
     /// </returns>
-    Task<bool> Send(INotification notification);
+    Task<bool> SendIfSupported(Notification notification);
 }
 
+[RegisterSingleton]
 internal class NotificationSenderDiscord : INotificationSenderDiscord
 {
-    public bool Supports(INotification notification)
+    public async Task<bool> SendIfSupported(Notification notification)
     {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> Send(INotification notification)
-    {
-        throw new NotImplementedException();
+        // throw new NotImplementedException();
+        return false; // TODO: implement
     }
 }

@@ -1,16 +1,10 @@
 ﻿using Namezr.Client.Shared;
 using Namezr.Features.Notifications.Contracts;
-using Namezr.Features.Notifications.Models;
 
 namespace Namezr.Features.Questionnaires.Notifications;
 
-internal record SubmissionStaffActionUserNotification : INotification
+internal record SubmissionStaffActionUserNotificationData
 {
-    Guid? INotification.CreatorId => CreatorId;
-    bool INotification.ReceivingAllStaff => false;
-    Guid? INotification.ReceivingUserId => SubmitterId;
-    Guid? INotification.ReceivingConsumerId => null;
-
     public required Guid CreatorId { get; init; }
     public required Guid QuestionnaireId { get; init; }
 
@@ -37,6 +31,22 @@ internal record SubmissionStaffActionUserNotification : INotification
     /// Null for other action types.
     /// </summary>
     public string? CommentBody { get; set; }
+
+    public Notification<SubmissionStaffActionUserNotificationData> ToNotification()
+    {
+        return new Notification<SubmissionStaffActionUserNotificationData>
+        {
+            Recipient = new NotificationRecipient
+            {
+                CreatorId = CreatorId,
+                AllStaff = false,
+                UserId = SubmitterId,
+                ConsumerId = null,
+            },
+            
+            Data = this,
+        };
+    }
 }
 
 public enum SubmissionStaffActionType
@@ -50,11 +60,13 @@ public enum SubmissionStaffActionType
     CommentAdded,
 }
 
-[RegisterSingleton]
+[RegisterSingleton(typeof(INotificationEmailRenderer))]
 internal class SubmissionStaffActionUserNotificationEmailRenderer :
-    INotificationMailRenderer<SubmissionStaffActionUserNotification>
+    NotificationEmailRendererBase<SubmissionStaffActionUserNotificationData>
 {
-    public ValueTask<RenderedEmailNotification> RenderAsync(SubmissionStaffActionUserNotification notification)
+    protected override ValueTask<RenderedEmailNotification> DoRenderAsync(
+        Notification<SubmissionStaffActionUserNotificationData> notification
+    )
     {
         throw new NotImplementedException();
     }

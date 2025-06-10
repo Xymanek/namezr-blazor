@@ -1,5 +1,4 @@
 ﻿using Namezr.Features.Notifications.Contracts;
-using Namezr.Features.Notifications.Models;
 
 namespace Namezr.Features.Notifications.Services;
 
@@ -20,7 +19,7 @@ internal partial class ThreadPoolNotificationDispatcher : INotificationDispatche
         set => Volatile.Write(ref field, value);
     }
 
-    public void Dispatch(INotification notification)
+    public void Dispatch(Notification notification)
     {
         if (IsStopping)
         {

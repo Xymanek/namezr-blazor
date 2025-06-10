@@ -1,34 +1,34 @@
 ﻿using Namezr.Features.Notifications.Contracts;
-using Namezr.Features.Notifications.Models;
 
 namespace Namezr.Features.Notifications.Services;
 
 internal interface INotificationSenderEmail
 {
-    bool Supports(INotification notification);
-    Task Send(INotification notification);
+    Task<bool> SendIfSupported(Notification notification);
 }
 
 [RegisterSingleton]
 [AutoConstructor]
 internal partial class NotificationSenderEmail : INotificationSenderEmail
 {
-    private readonly IServiceProvider _services;
-    
-    public bool Supports(INotification notification)
+    private readonly IEnumerable<INotificationEmailRenderer> _renderers;
+
+    public async Task<bool> SendIfSupported(Notification notification)
     {
+        RenderedEmailNotification? rendered = await MaybeRender(notification);
+        if (rendered == null) return false;
+
         throw new NotImplementedException();
+        // return true;
     }
 
-    public async Task Send(INotification notification)
+    private async Task<RenderedEmailNotification?> MaybeRender(Notification notification)
     {
-        _services.GetRequiredService(GetRendererType(notification));
-        
-        throw new NotImplementedException();
-    }
+        foreach (INotificationEmailRenderer renderer in _renderers)
+        {
+            return await renderer.RenderIfSupportedAsync(notification);
+        }
 
-    private static Type GetRendererType(INotification notification)
-    {
-        return typeof(INotificationMailRenderer<>).MakeGenericType(notification.GetType());
+        return null;
     }
 }
