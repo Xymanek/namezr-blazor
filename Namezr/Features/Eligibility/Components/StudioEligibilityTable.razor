@@ -3,6 +3,7 @@
 @using Namezr.Features.Creators.Services
 @using Namezr.Features.Eligibility.Data
 @using Namezr.Features.Eligibility.Services
+@using Namezr.Client.Shared
 
 @inject ISupportPlansService SupportPlansService
 @inject IEligibilityService EligibilityService
@@ -13,6 +14,7 @@
         <th>Support plan</th>
         <th>Priority group</th>
         <th>Weight</th>
+        <th>Hidden</th>
     </tr>
     </thead>
 
@@ -46,6 +48,9 @@
             </td>
             <td>@option.PriorityGroup</td>
             <td>@option.PriorityModifier</td>
+            <td>
+                <YesNoBadge Value="@option.IsHidden"/>
+            </td>
         </tr>
     }
     </tbody>

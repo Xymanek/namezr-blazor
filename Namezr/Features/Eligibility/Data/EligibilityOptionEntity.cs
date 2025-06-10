@@ -24,6 +24,11 @@ public class EligibilityOptionEntity
     public required decimal PriorityModifier { get; set; }
     
     // TODO: add SelectionWave, e.g. all "1"s must be selected before "2"s are considered
+
+    /// <summary>
+    /// Not shown unless the user is eligible.
+    /// </summary>
+    public bool IsHidden { get; set; }
 }
 
 internal class EligibilityOptionEntityConfiguration : IEntityTypeConfiguration<EligibilityOptionEntity>
