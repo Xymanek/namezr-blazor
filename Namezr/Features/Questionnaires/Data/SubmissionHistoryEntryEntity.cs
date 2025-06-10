@@ -58,6 +58,22 @@ public class SubmissionHistoryLabelRemovedEntity : SubmissionHistoryEntryEntity
     public Guid? LabelId { get; set; }
 }
 
+/// <summary>
+/// Covers all operations - "create", update, "delete".
+/// Note that 0 length is same as deleted, so created and deleted are just a specialised form of update.
+/// </summary>
+public class SubmissionHistoryAttributeUpdatedEntity : SubmissionHistoryEntryEntity
+{
+    [MaxLength(SubmissionAttributeEntity.KeyMaxLength)]
+    public required string AttributeKey { get; init; }
+
+    [MaxLength(SubmissionAttributeEntity.ValueMaxLength)]
+    public required string OldValue { get; init; }
+
+    [MaxLength(SubmissionAttributeEntity.ValueMaxLength)]
+    public required string NewValue { get; init; }
+}
+
 public class SubmissionHistoryFileDownloadedEntity : SubmissionHistoryEntryEntity
 {
     public Guid FieldId { get; set; }
@@ -140,6 +156,7 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .HasValue<SubmissionHistoryInternalNoteEntity>(7)
             .HasValue<SubmissionHistoryPublicCommentEntity>(8)
             .HasValue<SubmissionHistoryStaffViewedEntity>(9)
+            .HasValue<SubmissionHistoryAttributeUpdatedEntity>(10)
             .IsComplete();
     }
 

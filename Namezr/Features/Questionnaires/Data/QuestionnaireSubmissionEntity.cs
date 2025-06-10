@@ -33,6 +33,7 @@ public class QuestionnaireSubmissionEntity : SelectionCandidateEntity
 
     public ICollection<QuestionnaireFieldValueEntity>? FieldValues { get; set; }
     public ICollection<SubmissionHistoryEntryEntity>? History { get; set; }
+    public ICollection<SubmissionAttributeEntity>? Attributes { get; set; }
 
     public ICollection<SubmissionLabelEntity>? Labels { get; set; }
     public ICollection<SubmissionLabelLinkEntity>? LabelLinks { get; set; }
