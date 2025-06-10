@@ -16,6 +16,7 @@ using Namezr.Features.Consumers.Services;
 using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Identity.Endpoints;
+using Namezr.Features.Notifications.Services;
 using Namezr.Features.ThirdParty.Cli;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
@@ -71,6 +72,7 @@ builder.Services.AddAppShared();
 builder.Services.AutoRegister();
 
 builder.Services.AddHostedService<PeriodicConsumerStatusSyncer>();
+builder.Services.AddHostedService<ThreadPoolNotificationDispatcher>();
 
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
