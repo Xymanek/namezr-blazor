@@ -346,7 +346,12 @@
                     QuestionnaireId = _existingSubmission.Version.Questionnaire.Id,
                     SubmitterId = submitterId,
                     SubmissionId = _existingSubmission.Id,
-                    SubmissionUrl = NavigationManager.ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}").ToString(),
+
+                    // TODO: update once we support multiple submissions per questionnaire
+                    SubmissionUrl = NavigationManager
+                        .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                        .AbsoluteUri,
+
                     CommentBody = NewComment.Content,
                 }
                 .ToNotification()
