@@ -5,6 +5,8 @@ internal interface INotificationEmailRenderer
     ValueTask<RenderedEmailNotification?> RenderIfSupportedAsync(Notification notification);
 }
 
+// TODO: base renderer that invokes a razor component
+
 internal record RenderedEmailNotification
 {
     public required string Subject { get; init; }

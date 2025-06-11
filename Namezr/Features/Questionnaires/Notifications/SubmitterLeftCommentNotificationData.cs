@@ -2,7 +2,7 @@
 
 namespace Namezr.Features.Questionnaires.Notifications;
 
-internal record SubmitterLeftCommentNotificationData
+public record SubmitterLeftCommentNotificationData
 {
     public required Guid CreatorId { get; init; }
     public required Guid QuestionnaireId { get; init; }

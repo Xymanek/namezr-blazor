@@ -1,11 +1,11 @@
 ﻿namespace Namezr.Features.Notifications.Contracts;
 
-internal abstract record Notification
+public abstract record Notification
 {
     public required NotificationRecipient Recipient { get; init; }
 }
 
-internal class NotificationRecipient
+public class NotificationRecipient
 {
     /// <summary>
     /// Gets the unique identifier of the creator associated with the notification.
@@ -34,7 +34,7 @@ internal class NotificationRecipient
 /// <item>JSON-serializable</item>
 /// </list>
 /// </typeparam>
-internal record Notification<TData> : Notification
+public record Notification<TData> : Notification
 {
     public required TData Data { get; init; }
 }
