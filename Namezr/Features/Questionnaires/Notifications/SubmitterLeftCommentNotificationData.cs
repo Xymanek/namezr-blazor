@@ -9,7 +9,7 @@ public record SubmitterLeftCommentNotificationData
 {
     public required Guid CreatorId { get; init; }
     public required string CreatorDisplayName { get; init; }
-    
+
     public required Guid QuestionnaireId { get; init; }
     public required string QuestionnaireName { get; init; }
 
@@ -17,6 +17,7 @@ public record SubmitterLeftCommentNotificationData
     /// ID of the user who submitted the submission.
     /// </summary>
     public required Guid SubmitterId { get; init; }
+
     public required string SubmitterName { get; init; }
 
     public required Guid SubmissionId { get; init; }
@@ -40,18 +41,27 @@ public record SubmitterLeftCommentNotificationData
     }
 }
 
+// TODO: extract plumbing to base class
+// This should contain only 3 methods:
+// 1) Get parameters for the component
+// 2) Get the plain text version of the email
+// 3) Get the subject
+// The component should be passed to the base class as a type argument
 [AutoConstructor]
 [RegisterSingleton(typeof(INotificationEmailRenderer))]
 internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
     NotificationEmailRendererBase<SubmitterLeftCommentNotificationData>
 {
-    private readonly HtmlRenderer _htmlRenderer;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILoggerFactory _loggerFactory;
 
     protected override async ValueTask<RenderedEmailNotification> DoRenderAsync(
         Notification<SubmitterLeftCommentNotificationData> notification
     )
     {
-        string html = await _htmlRenderer.Dispatcher.InvokeAsync(async () =>
+        await using HtmlRenderer htmlRenderer = new(_serviceProvider, _loggerFactory);
+
+        string html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
         {
             Dictionary<string, object?> dictionary = new()
             {
@@ -60,7 +70,7 @@ internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
 
             ParameterView parameters = ParameterView.FromDictionary(dictionary);
             HtmlRootComponent output =
-                await _htmlRenderer.RenderComponentAsync<SubmitterLeftCommentEmailNotification>(parameters);
+                await htmlRenderer.RenderComponentAsync<SubmitterLeftCommentEmailNotification>(parameters);
 
             return output.ToHtmlString();
         });
