@@ -41,6 +41,8 @@ internal partial class NotificationSenderDiscord : INotificationSenderDiscord
             await user.SendMessageAsync(rendered.Text, embed: rendered.RichEmbed, embeds: rendered.Embeds);
         }
 
+        // TODO: if failed due to privacy settings, fallback to creator-defined broadcast/fallback channel
+
         // TODO: return false if none of the IDs succeeded.
         return true;
     }
