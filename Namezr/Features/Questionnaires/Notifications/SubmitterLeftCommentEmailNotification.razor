@@ -1,9 +1,43 @@
 ﻿@using Namezr.Features.Notifications.EmailComponents
 
 <EmailNotificationLayout>
-    <h3>SubmitterLeftCommentEmailNotification</h3>
+    <h2 style="color: #333; margin-bottom: 20px;">New Comment on Submission</h2>
 
-    @* TODO *@
+    <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+        A submitter has left a new comment on a questionnaire submission.
+    </p>
+
+    <div style="background-color: #f7f7f7; padding: 15px; border-left: 4px solid #0078d4; margin-bottom: 20px;">
+        <p style="font-style: italic; color: #555;">@NotificationData.CommentBody</p>
+    </div>
+
+    <div style="margin-top: 25px; margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 5px; padding: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #666; width: 130px;"><strong>Creator:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.CreatorDisplayName</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Questionnaire:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.QuestionnaireName</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Submitter:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.SubmitterName</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Submission:</strong></td>
+                <td style="padding: 8px 0;">#@NotificationData.SubmissionNumber</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="@NotificationData.SubmissionUrl"
+           style="background-color: #0078d4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            View Submission
+        </a>
+    </div>
 </EmailNotificationLayout>
 
 @code {

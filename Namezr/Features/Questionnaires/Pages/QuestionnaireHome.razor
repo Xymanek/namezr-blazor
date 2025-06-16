@@ -322,7 +322,8 @@
 
     private async Task OnValidSubmitNewComment()
     {
-        Guid submitterId = UserAccessor.GetRequiredUserId(HttpContext);
+        ApplicationUser submitter = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        Guid submitterId = submitter.Id;
 
         SubmissionHistoryPublicCommentEntity comment = new()
         {
@@ -343,9 +344,16 @@
             new SubmitterLeftCommentNotificationData
                 {
                     CreatorId = _existingSubmission.Version.Questionnaire.CreatorId,
+                    CreatorDisplayName = _existingSubmission.Version.Questionnaire.Creator.DisplayName,
+
                     QuestionnaireId = _existingSubmission.Version.Questionnaire.Id,
+                    QuestionnaireName = _existingSubmission.Version.Questionnaire.Title,
+
                     SubmitterId = submitterId,
+                    SubmitterName = submitter.UserName ?? string.Empty,
+
                     SubmissionId = _existingSubmission.Id,
+                    SubmissionNumber = _existingSubmission.Number,
 
                     // TODO: update once we support multiple submissions per questionnaire
                     SubmissionUrl = NavigationManager
