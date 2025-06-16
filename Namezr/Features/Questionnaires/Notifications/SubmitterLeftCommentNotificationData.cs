@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Discord;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.HtmlRendering;
 using Namezr.Features.Notifications.Contracts;
@@ -91,5 +92,37 @@ internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
             BodyHtml = html,
             BodyText = plainText
         };
+    }
+}
+
+[RegisterSingleton(typeof(INotificationDiscordRenderer))]
+internal class SubmitterLeftCommentNotificationDataDiscordRenderer
+    : NotificationDiscordRendererBase<SubmitterLeftCommentNotificationData>
+{
+    protected override ValueTask<RenderedDiscordNotification> DoRenderAsync(
+        Notification<SubmitterLeftCommentNotificationData> notification
+    )
+    {
+        SubmitterLeftCommentNotificationData data = notification.Data;
+
+        Embed embed = new EmbedBuilder()
+            .WithTitle("New Comment on Submission")
+            .WithDescription("A submitter has left a new comment on a questionnaire submission.")
+            .WithColor(Color.Blue)
+            .WithTimestamp(DateTimeOffset.UtcNow)
+            .AddField("Comment", data.CommentBody)
+            .AddField("Creator", data.CreatorDisplayName)
+            .AddField("Questionnaire", data.QuestionnaireName)
+            .AddField("Submitter", data.SubmitterName)
+            .AddField("Submission #", data.SubmissionNumber.ToString())
+            .WithUrl(data.SubmissionUrl)
+            .Build();
+
+        return ValueTask.FromResult(new RenderedDiscordNotification
+        {
+            Text = $"New comment from {data.SubmitterName} on submission #{data.SubmissionNumber}",
+            RichEmbed = embed,
+            Embeds = [embed]
+        });
     }
 }

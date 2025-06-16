@@ -21,7 +21,7 @@ internal interface INotificationSenderDiscord
 internal partial class NotificationSenderDiscord : INotificationSenderDiscord
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IEnumerable<INotificationDiscordRender> _renderers;
+    private readonly IEnumerable<INotificationDiscordRenderer> _renderers;
     private readonly IDiscordApiProvider _apiProvider;
 
     public async Task<bool> SendIfSupported(Notification notification)
@@ -65,7 +65,7 @@ internal partial class NotificationSenderDiscord : INotificationSenderDiscord
 
     private async Task<RenderedDiscordNotification?> MaybeRender(Notification notification)
     {
-        foreach (INotificationDiscordRender renderer in _renderers)
+        foreach (INotificationDiscordRenderer renderer in _renderers)
         {
             return await renderer.RenderDirectMessageIfSupportedAsync(notification);
         }
