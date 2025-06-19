@@ -8,6 +8,7 @@ namespace Namezr.Features.Notifications.Services;
 /// Will hold application stop to attempt to send all queued notifications.
 /// </summary>
 [AutoConstructor]
+[RegisterSingleton]
 internal partial class ThreadPoolNotificationDispatcher : INotificationDispatcher, IHostedService
 {
     private readonly ILogger<ThreadPoolNotificationDispatcher> _logger;

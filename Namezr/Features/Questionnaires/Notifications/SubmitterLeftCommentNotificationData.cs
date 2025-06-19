@@ -53,14 +53,15 @@ public record SubmitterLeftCommentNotificationData
 internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
     NotificationEmailRendererBase<SubmitterLeftCommentNotificationData>
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILoggerFactory _loggerFactory;
 
     protected override async ValueTask<RenderedEmailNotification> DoRenderAsync(
         Notification<SubmitterLeftCommentNotificationData> notification
     )
     {
-        await using HtmlRenderer htmlRenderer = new(_serviceProvider, _loggerFactory);
+        await using AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope();
+        await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, _loggerFactory);
 
         string html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
         {

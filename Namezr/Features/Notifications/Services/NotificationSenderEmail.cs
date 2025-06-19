@@ -45,7 +45,12 @@ internal partial class NotificationSenderEmail : INotificationSenderEmail
     {
         foreach (INotificationEmailRenderer renderer in _renderers)
         {
-            return await renderer.RenderIfSupportedAsync(notification);
+            RenderedEmailNotification? rendered = await renderer.RenderIfSupportedAsync(notification);
+            
+            if (rendered != null)
+            {
+                return rendered;
+            }
         }
 
         return null;

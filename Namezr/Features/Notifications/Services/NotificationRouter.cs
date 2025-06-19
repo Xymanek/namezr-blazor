@@ -77,8 +77,8 @@ internal partial class NotificationRouter : INotificationRouter
 
         bool[] isSupportedResults = await Task.WhenAll(
             // Note: discord 1st in this list since it's likely faster to arrive/be noticed
-            _notificationSenderDiscord.SendIfSupported(notification),
-            _notificationSenderEmail.SendIfSupported(notification)
+            _notificationSenderDiscord.SendIfSupported(notification).CaptureLogSenderExceptions(_logger),
+            _notificationSenderEmail.SendIfSupported(notification).CaptureLogSenderExceptions(_logger)
         );
 
         if (isSupportedResults.All(b => b == false))
@@ -90,5 +90,21 @@ internal partial class NotificationRouter : INotificationRouter
         // if (notification.Recipient.UserId != null)
         // {
         // }
+    }
+}
+
+file static class Extensions
+{
+    public static async Task<bool> CaptureLogSenderExceptions(this Task<bool> task, ILogger logger)
+    {
+        try
+        {
+            return await task;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Sender failed");
+            return false;
+        }
     }
 }

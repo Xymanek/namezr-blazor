@@ -343,11 +343,11 @@
         NotificationDispatcher.Dispatch(
             new SubmitterLeftCommentNotificationData
                 {
-                    CreatorId = _existingSubmission.Version.Questionnaire.CreatorId,
-                    CreatorDisplayName = _existingSubmission.Version.Questionnaire.Creator.DisplayName,
+                    CreatorId = _versionEntity!.Questionnaire.CreatorId,
+                    CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
 
-                    QuestionnaireId = _existingSubmission.Version.Questionnaire.Id,
-                    QuestionnaireName = _existingSubmission.Version.Questionnaire.Title,
+                    QuestionnaireId = _versionEntity!.Questionnaire.Id,
+                    QuestionnaireName = _versionEntity!.Questionnaire.Title,
 
                     SubmitterId = submitterId,
                     SubmitterName = submitter.UserName ?? string.Empty,
