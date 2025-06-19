@@ -1,8 +1,9 @@
-﻿using Namezr.Features.Notifications.Contracts;
+﻿using Discord;
+using Namezr.Features.Notifications.Contracts;
 
 namespace Namezr.Features.Questionnaires.Notifications;
 
-internal record SubmitterUpdatedValuesNotificationData
+public record SubmitterUpdatedValuesNotificationData
 {
     public required Guid CreatorId { get; init; }
     public required Guid QuestionnaireId { get; init; }
@@ -37,14 +38,58 @@ internal record SubmitterUpdatedValuesNotificationData
     }
 }
 
+[AutoConstructor]
 [RegisterSingleton(typeof(INotificationEmailRenderer))]
-internal class SubmitterUpdatedValuesNotificationDataEmailRenderer :
-    NotificationEmailRendererBase<SubmitterUpdatedValuesNotificationData>
+internal partial class SubmitterUpdatedValuesNotificationDataEmailRenderer :
+    NotificationEmailComponentRendererBase<SubmitterUpdatedValuesNotificationData, SubmitterUpdatedValuesEmailNotification>
 {
-    protected override ValueTask<RenderedEmailNotification> DoRenderAsync(
+    protected override string GetSubject(Notification<SubmitterUpdatedValuesNotificationData> notification)
+    {
+        return "Submission Values Updated";
+    }
+
+    protected override Dictionary<string, object?> GetComponentParameters(
         Notification<SubmitterUpdatedValuesNotificationData> notification
     )
     {
-        throw new NotImplementedException();
+        return new Dictionary<string, object?>
+        {
+            [nameof(SubmitterUpdatedValuesEmailNotification.NotificationData)] = notification.Data,
+        };
+    }
+
+    protected override string GetPlainTextBody(Notification<SubmitterUpdatedValuesNotificationData> notification)
+    {
+        return $"Submission Values Updated\n\n"
+               + $"A submitter has updated their submission values.\n\n"
+               + $"View the submission at: {notification.Data.SubmissionUrl}";
+    }
+}
+
+[RegisterSingleton(typeof(INotificationDiscordRenderer))]
+internal class SubmitterUpdatedValuesNotificationDataDiscordRenderer
+    : NotificationDiscordRendererBase<SubmitterUpdatedValuesNotificationData>
+{
+    protected override ValueTask<RenderedDiscordNotification> DoRenderAsync(
+        Notification<SubmitterUpdatedValuesNotificationData> notification
+    )
+    {
+        var data = notification.Data;
+
+        Embed embed = new EmbedBuilder()
+            .WithTitle("Submission Values Updated")
+            .WithDescription("A submitter has updated their submission values.")
+            .WithColor(Color.Blue)
+            .WithTimestamp(DateTimeOffset.UtcNow)
+            .AddField("Submission ID", data.SubmissionId.ToString())
+            .WithUrl(data.SubmissionUrl)
+            .Build();
+
+        return ValueTask.FromResult(new RenderedDiscordNotification
+        {
+            Text = $"Submission values updated for submission {data.SubmissionId}",
+            RichEmbed = embed,
+            Embeds = [embed]
+        });
     }
 }
