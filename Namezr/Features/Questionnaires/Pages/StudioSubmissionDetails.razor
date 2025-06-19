@@ -500,6 +500,21 @@
         dbContext.SubmissionHistoryEntries.Add(historyEntry);
         await dbContext.SaveChangesAsync();
 
+        // Dispatch notification for public staff comment
+        if (NewComment.Type == StudioSubmissionCommentType.PublicComment)
+        {
+            NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+            {
+                CreatorId = CreatorId,
+                QuestionnaireId = QuestionnaireId,
+                SubmitterId = _submission!.UserId,
+                SubmissionId = _submission.Id,
+                SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+                Type = SubmissionStaffActionType.CommentAdded,
+                CommentBody = NewComment.Content
+            });
+        }
+
         // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
         NavigationManager.Refresh();
     }
