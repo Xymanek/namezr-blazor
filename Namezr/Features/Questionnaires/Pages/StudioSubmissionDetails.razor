@@ -23,8 +23,10 @@
 @using Namezr.Features.Creators.Services
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
+@using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
 @using vNext.BlazorComponents.FluentValidation
+@using Namezr.Features.Questionnaires.Notifications
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -37,6 +39,7 @@
 @inject IEligibilityService EligibilityService
 @inject ISupportPlansService SupportPlansService
 @inject ISubmissionAuditService AuditService
+@inject INotificationDispatcher NotificationDispatcher
 
 @if (_submission == null || _eligibilityResult is null)
 {
@@ -421,6 +424,17 @@
 
         await dbContext.SaveChangesAsync();
 
+        // Dispatch notification for approval granted
+        NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+        {
+            CreatorId = CreatorId,
+            QuestionnaireId = QuestionnaireId,
+            SubmitterId = submission.UserId,
+            SubmissionId = submission.Id,
+            SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+            Type = SubmissionStaffActionType.ApprovalGranted
+        });
+
         // Reload the page with new info
         NavigationManager.Refresh();
     }
@@ -439,6 +453,17 @@
         dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalRemoval(submission));
 
         await dbContext.SaveChangesAsync();
+
+        // Dispatch notification for approval removed
+        NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+        {
+            CreatorId = CreatorId,
+            QuestionnaireId = QuestionnaireId,
+            SubmitterId = submission.UserId,
+            SubmissionId = submission.Id,
+            SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+            Type = SubmissionStaffActionType.ApprovalRemoved
+        });
 
         // Reload the page with new info
         NavigationManager.Refresh();
