@@ -78,6 +78,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                     QuestionnaireId = submission.Version.Questionnaire.Id,
                     SubmitterId = submission.UserId,
                     SubmissionId = submission.Id,
+                    SubmissionNumber = submission.Number,
                     SubmissionUrl = $"/questionnaires/{submission.Version.Questionnaire.Id}",
                     Type = request.NewPresent
                         ? SubmissionStaffActionType.LabelAdded

@@ -16,6 +16,7 @@ public record SubmissionStaffActionUserNotificationData
     public required Guid SubmitterId { get; init; }
 
     public required Guid SubmissionId { get; init; }
+    public required int SubmissionNumber { get; init; }
     public required string SubmissionUrl { get; init; }
 
     public required SubmissionStaffActionType Type { get; init; }
@@ -108,6 +109,7 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
             body += $"Label: {data.Label.Text}\n\n";
         }
 
+        body += $"Submission: #{data.SubmissionNumber}\n\n";
         body += $"View the submission at: {data.SubmissionUrl}";
         return body;
     }
@@ -168,6 +170,8 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
         {
             embedBuilder.AddField("Label", data.Label.Text);
         }
+
+        embedBuilder.AddField("Submission #", data.SubmissionNumber.ToString());
 
         Embed embed = embedBuilder.Build();
 

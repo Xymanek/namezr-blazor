@@ -14,6 +14,7 @@ public record SubmitterUpdatedValuesNotificationData
     public required Guid SubmitterId { get; init; }
 
     public required Guid SubmissionId { get; init; }
+    public required int SubmissionNumber { get; init; }
     public required string SubmissionUrl { get; init; }
 
     public Notification<SubmitterUpdatedValuesNotificationData> ToNotification()
@@ -62,6 +63,7 @@ internal partial class SubmitterUpdatedValuesNotificationDataEmailRenderer :
     {
         return $"Submission Values Updated\n\n"
                + $"A submitter has updated their submission values.\n\n"
+               + $"Submission: #{notification.Data.SubmissionNumber}\n\n"
                + $"View the submission at: {notification.Data.SubmissionUrl}";
     }
 }
@@ -81,13 +83,13 @@ internal class SubmitterUpdatedValuesNotificationDataDiscordRenderer
             .WithDescription("A submitter has updated their submission values.")
             .WithColor(Color.Blue)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("Submission ID", data.SubmissionId.ToString())
+            .AddField("Submission #", data.SubmissionNumber.ToString())
             .WithUrl(data.SubmissionUrl)
             .Build();
 
         return ValueTask.FromResult(new RenderedDiscordNotification
         {
-            Text = $"Submission values updated for submission {data.SubmissionId}",
+            Text = $"Submission values updated for submission #{data.SubmissionNumber}",
             RichEmbed = embed,
             Embeds = [embed]
         });

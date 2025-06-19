@@ -431,6 +431,7 @@
             QuestionnaireId = QuestionnaireId,
             SubmitterId = submission.UserId,
             SubmissionId = submission.Id,
+            SubmissionNumber = submission.Number,
             SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
             Type = SubmissionStaffActionType.ApprovalGranted
         });
@@ -461,6 +462,7 @@
             QuestionnaireId = QuestionnaireId,
             SubmitterId = submission.UserId,
             SubmissionId = submission.Id,
+            SubmissionNumber = submission.Number,
             SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
             Type = SubmissionStaffActionType.ApprovalRemoved
         });
@@ -509,6 +511,7 @@
                 QuestionnaireId = QuestionnaireId,
                 SubmitterId = _submission!.UserId,
                 SubmissionId = _submission.Id,
+                SubmissionNumber = _submission.Number,
                 SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
                 Type = SubmissionStaffActionType.CommentAdded,
                 CommentBody = NewComment.Content

@@ -231,6 +231,7 @@ internal partial class SubmissionSaveEndpoint
                     QuestionnaireId = questionnaireVersion.Questionnaire.Id,
                     SubmitterId = currentUser.Id,
                     SubmissionId = submissionEntity.Id,
+                    SubmissionNumber = submissionEntity.Number,
                     SubmissionUrl = UriHelper.BuildAbsolute(
                         httpContext.Request.Scheme,
                         httpContext.Request.Host,
