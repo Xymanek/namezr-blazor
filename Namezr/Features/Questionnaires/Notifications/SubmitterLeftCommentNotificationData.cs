@@ -42,57 +42,36 @@ public record SubmitterLeftCommentNotificationData
     }
 }
 
-// TODO: extract plumbing to base class
-// This should contain only 3 methods:
-// 1) Get parameters for the component
-// 2) Get the plain text version of the email
-// 3) Get the subject
-// The component should be passed to the base class as a type argument
 [AutoConstructor]
 [RegisterSingleton(typeof(INotificationEmailRenderer))]
 internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
-    NotificationEmailRendererBase<SubmitterLeftCommentNotificationData>
+    NotificationEmailComponentRendererBase<SubmitterLeftCommentNotificationData, SubmitterLeftCommentEmailNotification>
 {
-    private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILoggerFactory _loggerFactory;
+    protected override string GetSubject(Notification<SubmitterLeftCommentNotificationData> notification)
+    {
+        return "New Comment on Submission";
+    }
 
-    protected override async ValueTask<RenderedEmailNotification> DoRenderAsync(
+    protected override Dictionary<string, object?> GetComponentParameters(
         Notification<SubmitterLeftCommentNotificationData> notification
     )
     {
-        await using AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope();
-        await using HtmlRenderer htmlRenderer = new(scope.ServiceProvider, _loggerFactory);
-
-        string html = await htmlRenderer.Dispatcher.InvokeAsync(async () =>
+        return new Dictionary<string, object?>
         {
-            Dictionary<string, object?> dictionary = new()
-            {
-                [nameof(SubmitterLeftCommentEmailNotification.NotificationData)] = notification.Data,
-            };
-
-            ParameterView parameters = ParameterView.FromDictionary(dictionary);
-            HtmlRootComponent output =
-                await htmlRenderer.RenderComponentAsync<SubmitterLeftCommentEmailNotification>(parameters);
-
-            return output.ToHtmlString();
-        });
-
-        // Create plain text version from HTML
-        string plainText = $"New Comment on Submission\n\n"
-                           + $"A submitter has left a new comment on a questionnaire submission.\n\n"
-                           + $"Comment: {notification.Data.CommentBody}\n\n"
-                           + $"Creator: {notification.Data.CreatorDisplayName}\n"
-                           + $"Questionnaire: {notification.Data.QuestionnaireName}\n"
-                           + $"Submitter: {notification.Data.SubmitterName}\n"
-                           + $"Submission: #{notification.Data.SubmissionNumber}\n\n"
-                           + $"View the submission at: {notification.Data.SubmissionUrl}";
-
-        return new RenderedEmailNotification
-        {
-            Subject = "New Comment on Submission",
-            BodyHtml = html,
-            BodyText = plainText
+            [nameof(SubmitterLeftCommentEmailNotification.NotificationData)] = notification.Data,
         };
+    }
+
+    protected override string GetPlainTextBody(Notification<SubmitterLeftCommentNotificationData> notification)
+    {
+        return $"New Comment on Submission\n\n"
+               + $"A submitter has left a new comment on a questionnaire submission.\n\n"
+               + $"Comment: {notification.Data.CommentBody}\n\n"
+               + $"Creator: {notification.Data.CreatorDisplayName}\n"
+               + $"Questionnaire: {notification.Data.QuestionnaireName}\n"
+               + $"Submitter: {notification.Data.SubmitterName}\n"
+               + $"Submission: #{notification.Data.SubmissionNumber}\n\n"
+               + $"View the submission at: {notification.Data.SubmissionUrl}";
     }
 }
 
