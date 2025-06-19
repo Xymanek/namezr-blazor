@@ -2,11 +2,14 @@
 using Immediate.Handlers.Shared;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
+using Namezr.Client.Shared;
 using Namezr.Client.Studio.Questionnaires;
 using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
+using Namezr.Features.Questionnaires.Notifications;
+using Namezr.Features.Notifications.Contracts;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
@@ -21,6 +24,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
         IdentityUserAccessor userAccessor,
         IHttpContextAccessor httpContextAccessor,
         ISubmissionAuditService submissionAudit,
+        INotificationDispatcher notificationDispatcher,
         CancellationToken ct
     )
     {
@@ -61,6 +65,33 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
         {
             submission.Labels!.Remove(label);
             dbContext.SubmissionHistoryEntries.Add(submissionAudit.LabelRemovedStaff(submission, label));
+        }
+
+        // Trigger notification to submitter about staff label action, only if label is visible to submitter
+        if (label.IsSubmitterVisible)
+        {
+            dbContext.OnSavedChangesOnce((_, _) =>
+            {
+                notificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+                {
+                    CreatorId = submission.Version.Questionnaire.CreatorId,
+                    QuestionnaireId = submission.Version.Questionnaire.Id,
+                    SubmitterId = submission.UserId,
+                    SubmissionId = submission.Id,
+                    SubmissionUrl = $"/questionnaires/{submission.Version.Questionnaire.Id}",
+                    Type = request.NewPresent
+                        ? SubmissionStaffActionType.LabelAdded
+                        : SubmissionStaffActionType.LabelRemoved,
+                    Label = new SubmissionLabelModel
+                    {
+                        Id = label.Id,
+                        Text = label.Text,
+                        Description = label.Description,
+                        Colour = label.Colour,
+                        IsSubmitterVisible = label.IsSubmitterVisible
+                    }
+                });
+            });
         }
 
         await dbContext.SaveChangesAsync(ct);

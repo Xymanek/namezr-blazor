@@ -46,9 +46,16 @@ public record SubmissionStaffActionUserNotificationData
                 UserId = SubmitterId,
                 ConsumerId = null,
             },
-            
+
             Data = this,
         };
+    }
+
+    public static implicit operator Notification<SubmissionStaffActionUserNotificationData>(
+        SubmissionStaffActionUserNotificationData data
+    )
+    {
+        return data.ToNotification();
     }
 }
 
@@ -66,7 +73,8 @@ public enum SubmissionStaffActionType
 [AutoConstructor]
 [RegisterSingleton(typeof(INotificationEmailRenderer))]
 internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
-    NotificationEmailComponentRendererBase<SubmissionStaffActionUserNotificationData, SubmissionStaffActionUserEmailNotification>
+    NotificationEmailComponentRendererBase<SubmissionStaffActionUserNotificationData,
+        SubmissionStaffActionUserEmailNotification>
 {
     protected override string GetSubject(Notification<SubmissionStaffActionUserNotificationData> notification)
     {
@@ -94,7 +102,8 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
             body += $"Comment: {data.CommentBody}\n\n";
         }
 
-        if (data.Type is SubmissionStaffActionType.LabelAdded or SubmissionStaffActionType.LabelRemoved && data.Label != null)
+        if (data.Type is SubmissionStaffActionType.LabelAdded or SubmissionStaffActionType.LabelRemoved &&
+            data.Label != null)
         {
             body += $"Label: {data.Label.Text}\n\n";
         }
@@ -121,7 +130,8 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
         return type switch
         {
             SubmissionStaffActionType.ApprovalGranted => "Your submission has been approved by a staff member.",
-            SubmissionStaffActionType.ApprovalRemoved => "The approval on your submission has been removed by a staff member.",
+            SubmissionStaffActionType.ApprovalRemoved =>
+                "The approval on your submission has been removed by a staff member.",
             SubmissionStaffActionType.LabelAdded => "A staff member has added a label to your submission.",
             SubmissionStaffActionType.LabelRemoved => "A staff member has removed a label from your submission.",
             SubmissionStaffActionType.CommentAdded => "A staff member has added a comment to your submission.",
@@ -153,7 +163,8 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
             embedBuilder.AddField("Comment", data.CommentBody);
         }
 
-        if (actionType is SubmissionStaffActionType.LabelAdded or SubmissionStaffActionType.LabelRemoved && data.Label != null)
+        if (actionType is SubmissionStaffActionType.LabelAdded or SubmissionStaffActionType.LabelRemoved &&
+            data.Label != null)
         {
             embedBuilder.AddField("Label", data.Label.Text);
         }
@@ -186,7 +197,8 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
         return type switch
         {
             SubmissionStaffActionType.ApprovalGranted => "Your submission has been approved by a staff member.",
-            SubmissionStaffActionType.ApprovalRemoved => "The approval on your submission has been removed by a staff member.",
+            SubmissionStaffActionType.ApprovalRemoved =>
+                "The approval on your submission has been removed by a staff member.",
             SubmissionStaffActionType.LabelAdded => "A staff member has added a label to your submission.",
             SubmissionStaffActionType.LabelRemoved => "A staff member has removed a label from your submission.",
             SubmissionStaffActionType.CommentAdded => "A staff member has added a comment to your submission.",
