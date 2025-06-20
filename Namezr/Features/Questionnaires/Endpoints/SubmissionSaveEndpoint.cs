@@ -46,7 +46,7 @@ internal partial class SubmissionSaveEndpoint
     {
         QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
             .AsNoTracking()
-            .Include(x => x.Questionnaire)
+            .Include(x => x.Questionnaire.Creator)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
 
@@ -228,8 +228,11 @@ internal partial class SubmissionSaveEndpoint
                 notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
                 {
                     CreatorId = questionnaireVersion.Questionnaire.CreatorId,
+                    CreatorDisplayName = questionnaireVersion.Questionnaire.Creator.DisplayName,
                     QuestionnaireId = questionnaireVersion.Questionnaire.Id,
+                    QuestionnaireName = questionnaireVersion.Questionnaire.Title,
                     SubmitterId = currentUser.Id,
+                    SubmitterName = currentUser.UserName!,
                     SubmissionId = submissionEntity.Id,
                     SubmissionNumber = submissionEntity.Number,
                     SubmissionStudioUrl = UriHelper.BuildAbsolute(
