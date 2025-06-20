@@ -69,7 +69,12 @@ internal partial class NotificationSenderDiscord : INotificationSenderDiscord
     {
         foreach (INotificationDiscordRenderer renderer in _renderers)
         {
-            return await renderer.RenderDirectMessageIfSupportedAsync(notification);
+            RenderedDiscordNotification? rendered = await renderer.RenderDirectMessageIfSupportedAsync(notification);
+
+            if (rendered != null)
+            {
+                return rendered;
+            }
         }
 
         return null;
