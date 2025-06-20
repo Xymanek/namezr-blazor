@@ -1,5 +1,6 @@
 ﻿using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Shared;
@@ -28,6 +29,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
         CancellationToken ct
     )
     {
+        HttpContext httpContext = httpContextAccessor.HttpContext!;
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
@@ -79,9 +81,14 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                     SubmitterId = submission.UserId,
                     SubmissionId = submission.Id,
                     SubmissionNumber = submission.Number,
-                    
+
                     // TODO: update once we support multiple submissions per questionnaire
-                    SubmissionPublicUrl = $"/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}",
+                    SubmissionPublicUrl = UriHelper.BuildAbsolute(
+                        httpContext.Request.Scheme,
+                        httpContext.Request.Host,
+                        httpContext.Request.PathBase,
+                        $"/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}"
+                    ),
 
                     Type = request.NewPresent
                         ? SubmissionStaffActionType.LabelAdded
@@ -103,7 +110,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContextAccessor.HttpContext!);
+            Guid userId = userAccessor.GetRequiredUserId(httpContext);
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff
