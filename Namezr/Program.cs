@@ -1,6 +1,7 @@
 using AspireRunner.AspNetCore;
 using AspNet.Security.OAuth.Discord;
 using AspNet.Security.OAuth.Twitch;
+using MailKitSimplified.Sender;
 using Medallion.Threading;
 using Medallion.Threading.Postgres;
 using Microsoft.AspNetCore.Components;
@@ -16,6 +17,7 @@ using Namezr.Features.Consumers.Services;
 using Namezr.Features.Files.Configuration;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Identity.Endpoints;
+using Namezr.Features.Notifications.Services;
 using Namezr.Features.ThirdParty.Cli;
 using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
@@ -71,6 +73,7 @@ builder.Services.AddAppShared();
 builder.Services.AutoRegister();
 
 builder.Services.AddHostedService<PeriodicConsumerStatusSyncer>();
+builder.Services.AddHostedService<ThreadPoolNotificationDispatcher>();
 
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
@@ -243,6 +246,8 @@ builder.Services.AddOptions<FilesOptions>()
     .BindConfiguration(FilesOptions.SectionPath);
 
 builder.Services.AddMemoryCache();
+
+builder.Services.AddMailKitSimplifiedEmailSender(builder.Configuration);
 
 if (builder.Environment.IsDevelopment())
 {

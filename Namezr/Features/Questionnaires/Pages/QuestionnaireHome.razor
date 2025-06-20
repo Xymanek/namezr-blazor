@@ -3,6 +3,7 @@
 @using System.Collections.Immutable
 @using System.Diagnostics
 @using Microsoft.EntityFrameworkCore
+@using Namezr.Client
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
@@ -18,7 +19,9 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
+@using Namezr.Features.Questionnaires.Notifications
 @using NodaTime
 @using vNext.BlazorComponents.FluentValidation
 
@@ -29,6 +32,7 @@
 @inject IFileUploadTicketHelper FileUploadTicketHelper
 @inject IClock Clock
 @inject NavigationManager NavigationManager
+@inject INotificationDispatcher NotificationDispatcher
 
 @if (_versionEntity is not null)
 {
@@ -318,12 +322,15 @@
 
     private async Task OnValidSubmitNewComment()
     {
+        ApplicationUser submitter = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        Guid submitterId = submitter.Id;
+
         SubmissionHistoryPublicCommentEntity comment = new()
         {
             SubmissionId = _existingSubmission!.Id,
             OccuredAt = Clock.GetCurrentInstant(),
 
-            InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+            InstigatorUserId = submitterId,
             InstigatorIsStaff = false,
             InstigatorIsProgrammatic = false,
 
@@ -332,6 +339,32 @@
 
         DbContext.SubmissionHistoryEntries.Add(comment);
         await DbContext.SaveChangesAsync();
+
+        NotificationDispatcher.Dispatch(
+            new SubmitterLeftCommentNotificationData
+                {
+                    CreatorId = _versionEntity!.Questionnaire.CreatorId,
+                    CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
+
+                    QuestionnaireId = _versionEntity!.Questionnaire.Id,
+                    QuestionnaireName = _versionEntity!.Questionnaire.Title,
+
+                    SubmitterId = submitterId,
+                    SubmitterName = submitter.UserName ?? string.Empty,
+
+                    SubmissionId = _existingSubmission.Id,
+                    SubmissionNumber = _existingSubmission.Number,
+
+                    SubmissionStudioUrl = NavigationManager
+                        .ToAbsoluteUri(
+                            $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_existingSubmission.Id.NoHyphens()}"
+                        )
+                        .AbsoluteUri,
+
+                    CommentBody = NewComment.Content,
+                }
+                .ToNotification()
+        );
 
         NavigationManager.Refresh();
     }

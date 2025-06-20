@@ -33,6 +33,7 @@
         <PackageReference Include="Immediate.Apis" />
         <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" />
+        <PackageReference Include="MailKitSimplified.Sender" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />

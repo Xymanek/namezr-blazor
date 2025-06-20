@@ -1,0 +1,44 @@
+﻿@using Namezr.Features.Notifications.EmailComponents
+
+<EmailNotificationLayout>
+    <h2 style="color: #333; margin-bottom: 20px;">Submission Values Updated</h2>
+
+    <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+        A submitter has updated their submission values.
+    </p>
+
+    <div style="margin-top: 25px; margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 5px; padding: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #666; width: 130px;"><strong>Submission:</strong></td>
+                <td style="padding: 8px 0;">#@NotificationData.SubmissionNumber</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Submitter:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.SubmitterName</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Questionnaire:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.QuestionnaireName</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #666;"><strong>Creator:</strong></td>
+                <td style="padding: 8px 0;">@NotificationData.CreatorDisplayName</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="@NotificationData.SubmissionStudioUrl"
+           style="background-color: #0078d4; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            View Submission
+        </a>
+    </div>
+</EmailNotificationLayout>
+
+@code {
+
+    [Parameter]
+    public required SubmitterUpdatedValuesNotificationData NotificationData { get; init; }
+
+}

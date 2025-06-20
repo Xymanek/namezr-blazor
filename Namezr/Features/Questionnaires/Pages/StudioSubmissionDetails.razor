@@ -23,8 +23,10 @@
 @using Namezr.Features.Creators.Services
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
+@using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
 @using vNext.BlazorComponents.FluentValidation
+@using Namezr.Features.Questionnaires.Notifications
 
 @attribute [Authorize]
 @layout StudioPageHeaderLayout
@@ -37,6 +39,7 @@
 @inject IEligibilityService EligibilityService
 @inject ISupportPlansService SupportPlansService
 @inject ISubmissionAuditService AuditService
+@inject INotificationDispatcher NotificationDispatcher
 
 @if (_submission == null || _eligibilityResult is null)
 {
@@ -51,7 +54,7 @@
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire" />
+        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire"/>
 
         <HxBreadcrumbItem
             Href=@(NavigationManager.Uri)
@@ -372,6 +375,7 @@
             .Include(x => x.User)
             .Include(x => x.Labels)
             .Include(x => x.History!).ThenInclude(entry => entry.InstigatorUser)
+            .Include(x => x.Version.Questionnaire.Creator) // Ensure Creator is loaded
             .SingleOrDefaultAsync(x => x.Id == SubmissionId);
 
         if (_submission == null)
@@ -421,6 +425,25 @@
 
         await dbContext.SaveChangesAsync();
 
+        // Dispatch notification for approval granted
+        NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+        {
+            CreatorId = CreatorId,
+            CreatorDisplayName = _submission!.Version.Questionnaire.Creator.DisplayName,
+            QuestionnaireId = QuestionnaireId,
+            QuestionnaireName = _submission.Version.Questionnaire.Title,
+            SubmitterId = submission.UserId,
+            SubmissionId = submission.Id,
+            SubmissionNumber = submission.Number,
+
+            // TODO: update once we support multiple submissions per questionnaire
+            SubmissionPublicUrl = NavigationManager
+                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                .AbsoluteUri,
+
+            Type = SubmissionStaffActionType.ApprovalGranted
+        });
+
         // Reload the page with new info
         NavigationManager.Refresh();
     }
@@ -439,6 +462,22 @@
         dbContext.SubmissionHistoryEntries.Add(AuditService.ApprovalRemoval(submission));
 
         await dbContext.SaveChangesAsync();
+
+        // Dispatch notification for approval removed
+        NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+        {
+            CreatorId = CreatorId,
+            CreatorDisplayName = _submission!.Version.Questionnaire.Creator.DisplayName,
+            QuestionnaireId = QuestionnaireId,
+            QuestionnaireName = _submission.Version.Questionnaire.Title,
+            SubmitterId = submission.UserId,
+            SubmissionId = submission.Id,
+            SubmissionNumber = submission.Number,
+            SubmissionPublicUrl = NavigationManager
+                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                .AbsoluteUri,
+            Type = SubmissionStaffActionType.ApprovalRemoved
+        });
 
         // Reload the page with new info
         NavigationManager.Refresh();
@@ -474,6 +513,29 @@
 
         dbContext.SubmissionHistoryEntries.Add(historyEntry);
         await dbContext.SaveChangesAsync();
+
+        // Dispatch notification for public staff comment
+        if (NewComment.Type == StudioSubmissionCommentType.PublicComment)
+        {
+            NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+            {
+                CreatorId = CreatorId,
+                CreatorDisplayName = _submission.Version.Questionnaire.Creator.DisplayName,
+                QuestionnaireId = QuestionnaireId,
+                QuestionnaireName = _submission.Version.Questionnaire.Title,
+                SubmitterId = _submission!.UserId,
+                SubmissionId = _submission.Id,
+                SubmissionNumber = _submission.Number,
+
+                // TODO: update once we support multiple submissions per questionnaire
+                SubmissionPublicUrl = NavigationManager
+                    .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                    .AbsoluteUri,
+                Type = SubmissionStaffActionType.CommentAdded,
+
+                CommentBody = NewComment.Content
+            });
+        }
 
         // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
         NavigationManager.Refresh();
