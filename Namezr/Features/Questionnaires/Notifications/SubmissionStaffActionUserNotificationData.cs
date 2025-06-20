@@ -16,7 +16,6 @@ public record SubmissionStaffActionUserNotificationData
     /// And thus will be sent the notification
     /// </summary>
     public required Guid SubmitterId { get; init; }
-    public required string SubmitterName { get; init; }
 
     public required Guid SubmissionId { get; init; }
     public required int SubmissionNumber { get; init; }
@@ -113,7 +112,6 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
         }
 
         body += $"Submission: #{data.SubmissionNumber}\n";
-        body += $"Submitter: {data.SubmitterName}\n";
         body += $"Questionnaire: {data.QuestionnaireName}\n";
         body += $"Creator: {data.CreatorDisplayName}\n\n";
         body += $"View the submission at: {data.SubmissionPublicUrl}";
@@ -165,7 +163,6 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
             .WithColor(GetActionColor(actionType))
             .WithTimestamp(DateTimeOffset.UtcNow)
             .WithUrl(data.SubmissionPublicUrl)
-            .AddField("Submitter", data.SubmitterName)
             .AddField("Questionnaire", data.QuestionnaireName)
             .AddField("Creator", data.CreatorDisplayName);
 

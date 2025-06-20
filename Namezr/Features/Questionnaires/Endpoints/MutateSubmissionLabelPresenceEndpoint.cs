@@ -82,7 +82,6 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                     QuestionnaireId = submission.Version.Questionnaire.Id,
                     QuestionnaireName = submission.Version.Questionnaire.Title,
                     SubmitterId = submission.UserId,
-                    SubmitterName = submission.User.UserName!,
                     SubmissionId = submission.Id,
                     SubmissionNumber = submission.Number,
 

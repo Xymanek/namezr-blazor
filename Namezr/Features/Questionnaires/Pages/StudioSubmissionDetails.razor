@@ -433,7 +433,6 @@
             QuestionnaireId = QuestionnaireId,
             QuestionnaireName = _submission.Version.Questionnaire.Title,
             SubmitterId = submission.UserId,
-            SubmitterName = _submission!.User.UserName!,
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
 
@@ -472,13 +471,11 @@
             QuestionnaireId = QuestionnaireId,
             QuestionnaireName = _submission.Version.Questionnaire.Title,
             SubmitterId = submission.UserId,
-            SubmitterName = _submission.User.UserName!,
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
             SubmissionPublicUrl = NavigationManager
                 .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
                 .AbsoluteUri,
-
             Type = SubmissionStaffActionType.ApprovalRemoved
         });
 
@@ -527,7 +524,6 @@
                 QuestionnaireId = QuestionnaireId,
                 QuestionnaireName = _submission.Version.Questionnaire.Title,
                 SubmitterId = _submission!.UserId,
-                SubmitterName = _submission.User.UserName!,
                 SubmissionId = _submission.Id,
                 SubmissionNumber = _submission.Number,
 
