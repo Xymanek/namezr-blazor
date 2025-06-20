@@ -7,13 +7,16 @@ namespace Namezr.Features.Questionnaires.Notifications;
 public record SubmissionStaffActionUserNotificationData
 {
     public required Guid CreatorId { get; init; }
+    public required string CreatorDisplayName { get; init; }
     public required Guid QuestionnaireId { get; init; }
+    public required string QuestionnaireName { get; init; }
 
     /// <summary>
     /// ID of the user who submitted the submission.
     /// And thus will be sent the notification
     /// </summary>
     public required Guid SubmitterId { get; init; }
+    public required string SubmitterName { get; init; }
 
     public required Guid SubmissionId { get; init; }
     public required int SubmissionNumber { get; init; }
@@ -109,7 +112,10 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
             body += $"Label: {data.Label.Text}\n\n";
         }
 
-        body += $"Submission: #{data.SubmissionNumber}\n\n";
+        body += $"Submission: #{data.SubmissionNumber}\n";
+        body += $"Submitter: {data.SubmitterName}\n";
+        body += $"Questionnaire: {data.QuestionnaireName}\n";
+        body += $"Creator: {data.CreatorDisplayName}\n\n";
         body += $"View the submission at: {data.SubmissionPublicUrl}";
         return body;
     }
@@ -158,7 +164,10 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
             .WithDescription(GetActionDescription(actionType))
             .WithColor(GetActionColor(actionType))
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .WithUrl(data.SubmissionPublicUrl);
+            .WithUrl(data.SubmissionPublicUrl)
+            .AddField("Submitter", data.SubmitterName)
+            .AddField("Questionnaire", data.QuestionnaireName)
+            .AddField("Creator", data.CreatorDisplayName);
 
         if (actionType == SubmissionStaffActionType.CommentAdded && !string.IsNullOrEmpty(data.CommentBody))
         {

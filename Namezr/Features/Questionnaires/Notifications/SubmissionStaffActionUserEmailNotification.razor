@@ -6,6 +6,22 @@
     <div class="mb-2">
         <strong>Submission #@NotificationData.SubmissionNumber</strong>
     </div>
+    <table class="table table-sm w-auto mb-4">
+        <tbody>
+            <tr>
+                <td class="fw-bold text-secondary">Submitter:</td>
+                <td>@NotificationData.SubmitterName</td>
+            </tr>
+            <tr>
+                <td class="fw-bold text-secondary">Questionnaire:</td>
+                <td>@NotificationData.QuestionnaireName</td>
+            </tr>
+            <tr>
+                <td class="fw-bold text-secondary">Creator:</td>
+                <td>@NotificationData.CreatorDisplayName</td>
+            </tr>
+        </tbody>
+    </table>
 
     <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
         @GetActionDescription()

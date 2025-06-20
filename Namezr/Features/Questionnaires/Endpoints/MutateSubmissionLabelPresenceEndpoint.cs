@@ -36,7 +36,8 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
             .AsTracking()
             .AsSplitQuery()
             .Include(submission => submission.Labels)
-            .Include(submission => submission.Version.Questionnaire)
+            .Include(submission => submission.Version.Questionnaire.Creator)
+            .Include(submission => submission.User)
             .SingleOrDefaultAsync(submission => submission.Id == request.SubmissionId, ct);
 
         if (submission == null) throw new Exception("Bad submission ID");
@@ -77,8 +78,11 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                 notificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
                 {
                     CreatorId = submission.Version.Questionnaire.CreatorId,
+                    CreatorDisplayName = submission.Version.Questionnaire.Creator.DisplayName,
                     QuestionnaireId = submission.Version.Questionnaire.Id,
+                    QuestionnaireName = submission.Version.Questionnaire.Title,
                     SubmitterId = submission.UserId,
+                    SubmitterName = submission.User.UserName!,
                     SubmissionId = submission.Id,
                     SubmissionNumber = submission.Number,
 
