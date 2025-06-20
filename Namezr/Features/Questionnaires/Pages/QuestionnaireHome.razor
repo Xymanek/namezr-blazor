@@ -355,9 +355,10 @@
                     SubmissionId = _existingSubmission.Id,
                     SubmissionNumber = _existingSubmission.Number,
 
-                    // TODO: update once we support multiple submissions per questionnaire
-                    SubmissionUrl = NavigationManager
-                        .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                    SubmissionStudioUrl = NavigationManager
+                        .ToAbsoluteUri(
+                            $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_existingSubmission.Id.NoHyphens()}"
+                        )
                         .AbsoluteUri,
 
                     CommentBody = NewComment.Content,

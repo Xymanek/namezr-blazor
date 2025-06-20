@@ -79,7 +79,10 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                     SubmitterId = submission.UserId,
                     SubmissionId = submission.Id,
                     SubmissionNumber = submission.Number,
-                    SubmissionUrl = $"/questionnaires/{submission.Version.Questionnaire.Id}",
+                    
+                    // TODO: update once we support multiple submissions per questionnaire
+                    SubmissionPublicUrl = $"/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}",
+
                     Type = request.NewPresent
                         ? SubmissionStaffActionType.LabelAdded
                         : SubmissionStaffActionType.LabelRemoved,

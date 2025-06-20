@@ -23,7 +23,7 @@ public record SubmitterLeftCommentNotificationData
 
     public required Guid SubmissionId { get; init; }
     public required int SubmissionNumber { get; init; }
-    public required string SubmissionUrl { get; init; }
+    public required string SubmissionStudioUrl { get; init; }
 
     public required string CommentBody { get; init; }
 
@@ -71,7 +71,7 @@ internal partial class SubmitterLeftCommentNotificationDataEmailRenderer :
                + $"Questionnaire: {notification.Data.QuestionnaireName}\n"
                + $"Submitter: {notification.Data.SubmitterName}\n"
                + $"Submission: #{notification.Data.SubmissionNumber}\n\n"
-               + $"View the submission at: {notification.Data.SubmissionUrl}";
+               + $"View the submission at: {notification.Data.SubmissionStudioUrl}";
     }
 }
 
@@ -95,7 +95,7 @@ internal class SubmitterLeftCommentNotificationDataDiscordRenderer
             .AddField("Questionnaire", data.QuestionnaireName)
             .AddField("Submitter", data.SubmitterName)
             .AddField("Submission #", data.SubmissionNumber.ToString())
-            .WithUrl(data.SubmissionUrl)
+            .WithUrl(data.SubmissionStudioUrl)
             .Build();
 
         return ValueTask.FromResult(new RenderedDiscordNotification

@@ -232,12 +232,11 @@ internal partial class SubmissionSaveEndpoint
                     SubmitterId = currentUser.Id,
                     SubmissionId = submissionEntity.Id,
                     SubmissionNumber = submissionEntity.Number,
-                    SubmissionUrl = UriHelper.BuildAbsolute(
+                    SubmissionStudioUrl = UriHelper.BuildAbsolute(
                         httpContext.Request.Scheme,
                         httpContext.Request.Host,
                         httpContext.Request.PathBase,
-                        // TODO: update once we support multiple submissions per questionnaire
-                        $"/questionnaires/{questionnaireVersion.Questionnaire.Id}"
+                        $"/studio/{questionnaireVersion.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{questionnaireVersion.Questionnaire.Id.NoHyphens()}/submissions/{submissionEntity.Id.NoHyphens()}"
                     ),
                 });
             });

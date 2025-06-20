@@ -17,7 +17,7 @@ public record SubmissionStaffActionUserNotificationData
 
     public required Guid SubmissionId { get; init; }
     public required int SubmissionNumber { get; init; }
-    public required string SubmissionUrl { get; init; }
+    public required string SubmissionPublicUrl { get; init; }
 
     public required SubmissionStaffActionType Type { get; init; }
 
@@ -110,7 +110,7 @@ internal partial class SubmissionStaffActionUserNotificationEmailRenderer :
         }
 
         body += $"Submission: #{data.SubmissionNumber}\n\n";
-        body += $"View the submission at: {data.SubmissionUrl}";
+        body += $"View the submission at: {data.SubmissionPublicUrl}";
         return body;
     }
 
@@ -158,7 +158,7 @@ internal class SubmissionStaffActionUserNotificationDiscordRenderer
             .WithDescription(GetActionDescription(actionType))
             .WithColor(GetActionColor(actionType))
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .WithUrl(data.SubmissionUrl);
+            .WithUrl(data.SubmissionPublicUrl);
 
         if (actionType == SubmissionStaffActionType.CommentAdded && !string.IsNullOrEmpty(data.CommentBody))
         {

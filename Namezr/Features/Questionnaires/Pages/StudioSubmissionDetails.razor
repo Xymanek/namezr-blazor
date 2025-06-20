@@ -54,7 +54,7 @@
 
 <SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
     <HxBreadcrumb>
-        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire" />
+        <SubmissionsBreadcrumbs Questionnaire="_submission.Version.Questionnaire"/>
 
         <HxBreadcrumbItem
             Href=@(NavigationManager.Uri)
@@ -432,7 +432,10 @@
             SubmitterId = submission.UserId,
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
-            SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+
+            // TODO: update once we support multiple submissions per questionnaire
+            SubmissionPublicUrl = $"/questionnaires/{QuestionnaireId.NoHyphens()}",
+
             Type = SubmissionStaffActionType.ApprovalGranted
         });
 
@@ -463,7 +466,10 @@
             SubmitterId = submission.UserId,
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
-            SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+
+            // TODO: update once we support multiple submissions per questionnaire
+            SubmissionPublicUrl = $"/questionnaires/{QuestionnaireId.NoHyphens()}",
+
             Type = SubmissionStaffActionType.ApprovalRemoved
         });
 
@@ -512,8 +518,11 @@
                 SubmitterId = _submission!.UserId,
                 SubmissionId = _submission.Id,
                 SubmissionNumber = _submission.Number,
-                SubmissionUrl = $"/questionnaires/{QuestionnaireId}",
+
+                // TODO: update once we support multiple submissions per questionnaire
+                SubmissionPublicUrl = $"/questionnaires/{QuestionnaireId.NoHyphens()}",
                 Type = SubmissionStaffActionType.CommentAdded,
+
                 CommentBody = NewComment.Content
             });
         }
