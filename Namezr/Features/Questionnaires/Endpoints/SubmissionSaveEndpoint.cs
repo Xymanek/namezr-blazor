@@ -5,6 +5,7 @@ using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Medallion.Threading;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
@@ -13,7 +14,9 @@ using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Files;
 using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
+using Namezr.Features.Notifications.Contracts;
 using Namezr.Features.Questionnaires.Data;
+using Namezr.Features.Questionnaires.Notifications;
 using Namezr.Features.Questionnaires.Pages;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
@@ -37,12 +40,13 @@ internal partial class SubmissionSaveEndpoint
         ApplicationDbContext dbContext,
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
+        INotificationDispatcher notificationDispatcher,
         CancellationToken ct
     )
     {
         QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
             .AsNoTracking()
-            .Include(x => x.Questionnaire)
+            .Include(x => x.Questionnaire.Creator)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
 
@@ -94,7 +98,8 @@ internal partial class SubmissionSaveEndpoint
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
-        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        HttpContext httpContext = httpContextAccessor.HttpContext!;
+        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
 
         // Ensure 1 submission per ques per user, even in race conditions.
         await using var _ = await distributedLockProvider.AcquireLockAsync(
@@ -214,8 +219,30 @@ internal partial class SubmissionSaveEndpoint
                 submissionEntity.ApprovedAt = null;
                 submissionEntity.ApproverId = null;
             }
-        
+
             dbContext.SubmissionHistoryEntries.Add(auditService.UpdateValues(submissionEntity));
+
+            // TODO: fire the notification only if there were ever some changes(/views?) by staff
+            dbContext.OnSavedChangesOnce((_, _) =>
+            {
+                notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
+                {
+                    CreatorId = questionnaireVersion.Questionnaire.CreatorId,
+                    CreatorDisplayName = questionnaireVersion.Questionnaire.Creator.DisplayName,
+                    QuestionnaireId = questionnaireVersion.Questionnaire.Id,
+                    QuestionnaireName = questionnaireVersion.Questionnaire.Title,
+                    SubmitterId = currentUser.Id,
+                    SubmitterName = currentUser.UserName!,
+                    SubmissionId = submissionEntity.Id,
+                    SubmissionNumber = submissionEntity.Number,
+                    SubmissionStudioUrl = UriHelper.BuildAbsolute(
+                        httpContext.Request.Scheme,
+                        httpContext.Request.Host,
+                        httpContext.Request.PathBase,
+                        $"/studio/{questionnaireVersion.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{questionnaireVersion.Questionnaire.Id.NoHyphens()}/submissions/{submissionEntity.Id.NoHyphens()}"
+                    ),
+                });
+            });
         }
         else
         {
