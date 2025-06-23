@@ -13,6 +13,7 @@ public static class ApiEndpointPaths
 
     public const string SubmissionLabelsConfigSave = "/api/submission-labels/config/save";
     public const string SubmissionLabelsPresenceMutate = "/api/submission-labels/presence-mutate";
+    public const string SubmissionAttributeUpdate = "/api/submission-labels/update-attribute";
 
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
