@@ -33,6 +33,12 @@ Example:
     "ClientId": "...",
     "ClientSecret": "...",
     "BotToken": "..."
+  },
+  "EmailSender": {
+    "SmtpHost": "localhost",
+    "SmtpPort": 1025,
+    "CapabilitiesToRemove": "Authentication",
+    "ProtocolLog": "Logs\\SmtpClient.txt"
   }
 }
 ```
