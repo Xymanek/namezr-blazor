@@ -10,6 +10,8 @@ public class EligibilityOptionEditModel
     public string PriorityGroup { get; set; } = string.Empty;
     public decimal PriorityModifier { get; set; } = 1; // TODO: rename: Weight
 
+    public bool IsHidden { get; set; }
+    
     [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
     internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>
     {

@@ -21,6 +21,7 @@
     IEnumerable<IGrouping<(EligibilityType Type, Guid? SupportTargetId), EligibilityOptionEntity>> groupedOptions =
         Configuration
             .Options!
+            .Where(option => !option.IsHidden || EligibilityResult.EligiblePlanIds.Contains(option.PlanId))
             .GroupBy(option => (option.PlanId.Type, option.PlanId.SupportPlanId?.SupportTargetId))
             .OrderBy(x => x.Key.Type switch
             {
