@@ -1,0 +1,141 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Blazor Project Structure",
+        "description": "Set up the Blazor project structure with server-side static rendering and a WASM client project. Configure Havit.Blazor UI and Bootstrap 5.3.",
+        "details": "1. Create a new Blazor Web App project.\n2. Add Havit.Blazor UI NuGet packages.\n3. Configure Bootstrap 5.3.\n4. Structure the project with feature-based folders (e.g., Creators, Questionnaires).\n5. Set up static rendering for the server-side project and configure the WASM client project.",
+        "testStrategy": "Verify the project builds successfully and that Havit.Blazor UI components and Bootstrap styling are correctly applied. Check that static rendering is enabled on the server.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Creator Profiles Feature",
+        "description": "Implement the Creator Profiles feature with public and studio views. Include support for managing support targets (Twitch, Patreon, YouTube, etc.) and staff management.",
+        "details": "1. Create Creator model and database schema.\n2. Implement API endpoints for creator profile management using Immediate.Apis.\n3. Develop UI components for public and studio views using Havit.Blazor UI.\n4. Implement support target management (add, edit, delete).\n5. Implement staff management (invite, manage permissions).",
+        "testStrategy": "Verify that creator profiles can be created, updated, and viewed correctly in both public and studio views. Ensure support targets and staff can be managed. Test API endpoints for proper functionality and authorization.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement Questionnaires Feature",
+        "description": "Implement the Questionnaires feature, including creation, editing, versioning, submission, approval workflow, labels, comments, bulk/file operations, and selection series.",
+        "details": "1. Create Questionnaire and Submission models and database schema.\n2. Implement API endpoints for questionnaire management using Immediate.Apis.\n3. Develop UI components for questionnaire creation, editing, and submission using Havit.Blazor UI.\n4. Implement approval workflow (auto-approve, manual approval, closed).\n5. Implement labels and threaded comments (public and staff).\n6. Implement bulk and file operations (download submissions).\n7. Implement selection series management.",
+        "testStrategy": "Verify that questionnaires can be created, edited, submitted, and approved correctly. Ensure labels, comments, and file operations function as expected. Test API endpoints for proper functionality and authorization.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Eligibility Feature",
+        "description": "Implement the Eligibility feature, including configuration of eligibility rules and presentation of eligibility status and requirements.",
+        "details": "1. Create EligibilityRule model and database schema.\n2. Implement API endpoints for eligibility configuration using Immediate.Apis.\n3. Develop UI components for displaying eligibility status and requirements using Havit.Blazor UI.\n4. Implement logic for checking eligibility based on defined rules.",
+        "testStrategy": "Verify that eligibility rules can be configured and that eligibility status is displayed correctly in both public and studio views. Test API endpoints for proper functionality and authorization.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Polls Feature",
+        "description": "Implement the Polls feature, including poll creation, management, and voting.",
+        "details": "1. Create Poll model and database schema.\n2. Implement API endpoints for poll management using Immediate.Apis.\n3. Develop UI components for poll creation, editing, and voting using Havit.Blazor UI.",
+        "testStrategy": "Verify that polls can be created, edited, and voted on correctly. Test API endpoints for proper functionality and authorization.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Identity & Authentication",
+        "description": "Implement Identity & Authentication using external logins (Discord, Google) and profile management. Implement role-based authorization for creators, staff, and supporters.",
+        "details": "1. Configure external login providers (Discord, Google).\n2. Implement user profile management (update profile, link accounts).\n3. Implement role-based authorization (creators, staff, supporters).\n4. Secure endpoints and UI components based on roles.",
+        "testStrategy": "Verify that users can log in using external providers and manage their profiles. Ensure role-based authorization is correctly implemented and enforced. Test API endpoints for proper authentication and authorization.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement File Management",
+        "description": "Implement secure file upload and download endpoints with file type and size restrictions.",
+        "details": "1. Implement API endpoints for file upload and download using Immediate.Apis.\n2. Configure file type and size restrictions per questionnaire.\n3. Secure file access based on user roles and permissions.",
+        "testStrategy": "Verify that files can be uploaded and downloaded securely. Ensure file type and size restrictions are enforced. Test API endpoints for proper authentication and authorization.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Notifications",
+        "description": "Implement notification dispatchers for email and Discord. Notify users and staff on submission/comment/approval events.",
+        "details": "1. Configure email (SMTP) and Discord notification dispatchers.\n2. Implement logic for sending notifications on submission, comment, and approval events.\n3. Integrate with Discord bot for Discord notifications.",
+        "testStrategy": "Verify that email and Discord notifications are sent correctly on submission, comment, and approval events. Test Discord bot integration.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Studio (Admin) Tools",
+        "description": "Implement Studio (Admin) tools, including a dashboard, breadcrumbs, and navigation using Havit.Blazor components.",
+        "details": "1. Develop studio layouts and navigation using Havit.Blazor UI.\n2. Implement a dashboard for managing creators, questionnaires, supporters, and submissions.\n3. Implement breadcrumbs for consistent navigation.",
+        "testStrategy": "Verify that the studio dashboard and navigation are functional and user-friendly. Ensure breadcrumbs are displayed correctly. Test UI components for proper rendering and behavior.",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          3,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Supporters Feature",
+        "description": "Implement the Supporters feature, including viewing and managing supporters, their support status, and participation.",
+        "details": "1. Create Supporter model and database schema.\n2. Implement API endpoints for supporter management using Immediate.Apis.\n3. Develop UI components for viewing and managing supporters using Havit.Blazor UI.\n4. Implement logic for tracking supporter status and participation.",
+        "testStrategy": "Verify that supporters can be viewed and managed correctly. Ensure supporter status and participation are tracked accurately. Test API endpoints for proper functionality and authorization.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-25T21:08:59.685Z",
+      "updated": "2025-06-25T21:08:59.685Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
