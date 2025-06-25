@@ -9,7 +9,7 @@ public class EligibilityOptionEditModel
 
     public string PriorityGroup { get; set; } = string.Empty;
     public decimal PriorityModifier { get; set; } = 1; // TODO: rename: Weight
-    public int MaxSubmissionsPerUser { get; set; } = 1;
+    public int MaxSubmissionsPerUser { get; set; } = EligibilityOptionConstants.DefaultMaxSubmissionsPerUser;
 
     [RegisterSingleton(typeof(IValidator<EligibilityOptionEditModel>))]
     internal sealed class Validator : AbstractValidator<EligibilityOptionEditModel>
@@ -23,6 +23,9 @@ public class EligibilityOptionEditModel
                 .MaximumLength(PriorityGroupMaxLength);
 
             RuleFor(x => x.PriorityModifier)
+                .GreaterThan(0);
+
+            RuleFor(x => x.MaxSubmissionsPerUser)
                 .GreaterThan(0);
         }
     }
