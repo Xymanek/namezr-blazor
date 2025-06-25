@@ -28,6 +28,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 ### 4. Eligibility
 - **Eligibility Configuration:** Define and manage eligibility rules for questionnaires and support plans.
 - **Eligibility Presentation:** Public and studio components to display eligibility status and requirements.
+- **Max Submissions Per User:** Creators can configure a maximum number of submissions per user for each questionnaire, using eligibility options. This is set as a field in the eligibility option entity and enforced per user per questionnaire.
 
 ### 5. Polls
 - **Poll Creation:** Studio users can create and manage polls.
@@ -55,7 +56,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 ## Endpoints (Immediate.Apis)
 - **Questionnaires:** Create, update, submit, download files, bulk download, mutate labels.
 - **Creators:** Onboarding, staff management, support target management.
-- **Eligibility:** Eligibility checks and configuration.
+- **Eligibility:** Eligibility checks and configuration, including max submissions per user.
 - **Polls:** Create and manage polls.
 - **Files:** Upload and download endpoints.
 - **Identity:** External login, logout, profile management.
@@ -66,12 +67,13 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 ## User Flows
 - **Public User:**
   - Browse creators and questionnaires.
-  - Submit responses if eligible.
+  - Submit responses if eligible and within the allowed submission limit.
   - View own submissions and comments.
   - Manage profile and external logins.
 - **Creator/Staff (Studio):**
   - Manage creator profile, staff, and support targets.
   - Create and manage questionnaires, submissions, and polls.
+  - Configure max submissions per user for questionnaires.
   - Review, approve, and comment on submissions.
   - Manage eligibility and selection series.
   - View and manage supporters.
@@ -123,6 +125,7 @@ These integrations are designed to be extensible, allowing new platforms to be a
 - **Role-based Authorization:** Enforced at endpoint and UI level.
 - **File Access:** Only authorized users can upload/download files.
 - **Submission Access:** Only eligible users can submit; only staff can approve/review.
+- **Submission Limit Enforcement:** Users cannot submit more than the configured max submissions per questionnaire; attempts to exceed the limit are blocked and an appropriate message is shown.
 
 ---
 
@@ -132,7 +135,7 @@ These integrations are designed to be extensible, allowing new platforms to be a
 
 ---
 
-## Data Model: Creators, Support Targets, Supporters, and Users
+## Data Model: Creators, Support Targets, Supporters, Users, and Eligibility Options
 
 - **Creators** represent individuals or organizations who run campaigns, questionnaires, or community activities on Namezr. Each creator has a profile and can have multiple staff members.
 
@@ -142,12 +145,15 @@ These integrations are designed to be extensible, allowing new platforms to be a
 
 - **Users** are all registered participants in the system. A user can be a supporter, a creator, a staff member, or any combination. Users can manage their profile, participate in questionnaires, and interact with creators they support.
 
+- **Eligibility Options** include a field for max submissions per user, which is set per questionnaire and enforced per user. This field is part of the eligibility option entity and is used to determine if a user can submit additional responses to a questionnaire.
+
 **Associations:**
 - A creator can have multiple support targets.
 - A support target belongs to one creator.
 - A user can support multiple creators (via different support targets).
 - The system maintains mappings between users and their active support targets to determine eligibility and access.
 - Staff users are associated with creators and have management permissions.
+- Eligibility options are associated with questionnaires and define per-user submission limits.
 
 This association model enables flexible community management, eligibility checks, and targeted communication between creators and their supporters.
 
@@ -178,4 +184,4 @@ This approach ensures that only authenticated users with valid external support 
 
 ---
 
-*Generated automatically from project structure and code analysis, June 25, 2025.*
+*Generated automatically from project structure and code analysis, June 26, 2025.*
