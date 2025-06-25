@@ -15,6 +15,7 @@ using Namezr.Features.Files;
 using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Notifications.Contracts;
+using Namezr.Features.Eligibility.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Notifications;
 using Namezr.Features.Questionnaires.Pages;
@@ -47,6 +48,7 @@ internal partial class SubmissionSaveEndpoint
         QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire.Creator)
+            .Include(x => x.Questionnaire.EligibilityOptions) // Include EligibilityOptions
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
 

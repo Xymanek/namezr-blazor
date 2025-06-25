@@ -32,6 +32,13 @@
                 @bind-Value="Value.PriorityModifier"/>
         </HxTooltip>
     </div>
+    <div class="col-2">
+        <HxInputNumber
+            Label="Max Submissions Per User"
+            @bind-Value="Value.MaxSubmissionsPerUser"
+            Min="0"
+        />
+    </div>
 
     <div class="col-1">
         <HxButtonGroup>

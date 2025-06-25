@@ -23,6 +23,8 @@ public class EligibilityOptionEntity
 
     public required decimal PriorityModifier { get; set; }
     
+    public int MaxSubmissionsPerUser { get; set; } = 1;
+    
     // TODO: add SelectionWave, e.g. all "1"s must be selected before "2"s are considered
 }
 
