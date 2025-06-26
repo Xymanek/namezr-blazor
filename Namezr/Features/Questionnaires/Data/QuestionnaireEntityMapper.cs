@@ -94,7 +94,7 @@ public partial class QuestionnaireFormToEntityMapper
         entity.EligibilityConfiguration = new EligibilityConfigurationEntity
         {
             OwnershipType = EligibilityConfigurationOwnershipType.Questionnaire,
-            Options = EligibilityEntityMapper.Map(source.EligibilityOptions),
+            Options = EligibilityEntityMapper.Map(source.EligibilityOptions, source.MaxSubmissionsPerUser),
         };
 
         return entity;
@@ -126,7 +126,7 @@ public partial class QuestionnaireFormToEntityMapper
     {
         UpdateEntityProperties(source, target);
         target.Versions!.Add(MapToVersionEntity(source));
-        EligibilityEntityMapper.Map(source.EligibilityOptions, target.EligibilityConfiguration.Options);
+        EligibilityEntityMapper.Map(source.EligibilityOptions, source.MaxSubmissionsPerUser, target.EligibilityConfiguration.Options);
         UpdateFields(target);
     }
 

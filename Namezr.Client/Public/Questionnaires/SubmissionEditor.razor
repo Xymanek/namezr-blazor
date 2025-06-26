@@ -2,6 +2,8 @@
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using SuperLinq
 @using vNext.BlazorComponents.FluentValidation
+@using System.Net.Http.Json
+@using Namezr.Client.Helpers
 
 @rendermode InteractiveWebAssembly
 
@@ -165,10 +167,46 @@
                     NewFileTickets = [.._newFileTickets],
                 }
             );
-            
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    ValidationProblemDetailsDto? problemDetails = await response.Content.ReadFromJsonAsync<ValidationProblemDetailsDto>();
+                    if (problemDetails?.Errors != null)
+                    {
+                        foreach (var errorEntry in problemDetails.Errors)
+                        {
+                            foreach (var errorMessage in errorEntry.Value)
+                            {
+                                HxMessenger.AddError(errorMessage);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        HxMessenger.AddError("An unexpected validation error occurred.");
+                    }
+                }
+                else
+                {
+                    // For other non-success status codes, display a generic error
+                    HxMessenger.AddError($"An error occurred: {response.ReasonPhrase}");
+                }
+                return; // Stop further processing if there was an error
+            }
 
             HxMessenger.AddInformation("Submission saved");
+        }
+        catch (HttpRequestException ex)
+        {
+            // This catch block is for network errors or other HTTP issues not related to status codes
+            HxMessenger.AddError($"Network error or unexpected HTTP issue: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Catch any other unexpected errors
+            HxMessenger.AddError($"An unexpected error occurred: {ex.Message}");
         }
         finally
         {

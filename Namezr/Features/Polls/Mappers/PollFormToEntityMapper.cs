@@ -33,7 +33,7 @@ public static partial class PollFormToEntityMapper
         return new EligibilityConfigurationEntity
         {
             OwnershipType = EligibilityConfigurationOwnershipType.Poll,
-            Options = EligibilityEntityMapper.Map(source.EligibilityOptions),
+            Options = EligibilityEntityMapper.Map(source.EligibilityOptions, null),
         };
     }
 
@@ -61,7 +61,7 @@ public static partial class PollFormToEntityMapper
     {
         DoUpdateEntity(source, target);
         CollectionMapper.Map(OptionMappingConfiguration, source.Options, target.Options);
-        EligibilityEntityMapper.Map(source.EligibilityOptions, target.EligibilityConfiguration.Options);
+        EligibilityEntityMapper.Map(source.EligibilityOptions, null, target.EligibilityConfiguration.Options);
     }
 
     [MapperRequiredMapping(RequiredMappingStrategy.Source)]

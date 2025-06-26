@@ -10,6 +10,7 @@ public static partial class EligibilityEntityMapper
 {
     public static ICollection<EligibilityOptionEntity> Map(
         IReadOnlyList<EligibilityOptionEditModel> models,
+        int? maxSubmissionsPerUser,
         ICollection<EligibilityOptionEntity>? entities = null
     )
     {
@@ -32,10 +33,13 @@ public static partial class EligibilityEntityMapper
             {
                 Map(model, entity);
                 entity.Order = index;
+                entity.MaxSubmissionsPerUser = maxSubmissionsPerUser;
             }
             else
             {
-                entities.Add(Map(model, index));
+                EligibilityOptionEntity newEntity = Map(model, index);
+                newEntity.MaxSubmissionsPerUser = maxSubmissionsPerUser;
+                entities.Add(newEntity);
             }
         }
 

@@ -85,6 +85,11 @@
                     CanRemove="Model.EligibilityOptions.Count > 1"
                     OnRemove="() => Model.EligibilityOptions.RemoveAt(optionIndex)"
                 />
+                <HxInputNumber
+                    Label="Max submissions per user (0 or blank for no limit)"
+                    @bind-Value="Model.EligibilityOptions[optionIndex].MaxSubmissionsPerUser"
+                    Min="0"
+                />
             }
         </BodyTemplate>
     </HxCard>

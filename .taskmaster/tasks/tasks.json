@@ -137,7 +137,7 @@
         "description": "Implement the ability to configure and enforce a maximum number of submissions per user per questionnaire. This includes updating the eligibility option entity, endpoints, UI, and validation logic.",
         "details": "1. Update the EligibilityOption model to include a `MaxSubmissionsPerUser` property.\n2. Modify the questionnaire creation/editing UI in the Studio (Admin) tools to allow creators to set the `MaxSubmissionsPerUser` value.\n3. Update the API endpoints for creating and updating questionnaires to persist the `MaxSubmissionsPerUser` value.\n4. Implement validation logic in the submission process to check if the user has already reached the maximum number of submissions for the questionnaire.\n5. If the user has reached the maximum, display an appropriate error message.\n6. Document the new feature in the relevant documentation.\n7. Ensure that the feature is compatible with existing eligibility rules and submission workflows.",
         "testStrategy": "1. Create questionnaires with different `MaxSubmissionsPerUser` values (e.g., 1, 5, unlimited).\n2. As a user, submit questionnaires and verify that the system enforces the maximum submission limit.\n3. Ensure that the correct error message is displayed when the user exceeds the limit.\n4. Test the feature with different user roles (e.g., creators, staff, supporters).\n5. Verify that the `MaxSubmissionsPerUser` value is correctly displayed in the Studio (Admin) tools.\n6. Test the feature with existing eligibility rules to ensure compatibility.\n7. Test edge cases, such as submitting questionnaires concurrently or attempting to bypass the validation logic.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           3,
           4,
@@ -152,7 +152,7 @@
             "description": "Modify the `EligibilityOption` data model to include a `MaxSubmissionsPerUser` property. This property will store the maximum number of submissions allowed per user for a given questionnaire.",
             "dependencies": [],
             "details": "Add a new integer property named `MaxSubmissionsPerUser` to the `EligibilityOption` entity. Ensure the property is nullable to indicate no limit. Update database schema accordingly using migrations.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify that the new `MaxSubmissionsPerUser` property is correctly added to the `EligibilityOption` model and that database migrations are successful."
           },
           {
@@ -161,7 +161,7 @@
             "description": "Modify the questionnaire creation/editing UI in the Studio (Admin) tools to allow questionnaire creators to set the `MaxSubmissionsPerUser` value.",
             "dependencies": [],
             "details": "Add a new input field (e.g., a number input) to the questionnaire creation/editing form in the Studio. This field should allow administrators to specify the maximum number of submissions per user. If the field is left blank or set to 0, it should be interpreted as no limit. Ensure appropriate validation on the input field (e.g., non-negative integer).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test that the new input field is displayed correctly in the UI and that the entered value is properly bound to the questionnaire object. Verify that validation prevents invalid input (e.g., negative numbers)."
           },
           {
@@ -170,7 +170,7 @@
             "description": "Update the API endpoints for creating and updating questionnaires to persist the `MaxSubmissionsPerUser` value. This ensures that the value set in the UI is correctly stored in the database.",
             "dependencies": [],
             "details": "Modify the API endpoints responsible for creating and updating questionnaires to accept and persist the `MaxSubmissionsPerUser` value. Map the value from the request body to the corresponding property in the `EligibilityOption` entity. Handle null or zero values appropriately to indicate no limit.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Use API testing tools (e.g., Postman) to send requests to the create and update questionnaire endpoints with different values for `MaxSubmissionsPerUser`. Verify that the values are correctly stored in the database."
           },
           {
@@ -179,7 +179,7 @@
             "description": "Implement validation logic in the submission process to check if the user has already reached the maximum number of submissions for the questionnaire.",
             "dependencies": [],
             "details": "In the submission processing logic, retrieve the `MaxSubmissionsPerUser` value for the questionnaire. Query the database to count the number of submissions made by the current user for the questionnaire. Compare the submission count with the `MaxSubmissionsPerUser` value. If the user has reached the maximum, prevent the submission and proceed to the next subtask.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create test users and questionnaires with different `MaxSubmissionsPerUser` values. Submit submissions as the test users and verify that the validation logic correctly prevents submissions when the maximum is reached."
           },
           {
@@ -188,7 +188,7 @@
             "description": "If the user has reached the maximum number of submissions, display an appropriate error message to inform them that they cannot submit any more responses.",
             "dependencies": [],
             "details": "When the submission validation logic determines that the user has reached the maximum number of submissions, display a user-friendly error message. The message should clearly explain why the submission was rejected and inform the user about the maximum submission limit.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create test users and questionnaires with a `MaxSubmissionsPerUser` value of 1. Submit one submission as the test user and then attempt to submit another. Verify that the correct error message is displayed."
           },
           {
@@ -197,7 +197,7 @@
             "description": "Document the new feature in the relevant documentation. This includes explaining how to configure the maximum submissions per user and how it affects the submission process.",
             "dependencies": [],
             "details": "Update the documentation to include a section describing the `MaxSubmissionsPerUser` feature. Explain how to configure the feature in the Studio UI, how it is persisted in the API, and how it affects the submission process. Include examples and screenshots where appropriate.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Review the documentation to ensure that it is clear, accurate, and complete. Verify that all aspects of the feature are adequately documented."
           }
         ]
@@ -205,7 +205,7 @@
     ],
     "metadata": {
       "created": "2025-06-25T21:08:59.685Z",
-      "updated": "2025-06-25T21:19:59.309Z",
+      "updated": "2025-06-26T05:11:31.079Z",
       "description": "Tasks for master context"
     }
   }

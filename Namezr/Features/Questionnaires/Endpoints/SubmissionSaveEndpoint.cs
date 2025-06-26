@@ -47,6 +47,7 @@ internal partial class SubmissionSaveEndpoint
         QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
             .AsNoTracking()
             .Include(x => x.Questionnaire.Creator)
+            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
             .Include(x => x.Fields!).ThenInclude(x => x.Field)
             .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
 
@@ -106,6 +107,27 @@ internal partial class SubmissionSaveEndpoint
             GetLockName(questionnaireVersion.QuestionnaireId, currentUser.Id),
             cancellationToken: ct
         );
+
+        int existingSubmissionsCount = await dbContext.QuestionnaireSubmissions
+            .AsNoTracking()
+            .Where(s =>
+                s.UserId == currentUser.Id &&
+                s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId
+            )
+            .CountAsync(cancellationToken: ct);
+
+        if (
+            questionnaireVersion.Questionnaire.EligibilityConfiguration.Options.Any(
+                x => x.MaxSubmissionsPerUser is { } maxSubmissions && existingSubmissionsCount >= maxSubmissions
+            )
+        )
+        {
+            valuesValidationResult.Errors.Add(new ValidationFailure(
+                nameof(SubmissionCreateModel.QuestionnaireVersionId),
+                "Maximum number of submissions reached"
+            ));
+            ThrowFailedValuesValidation();
+        }
 
         QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
             .AsTracking()

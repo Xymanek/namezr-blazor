@@ -11,6 +11,8 @@ public class QuestionnaireEditModel
     public QuestionnaireApprovalMode ApprovalMode { get; set; } = QuestionnaireApprovalMode.GrantAutomatically;
     public QuestionnaireSubmissionOpenMode SubmissionOpenMode { get; set; } = QuestionnaireSubmissionOpenMode.Open;
 
+    public int? MaxSubmissionsPerUser { get; set; }
+
     public List<EligibilityOptionEditModel> EligibilityOptions { get; set; } = new();
     public List<QuestionnaireFieldEditModel> Fields { get; set; } = new();
 
