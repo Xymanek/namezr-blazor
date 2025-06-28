@@ -16,6 +16,7 @@ using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Notifications.Contracts;
 using Namezr.Features.Questionnaires.Data;
+using Namezr.Features.Questionnaires.Models; // Add this
 using Namezr.Features.Questionnaires.Notifications;
 using Namezr.Features.Questionnaires.Pages;
 using Namezr.Features.Questionnaires.Services;
@@ -29,7 +30,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionSave)]
 internal partial class SubmissionSaveEndpoint
 {
-    // TODO: refactor, this has seriously overgrown
     private static async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
         IHttpContextAccessor httpContextAccessor,
@@ -41,26 +41,33 @@ internal partial class SubmissionSaveEndpoint
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
+        QuestionnaireAccessService questionnaireAccessService, // Inject the new service
         CancellationToken ct
     )
     {
-        QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.Creator)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
+        QuestionnaireAccessResult accessResult = await questionnaireAccessService.GetQuestionnaireAccessResult(
+            model.QuestionnaireVersionId, // Assuming QuestionnaireVersionId is the ID needed
+            httpContextAccessor.HttpContext!,
+            ct
+        );
 
-        if (questionnaireVersion is null)
+        if (!accessResult.IsSuccess)
         {
-            // TODO: return 400
-            throw new Exception("Questionnaire version not found");
+            // TODO: return 400 based on DisabledReason
+            throw accessResult.DisabledReason switch
+            {
+                DisabledReason.NotFound => new Exception("Questionnaire version not found"),
+                DisabledReason.SubmissionsClosed => new Exception("Questionnaire is closed for submissions"),
+                DisabledReason.NotLoggedIn => new Exception("User not logged in"), // Should be caught by [Authorize]
+                DisabledReason.NotEligible => new Exception("User not eligible"),
+                DisabledReason.AlreadyApproved => new Exception("Editing approved submissions is not allowed"),
+                _ => new Exception("Unknown access error"),
+            };
         }
 
-        if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
-        {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
-        }
+        QuestionnaireVersionEntity questionnaireVersion = accessResult.QuestionnaireVersion!;
+        ApplicationUser currentUser = accessResult.CurrentUser!;
+        QuestionnaireSubmissionEntity? submissionEntity = accessResult.ExistingSubmission;
 
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
@@ -92,14 +99,8 @@ internal partial class SubmissionSaveEndpoint
             ThrowFailedValuesValidation();
         }
 
-        // TODO: validate eligibility + generally replicate the same checks as
-        // Namezr.Features.Questionnaires.Pages.QuestionnaireHome.DisabledReason
-
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
-
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
-        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
 
         // Ensure 1 submission per ques per user, even in race conditions.
         await using var _ = await distributedLockProvider.AcquireLockAsync(
@@ -107,36 +108,56 @@ internal partial class SubmissionSaveEndpoint
             cancellationToken: ct
         );
 
-        QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
-            .AsTracking()
-            .Include(x => x.FieldValues)
-            .FirstOrDefaultAsync(
-                s =>
-                    s.UserId == currentUser.Id &&
-                    s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId,
-                cancellationToken: ct
-            );
-
-        if (
-            submissionEntity is null &&
-            questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly
-        )
+        if (submissionEntity != null)
         {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
+            submissionEntity.VersionId = model.QuestionnaireVersionId;
+            submissionEntity.SubmittedAt = clock.GetCurrentInstant();
+
+            if (
+                questionnaireVersion.Questionnaire.ApprovalMode ==
+                QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited
+            )
+            {
+                submissionEntity.ApprovedAt = null;
+                submissionEntity.ApproverId = null;
+            }
+
+            dbContext.SubmissionHistoryEntries.Add(auditService.UpdateValues(submissionEntity));
+
+            // TODO: fire the notification only if there were ever some changes(/views?) by staff
+            dbContext.OnSavedChangesOnce((_, _) =>
+            {
+                notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
+                {
+                    CreatorId = questionnaireVersion.Questionnaire.CreatorId,
+                    CreatorDisplayName = questionnaireVersion.Questionnaire.Creator.DisplayName,
+                    QuestionnaireId = questionnaireVersion.Questionnaire.Id,
+                    QuestionnaireName = questionnaireVersion.Questionnaire.Title,
+                    SubmitterId = currentUser.Id,
+                    SubmitterName = currentUser.UserName!,
+                    SubmissionId = submissionEntity.Id,
+                    SubmissionNumber = submissionEntity.Number,
+                    SubmissionStudioUrl = UriHelper.BuildAbsolute(
+                        httpContextAccessor.HttpContext!.Request.Scheme,
+                        httpContextAccessor.HttpContext!.Request.Host,
+                        httpContextAccessor.HttpContext!.Request.PathBase,
+                        $"/studio/{questionnaireVersion.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{questionnaireVersion.Questionnaire.Id.NoHyphens()}/submissions/{submissionEntity.Id.NoHyphens()}"
+                    ),
+                });
+            });
         }
-
-        if (
-            submissionEntity is { ApprovedAt: not null } &&
-            questionnaireVersion.Questionnaire.ApprovalMode ==
-            QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
-        )
+        else
         {
-            valuesValidationResult.Errors.Add(new ValidationFailure(
-                nameof(SubmissionCreateModel.QuestionnaireVersionId),
-                "Editing approved submissions is not allowed"
-            ));
-            ThrowFailedValuesValidation();
+            submissionEntity = new()
+            {
+                VersionId = model.QuestionnaireVersionId,
+                UserId = currentUser.Id,
+
+                SubmittedAt = clock.GetCurrentInstant(),
+            };
+
+            dbContext.QuestionnaireSubmissions.Add(submissionEntity);
+            dbContext.SubmissionHistoryEntries.Add(auditService.InitialSubmit(submissionEntity));
         }
 
         HashSet<Guid> fileUploadFieldIds = questionnaireVersion.Fields!
@@ -204,58 +225,6 @@ internal partial class SubmissionSaveEndpoint
                     }
                 }
             }
-        }
-
-        if (submissionEntity != null)
-        {
-            submissionEntity.VersionId = model.QuestionnaireVersionId;
-            submissionEntity.SubmittedAt = clock.GetCurrentInstant();
-
-            if (
-                questionnaireVersion.Questionnaire.ApprovalMode ==
-                QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited
-            )
-            {
-                submissionEntity.ApprovedAt = null;
-                submissionEntity.ApproverId = null;
-            }
-
-            dbContext.SubmissionHistoryEntries.Add(auditService.UpdateValues(submissionEntity));
-
-            // TODO: fire the notification only if there were ever some changes(/views?) by staff
-            dbContext.OnSavedChangesOnce((_, _) =>
-            {
-                notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
-                {
-                    CreatorId = questionnaireVersion.Questionnaire.CreatorId,
-                    CreatorDisplayName = questionnaireVersion.Questionnaire.Creator.DisplayName,
-                    QuestionnaireId = questionnaireVersion.Questionnaire.Id,
-                    QuestionnaireName = questionnaireVersion.Questionnaire.Title,
-                    SubmitterId = currentUser.Id,
-                    SubmitterName = currentUser.UserName!,
-                    SubmissionId = submissionEntity.Id,
-                    SubmissionNumber = submissionEntity.Number,
-                    SubmissionStudioUrl = UriHelper.BuildAbsolute(
-                        httpContext.Request.Scheme,
-                        httpContext.Request.Host,
-                        httpContext.Request.PathBase,
-                        $"/studio/{questionnaireVersion.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{questionnaireVersion.Questionnaire.Id.NoHyphens()}/submissions/{submissionEntity.Id.NoHyphens()}"
-                    ),
-                });
-            });
-        }
-        else
-        {
-            submissionEntity = new()
-            {
-                VersionId = model.QuestionnaireVersionId,
-                UserId = currentUser.Id,
-
-                SubmittedAt = clock.GetCurrentInstant(),
-            };
-
-            dbContext.QuestionnaireSubmissions.Add(submissionEntity);
-            dbContext.SubmissionHistoryEntries.Add(auditService.InitialSubmit(submissionEntity));
         }
 
         // Even if we loaded an existing entity, outright replace old value entities/rows
