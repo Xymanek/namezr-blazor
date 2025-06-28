@@ -26,7 +26,7 @@
 @using vNext.BlazorComponents.FluentValidation
 
 @inject ApplicationDbContext DbContext
-@inject IEligibilityService EligibilityService
+@inject IQuestionnaireAccessService QuestionnaireAccessService
 @inject IdentityUserAccessor UserAccessor
 @inject IFieldValueSerializer FieldValueSerializer
 @inject IFileUploadTicketHelper FileUploadTicketHelper
@@ -201,14 +201,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _versionEntity = await DbContext.QuestionnaireVersions
-            .AsSplitQuery()
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
-            .Include(x => x.Questionnaire.Creator.SupportTargets)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
+        _versionEntity = await QuestionnaireAccessService.LoadQuestionnaireVersionAsync(QuestionnaireId);
 
         if (_versionEntity is null)
         {
@@ -216,78 +209,50 @@
             throw new Exception($"Questionnaire with ID {QuestionnaireId} not found.");
         }
 
-        if (_versionEntity!.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
-        {
-            _disabledReason = DisabledReason.SubmissionsClosed;
-        }
-
-        ConfigModel = _versionEntity?.MapToConfigModel();
-        QuestionnaireVersionId = _versionEntity?.Id;
+        ConfigModel = _versionEntity.MapToConfigModel();
+        QuestionnaireVersionId = _versionEntity.Id;
 
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
 
-        if (user is null)
+        // Use the new service to validate access
+        QuestionnaireAccessResult accessResult = await QuestionnaireAccessService
+            .ValidateAccessAsync(_versionEntity, user);
+
+        _eligibilityResult = accessResult.EligibilityResult;
+        _existingSubmission = accessResult.ExistingSubmission;
+
+        // Map access result to disabled reason
+        _disabledReason = accessResult.DeniedReason switch
         {
-            _disabledReason ??= DisabledReason.NotLoggedIn;
-        }
-        else
+            QuestionnaireAccessDeniedReason.SubmissionsClosed => DisabledReason.SubmissionsClosed,
+            QuestionnaireAccessDeniedReason.NotLoggedIn => DisabledReason.NotLoggedIn,
+            QuestionnaireAccessDeniedReason.NotEligible => DisabledReason.NotEligible,
+            QuestionnaireAccessDeniedReason.AlreadyApproved => DisabledReason.AlreadyApproved,
+            QuestionnaireAccessDeniedReason.EditExistingOnlyButNoSubmission => DisabledReason.SubmissionsClosed,
+            _ => null
+        };
+
+        // Process existing submission data if available
+        if (_existingSubmission is not null)
         {
-            _eligibilityResult = await EligibilityService.ClassifyEligibility(
-                user.Id,
-                _versionEntity!.Questionnaire.EligibilityConfiguration,
-                UserStatusSyncEagerness.Default
-            );
+            _initialValues = new Dictionary<string, SubmissionValueModel>();
+            SubmissionComments = _existingSubmission.History!
+                .Cast<SubmissionHistoryPublicCommentEntity>()
+                .OrderByDescending(comment => comment.OccuredAt)
+                .ToArray();
 
-            if (!_eligibilityResult.Any)
+            foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
             {
-                _disabledReason ??= DisabledReason.NotEligible;
-            }
+                QuestionnaireFieldType? fieldType = _versionEntity.Fields!
+                    .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
+                    ?.Field.Type;
 
-            _existingSubmission = await DbContext.QuestionnaireSubmissions
-                .AsSplitQuery()
-                .Include(x => x.FieldValues)
-                // If these filters are ever adjusted, other code will need to change
-                .Include(x => x.History!.Where(entry => entry is SubmissionHistoryPublicCommentEntity))
-                .Include(x => x.Labels!.Where(label => label.IsSubmitterVisible))
-                .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
+                if (fieldType is null) continue;
 
-            if (_existingSubmission is null)
-            {
-                if (_versionEntity.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly)
-                {
-                    _disabledReason ??= DisabledReason.SubmissionsClosed;
-                }
-            }
-            else
-            {
-                if (
-                    _existingSubmission.ApprovedAt is not null &&
-                    _versionEntity.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
-                )
-                {
-                    _disabledReason ??= DisabledReason.AlreadyApproved;
-                }
-
-                _initialValues = new Dictionary<string, SubmissionValueModel>();
-                SubmissionComments = _existingSubmission.History!
-                    .Cast<SubmissionHistoryPublicCommentEntity>()
-                    .OrderByDescending(comment => comment.OccuredAt)
-                    .ToArray();
-
-
-                foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
-                {
-                    QuestionnaireFieldType? fieldType = _versionEntity.Fields!
-                        .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
-                        ?.Field.Type;
-
-                    if (fieldType is null) continue;
-
-                    _initialValues.Add(
-                        fieldValue.FieldId.ToString(),
-                        FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
-                    );
-                }
+                _initialValues.Add(
+                    fieldValue.FieldId.ToString(),
+                    FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
+                );
             }
         }
 

@@ -29,7 +29,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionSave)]
 internal partial class SubmissionSaveEndpoint
 {
-    // TODO: refactor, this has seriously overgrown
     private static async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
         IHttpContextAccessor httpContextAccessor,
@@ -41,14 +40,12 @@ internal partial class SubmissionSaveEndpoint
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
+        IQuestionnaireAccessService questionnaireAccessService,
         CancellationToken ct
     )
     {
-        QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.Creator)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
+        QuestionnaireVersionEntity? questionnaireVersion = await questionnaireAccessService
+            .LoadQuestionnaireVersionByIdAsync(model.QuestionnaireVersionId, ct);
 
         if (questionnaireVersion is null)
         {
@@ -56,10 +53,25 @@ internal partial class SubmissionSaveEndpoint
             throw new Exception("Questionnaire version not found");
         }
 
-        if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
+        HttpContext httpContext = httpContextAccessor.HttpContext!;
+        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
+
+        // Validate access using the new service
+        QuestionnaireAccessResult accessResult = await questionnaireAccessService
+            .ValidateAccessAsync(questionnaireVersion, currentUser, ct);
+
+        if (!accessResult.IsAccessible)
         {
+            string errorMessage = accessResult.DeniedReason switch
+            {
+                QuestionnaireAccessDeniedReason.SubmissionsClosed => "Questionnaire is closed for submissions",
+                QuestionnaireAccessDeniedReason.NotEligible => "User is not eligible for this questionnaire",
+                QuestionnaireAccessDeniedReason.AlreadyApproved => "Editing approved submissions is not allowed",
+                QuestionnaireAccessDeniedReason.EditExistingOnlyButNoSubmission => "Questionnaire is closed for new submissions",
+                _ => "Access denied"
+            };
             // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
+            throw new Exception(errorMessage);
         }
 
         // TODO: map only the field configs
@@ -92,14 +104,8 @@ internal partial class SubmissionSaveEndpoint
             ThrowFailedValuesValidation();
         }
 
-        // TODO: validate eligibility + generally replicate the same checks as
-        // Namezr.Features.Questionnaires.Pages.QuestionnaireHome.DisabledReason
-
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
-
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
-        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
 
         // Ensure 1 submission per ques per user, even in race conditions.
         await using var _ = await distributedLockProvider.AcquireLockAsync(
@@ -107,6 +113,7 @@ internal partial class SubmissionSaveEndpoint
             cancellationToken: ct
         );
 
+        // Load the existing submission with tracking for updates
         QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
             .AsTracking()
             .Include(x => x.FieldValues)
@@ -116,28 +123,6 @@ internal partial class SubmissionSaveEndpoint
                     s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId,
                 cancellationToken: ct
             );
-
-        if (
-            submissionEntity is null &&
-            questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly
-        )
-        {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
-        }
-
-        if (
-            submissionEntity is { ApprovedAt: not null } &&
-            questionnaireVersion.Questionnaire.ApprovalMode ==
-            QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
-        )
-        {
-            valuesValidationResult.Errors.Add(new ValidationFailure(
-                nameof(SubmissionCreateModel.QuestionnaireVersionId),
-                "Editing approved submissions is not allowed"
-            ));
-            ThrowFailedValuesValidation();
-        }
 
         HashSet<Guid> fileUploadFieldIds = questionnaireVersion.Fields!
             .Where(x => x.Field.Type == QuestionnaireFieldType.FileUpload)
