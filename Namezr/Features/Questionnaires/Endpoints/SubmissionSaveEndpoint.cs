@@ -41,25 +41,30 @@ internal partial class SubmissionSaveEndpoint
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
+        QuestionnaireAccessHelper questionnaireAccessHelper,
         CancellationToken ct
     )
     {
-        QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.Creator)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
-
+        HttpContext httpContext = httpContextAccessor.HttpContext!;
+        var accessResult = await questionnaireAccessHelper.GetAccessInfoAsync(
+            // Use QuestionnaireId from the loaded version entity
+            dbContext.QuestionnaireVersions
+                .Where(x => x.Id == model.QuestionnaireVersionId)
+                .Select(x => x.QuestionnaireId)
+                .FirstOrDefault(),
+            httpContext,
+            ct
+        );
+        var questionnaireVersion = accessResult.VersionEntity;
         if (questionnaireVersion is null)
         {
             // TODO: return 400
             throw new Exception("Questionnaire version not found");
         }
-
-        if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
+        if (accessResult.DisabledReason is not null)
         {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
+            // TODO: return 400 with reason
+            throw new Exception($"Submission not allowed: {accessResult.DisabledReason}");
         }
 
         // TODO: map only the field configs
@@ -98,7 +103,6 @@ internal partial class SubmissionSaveEndpoint
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
         ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
 
         // Ensure 1 submission per ques per user, even in race conditions.
