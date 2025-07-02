@@ -6,21 +6,21 @@ using Immediate.Handlers.Shared;
 using Medallion.Threading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
-using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Files;
 using Namezr.Features.Files.Services;
-using Namezr.Features.Identity.Data;
 using Namezr.Features.Notifications.Contracts;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Notifications;
-using Namezr.Features.Questionnaires.Pages;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
+using Namezr.Features.Questionnaires.Pages;
 using NodaTime;
+using Namezr.Features.Questionnaires.Models;
+using Namezr.Features.Identity.Data;
+using Namezr.Features.Identity.Helpers;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
@@ -32,8 +32,6 @@ internal partial class SubmissionSaveEndpoint
     // TODO: refactor, this has seriously overgrown
     private static async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
         IClock clock,
         IDistributedLockProvider distributedLockProvider,
         IFieldValueSerializer fieldValueSerializer,
@@ -41,26 +39,30 @@ internal partial class SubmissionSaveEndpoint
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
+        IQuestionnaireSubmissionContextService contextService,
+        IdentityUserAccessor userAccessor,
+        IHttpContextAccessor httpContextAccessor,
         CancellationToken ct
     )
     {
-        QuestionnaireVersionEntity? questionnaireVersion = await dbContext.QuestionnaireVersions
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.Creator)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .SingleOrDefaultAsync(x => x.Id == model.QuestionnaireVersionId, ct);
-
+        QuestionnaireVersionEntity? questionnaireVersion = await contextService.GetQuestionnaireVersionAsync(model.QuestionnaireVersionId, ct);
         if (questionnaireVersion is null)
         {
             // TODO: return 400
-            throw new Exception("Questionnaire version not found");
+            throw new Exception($"Questionnaire with ID {model.QuestionnaireVersionId} not found.");
         }
 
-        if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
-        {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
-        }
+        // Fetch the current user for the request
+        ApplicationUser? currentUser = await userAccessor.GetUserAsync(httpContextAccessor.HttpContext!);
+
+        // Ensure 1 submission per ques per user, even in race conditions.
+        await using var _ = await distributedLockProvider.AcquireLockAsync(
+            GetLockName(questionnaireVersion.QuestionnaireId, currentUser!.Id),
+            cancellationToken: ct
+        );
+
+        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(questionnaireVersion, currentUser, ct);
+        QuestionnaireSubmissionEntity? submissionEntity = context.ExistingSubmission;
 
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
@@ -92,52 +94,10 @@ internal partial class SubmissionSaveEndpoint
             ThrowFailedValuesValidation();
         }
 
-        // TODO: validate eligibility + generally replicate the same checks as
-        // Namezr.Features.Questionnaires.Pages.QuestionnaireHome.DisabledReason
-
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
-        ApplicationUser currentUser = await userAccessor.GetRequiredUserAsync(httpContext);
-
-        // Ensure 1 submission per ques per user, even in race conditions.
-        await using var _ = await distributedLockProvider.AcquireLockAsync(
-            GetLockName(questionnaireVersion.QuestionnaireId, currentUser.Id),
-            cancellationToken: ct
-        );
-
-        QuestionnaireSubmissionEntity? submissionEntity = await dbContext.QuestionnaireSubmissions
-            .AsTracking()
-            .Include(x => x.FieldValues)
-            .FirstOrDefaultAsync(
-                s =>
-                    s.UserId == currentUser.Id &&
-                    s.Version.QuestionnaireId == questionnaireVersion.QuestionnaireId,
-                cancellationToken: ct
-            );
-
-        if (
-            submissionEntity is null &&
-            questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly
-        )
-        {
-            // TODO: return 400
-            throw new Exception("Questionnaire is closed for submissions");
-        }
-
-        if (
-            submissionEntity is { ApprovedAt: not null } &&
-            questionnaireVersion.Questionnaire.ApprovalMode ==
-            QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
-        )
-        {
-            valuesValidationResult.Errors.Add(new ValidationFailure(
-                nameof(SubmissionCreateModel.QuestionnaireVersionId),
-                "Editing approved submissions is not allowed"
-            ));
-            ThrowFailedValuesValidation();
-        }
+        var httpContext = httpContextAccessor.HttpContext!;
 
         HashSet<Guid> fileUploadFieldIds = questionnaireVersion.Fields!
             .Where(x => x.Field.Type == QuestionnaireFieldType.FileUpload)

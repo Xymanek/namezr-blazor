@@ -8,8 +8,6 @@
 @using Namezr.Features.Questionnaires.Data
 @using Namezr.Infrastructure.Data
 @using Namezr.Client.Studio.Questionnaires.Edit
-@using Namezr.Features.Consumers.Services
-@using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Files
 @using Namezr.Features.Files.Services
 @using Namezr.Features.Identity.Data
@@ -24,15 +22,17 @@
 @using Namezr.Features.Questionnaires.Notifications
 @using NodaTime
 @using vNext.BlazorComponents.FluentValidation
+@using Namezr.Features.Questionnaires.Models
+@using Namezr.Features.Eligibility.Services
 
-@inject ApplicationDbContext DbContext
-@inject IEligibilityService EligibilityService
-@inject IdentityUserAccessor UserAccessor
+@inject IQuestionnaireSubmissionContextService QuestionnaireSubmissionContextService
 @inject IFieldValueSerializer FieldValueSerializer
 @inject IFileUploadTicketHelper FileUploadTicketHelper
 @inject IClock Clock
 @inject NavigationManager NavigationManager
 @inject INotificationDispatcher NotificationDispatcher
+@inject IdentityUserAccessor UserAccessor
+@inject ApplicationDbContext DbContext
 
 @if (_versionEntity is not null)
 {
@@ -72,25 +72,25 @@
         case null:
             break;
 
-        case DisabledReason.SubmissionsClosed:
+        case SubmissionDisabledReason.SubmissionsClosed:
             <HxAlert Color="ThemeColor.Secondary">
                 Submissions are currently closed.
             </HxAlert>
             break;
 
-        case DisabledReason.NotLoggedIn:
+        case SubmissionDisabledReason.NotLoggedIn:
             <HxAlert Color="ThemeColor.Warning">
                 Please log in to submit a response.
             </HxAlert>
             break;
 
-        case DisabledReason.NotEligible:
+        case SubmissionDisabledReason.NotEligible:
             <HxAlert Color="ThemeColor.Warning">
                 You are currently not eligible.
             </HxAlert>
             break;
 
-        case DisabledReason.AlreadyApproved:
+        case SubmissionDisabledReason.AlreadyApproved:
             <HxAlert Color="ThemeColor.Secondary">
                 Your submission has already been approved and cannot be edited.
             </HxAlert>
@@ -113,8 +113,7 @@
     }
 }
 
-@* Assumes _existingSubmission.Labels were filtered for submitter-visibile only *@
-@if (_existingSubmission is { ApprovedAt: not null } or { Labels.Count: > 0 })
+@if (_existingSubmission is { ApprovedAt: not null } || SubmissionLabels is { Length: > 0 })
 {
     <HxCard>
         <BodyTemplate>
@@ -126,7 +125,7 @@
                     </HxBadge>
                 }
 
-                @foreach (SubmissionLabelEntity label in _existingSubmission.Labels!)
+                @foreach (SubmissionLabelEntity label in SubmissionLabels)
                 {
                     <SubmissionLabelPresenter Label="label.ToModel()"/>
                 }
@@ -187,6 +186,7 @@
     private Guid? QuestionnaireVersionId { get; set; }
 
     private SubmissionHistoryPublicCommentEntity[] SubmissionComments { get; set; } = [];
+    private SubmissionLabelEntity[] SubmissionLabels { get; set; } = [];
 
     [SupplyParameterFromForm]
     private SubmissionCreateSubmitterCommentModel NewComment { get; set; } = new();
@@ -196,19 +196,13 @@
     private Dictionary<string, SubmissionValueModel>? _initialValues;
     private Dictionary<Guid, string> _fileUploadTickets = new();
 
-    private DisabledReason? _disabledReason;
+    private SubmissionDisabledReason? _disabledReason;
     private QuestionnaireSubmissionEntity? _existingSubmission;
 
     protected override async Task OnInitializedAsync()
     {
-        _versionEntity = await DbContext.QuestionnaireVersions
-            .AsSplitQuery()
-            .AsNoTracking()
-            .Include(x => x.Questionnaire.EligibilityConfiguration).ThenInclude(x => x.Options)
-            .Include(x => x.Questionnaire.Creator.SupportTargets)
-            .Include(x => x.Fields!).ThenInclude(x => x.Field)
-            .OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(q => q.Questionnaire.Id == QuestionnaireId);
+        // Stage 1: Retrieve the latest questionnaire version
+        _versionEntity = await QuestionnaireSubmissionContextService.GetLatestQuestionnaireVersionAsync(QuestionnaireId, CancellationToken.None);
 
         if (_versionEntity is null)
         {
@@ -216,78 +210,35 @@
             throw new Exception($"Questionnaire with ID {QuestionnaireId} not found.");
         }
 
-        if (_versionEntity!.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.Closed)
-        {
-            _disabledReason = DisabledReason.SubmissionsClosed;
-        }
-
-        ConfigModel = _versionEntity?.MapToConfigModel();
-        QuestionnaireVersionId = _versionEntity?.Id;
-
+        // Stage 2: Retrieve the user
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
 
-        if (user is null)
+        // Stage 3: Retrieve the submission context
+        var context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(_versionEntity, user, CancellationToken.None);
+
+        _existingSubmission = context.ExistingSubmission;
+        _eligibilityResult = context.EligibilityResult;
+        _disabledReason = context.DisabledReason;
+
+        ConfigModel = _versionEntity.MapToConfigModel();
+        QuestionnaireVersionId = _versionEntity?.Id;
+
+        if (_existingSubmission is not null)
         {
-            _disabledReason ??= DisabledReason.NotLoggedIn;
-        }
-        else
-        {
-            _eligibilityResult = await EligibilityService.ClassifyEligibility(
-                user.Id,
-                _versionEntity!.Questionnaire.EligibilityConfiguration,
-                UserStatusSyncEagerness.Default
-            );
+            _initialValues = new Dictionary<string, SubmissionValueModel>();
 
-            if (!_eligibilityResult.Any)
+            foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
             {
-                _disabledReason ??= DisabledReason.NotEligible;
-            }
+                QuestionnaireFieldType? fieldType = _versionEntity!.Fields!
+                    .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
+                    ?.Field.Type;
 
-            _existingSubmission = await DbContext.QuestionnaireSubmissions
-                .AsSplitQuery()
-                .Include(x => x.FieldValues)
-                // If these filters are ever adjusted, other code will need to change
-                .Include(x => x.History!.Where(entry => entry is SubmissionHistoryPublicCommentEntity))
-                .Include(x => x.Labels!.Where(label => label.IsSubmitterVisible))
-                .FirstOrDefaultAsync(x => x.UserId == user.Id && x.Version.QuestionnaireId == QuestionnaireId);
+                if (fieldType is null) continue;
 
-            if (_existingSubmission is null)
-            {
-                if (_versionEntity.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly)
-                {
-                    _disabledReason ??= DisabledReason.SubmissionsClosed;
-                }
-            }
-            else
-            {
-                if (
-                    _existingSubmission.ApprovedAt is not null &&
-                    _versionEntity.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
-                )
-                {
-                    _disabledReason ??= DisabledReason.AlreadyApproved;
-                }
-
-                _initialValues = new Dictionary<string, SubmissionValueModel>();
-                SubmissionComments = _existingSubmission.History!
-                    .Cast<SubmissionHistoryPublicCommentEntity>()
-                    .OrderByDescending(comment => comment.OccuredAt)
-                    .ToArray();
-
-
-                foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
-                {
-                    QuestionnaireFieldType? fieldType = _versionEntity.Fields!
-                        .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
-                        ?.Field.Type;
-
-                    if (fieldType is null) continue;
-
-                    _initialValues.Add(
-                        fieldValue.FieldId.ToString(),
-                        FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
-                    );
-                }
+                _initialValues.Add(
+                    fieldValue.FieldId.ToString(),
+                    FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
+                );
             }
         }
 
@@ -295,6 +246,27 @@
         {
             CreateFileUploadTickets();
         }
+    }
+
+    private async Task LoadSubmissionHistory()
+    {
+        if (_existingSubmission is null)
+        {
+            return;
+        }
+
+        SubmissionComments = await DbContext.SubmissionHistoryEntries
+            .OfType<SubmissionHistoryPublicCommentEntity>()
+            .Where(entry => entry.SubmissionId == _existingSubmission.Id)
+            .OrderByDescending(comment => comment.OccuredAt)
+            .ToArrayAsync();
+
+        SubmissionLabels = await DbContext.SubmissionLabels
+            .Where(label => 
+                label.IsSubmitterVisible &&
+                label.Submissions!.Any(submission => submission.Id == _existingSubmission.Id)
+            )
+            .ToArrayAsync();
     }
 
     private void CreateFileUploadTickets()
@@ -310,14 +282,6 @@
                     AllowedExtensions = field.FileUploadOptions?.AllowedExtensions.ToImmutableList(),
                 })
             );
-    }
-
-    private enum DisabledReason
-    {
-        SubmissionsClosed,
-        NotLoggedIn,
-        NotEligible,
-        AlreadyApproved,
     }
 
     private async Task OnValidSubmitNewComment()
