@@ -3,6 +3,20 @@ using Namezr.Client.Studio.Questionnaires.Edit;
 
 namespace Namezr.Client.Public.Questionnaires;
 
+/// <summary>
+/// Summary model for a questionnaire submission.
+/// </summary>
+public class QuestionnaireSubmissionSummaryModel
+{
+    public Guid Id { get; set; }
+    public int Number { get; set; }
+    public DateTimeOffset SubmittedAt { get; set; }
+    public DateTimeOffset? ApprovedAt { get; set; }
+}
+
+/// <summary>
+/// Represents a value for a questionnaire field in a submission.
+/// </summary>
 public class SubmissionValueModel
 {
     public string StringValue { get; set; } = string.Empty;

@@ -96,19 +96,22 @@
             </HxAlert>
             break;
 
+        case SubmissionDisabledReason.SubmissionLimitReached:
+            <HxAlert Color="ThemeColor.Warning">
+                You have reached the maximum number of submissions allowed for this questionnaire.
+            </HxAlert>
+            break;
+
         default:
             throw new UnreachableException();
     }
 
     @if (ConfigModel is not null)
     {
-        <SubmissionEditor
-            Config="ConfigModel"
-            SubmissionId="_existingSubmission?.Id"
-            InitialValues="_initialValues"
-            FileUploadTickets="_fileUploadTickets"
-            AllDisabled="_disabledReason.HasValue"
-            QuestionnaireVersionId="QuestionnaireVersionId!.Value"
+        <SubmissionManager
+            Submissions="_submissionSummaries"
+            MaxSubmissions="_eligibilityResult?.MaxSubmissionsPerUser ?? 1"
+            SelectedSubmissionId="_selectedSubmissionId"
         />
     }
 }
@@ -193,11 +196,16 @@
 
     private EligibilityResult? _eligibilityResult;
 
-    private Dictionary<string, SubmissionValueModel>? _initialValues;
     private Dictionary<Guid, string> _fileUploadTickets = new();
 
     private SubmissionDisabledReason? _disabledReason;
     private QuestionnaireSubmissionEntity? _existingSubmission;
+
+    // Multiple submissions support
+    private List<QuestionnaireSubmissionSummaryModel> _submissionSummaries = new();
+    private Dictionary<Guid, Dictionary<string, SubmissionValueModel>> _submissionFieldValues = new();
+    private QuestionnaireSubmissionContext? _context;
+    private Guid? _selectedSubmissionId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,34 +221,49 @@
         // Stage 2: Retrieve the user
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
 
-        // Stage 3: Retrieve the submission context
-        var context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(_versionEntity, user, CancellationToken.None);
+        // Stage 3: Retrieve the submission context (multiple submissions)
+        _context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(_versionEntity, user, SubmissionMode.Automatic, CancellationToken.None);
 
-        _existingSubmission = context.ExistingSubmission;
-        _eligibilityResult = context.EligibilityResult;
-        _disabledReason = context.DisabledReason;
+        _existingSubmission = _context.ExistingSubmissions.FirstOrDefault();
+        _eligibilityResult = _context.EligibilityResult;
+        _disabledReason = _context.DisabledReason;
 
         ConfigModel = _versionEntity.MapToConfigModel();
         QuestionnaireVersionId = _versionEntity?.Id;
 
-        if (_existingSubmission is not null)
-        {
-            _initialValues = new Dictionary<string, SubmissionValueModel>();
-
-            foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
+        // Prepare summaries and field values for all submissions
+        _submissionSummaries = _context.ExistingSubmissions
+            .Select(s => new QuestionnaireSubmissionSummaryModel
             {
-                QuestionnaireFieldType? fieldType = _versionEntity!.Fields!
+                Id = s.Id,
+                Number = s.Number,
+                SubmittedAt = s.SubmittedAt.ToDateTimeOffset(),
+                ApprovedAt = s.ApprovedAt?.ToDateTimeOffset(),
+            })
+            .ToList();
+
+        _submissionFieldValues = new Dictionary<Guid, Dictionary<string, SubmissionValueModel>>();
+        foreach (var submission in _context.ExistingSubmissions)
+        {
+            var fieldValues = new Dictionary<string, SubmissionValueModel>();
+            foreach (var fieldValue in submission.FieldValues ?? Enumerable.Empty<QuestionnaireFieldValueEntity>())
+            {
+                var fieldType = _versionEntity!.Fields!
                     .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
                     ?.Field.Type;
 
                 if (fieldType is null) continue;
 
-                _initialValues.Add(
-                    fieldValue.FieldId.ToString(),
-                    FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized)
-                );
+                fieldValues[fieldValue.FieldId.ToString()] =
+                    FieldValueSerializer.Deserialize(fieldType.Value, fieldValue.ValueSerialized);
             }
+            _submissionFieldValues[submission.Id] = fieldValues;
         }
+
+        // Default to most recent submission
+        _selectedSubmissionId = _submissionSummaries
+            .OrderByDescending(s => s.SubmittedAt)
+            .FirstOrDefault()?.Id;
 
         if (_disabledReason == null)
         {
@@ -306,28 +329,28 @@
 
         NotificationDispatcher.Dispatch(
             new SubmitterLeftCommentNotificationData
-                {
-                    CreatorId = _versionEntity!.Questionnaire.CreatorId,
-                    CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
+            {
+                CreatorId = _versionEntity!.Questionnaire.CreatorId,
+                CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
 
-                    QuestionnaireId = _versionEntity!.Questionnaire.Id,
-                    QuestionnaireName = _versionEntity!.Questionnaire.Title,
+                QuestionnaireId = _versionEntity!.Questionnaire.Id,
+                QuestionnaireName = _versionEntity!.Questionnaire.Title,
 
-                    SubmitterId = submitterId,
-                    SubmitterName = submitter.UserName ?? string.Empty,
+                SubmitterId = submitterId,
+                SubmitterName = submitter.UserName ?? string.Empty,
 
-                    SubmissionId = _existingSubmission.Id,
-                    SubmissionNumber = _existingSubmission.Number,
+                SubmissionId = _existingSubmission.Id,
+                SubmissionNumber = _existingSubmission.Number,
 
-                    SubmissionStudioUrl = NavigationManager
-                        .ToAbsoluteUri(
-                            $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_existingSubmission.Id.NoHyphens()}"
-                        )
-                        .AbsoluteUri,
+                SubmissionStudioUrl = NavigationManager
+                    .ToAbsoluteUri(
+                        $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_existingSubmission.Id.NoHyphens()}"
+                    )
+                    .AbsoluteUri,
 
-                    CommentBody = NewComment.Content,
-                }
-                .ToNotification()
+                CommentBody = NewComment.Content,
+            }
+            .ToNotification()
         );
 
         NavigationManager.Refresh();

@@ -37,9 +37,10 @@ public interface IQuestionnaireSubmissionContextService
     /// </summary>
     /// <param name="questionnaireVersion">The questionnaire version entity (from stage 1).</param>
     /// <param name="currentUser">The current user, or null if not logged in (from stage 2).</param>
+    /// <param name="submissionMode">The mode determining if user is creating new, editing existing, or automatic mode.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The submission context for the questionnaire version and user.</returns>
-    Task<QuestionnaireSubmissionContext> GetSubmissionContextAsync(QuestionnaireVersionEntity questionnaireVersion, ApplicationUser? currentUser, CancellationToken ct);
+    Task<QuestionnaireSubmissionContext> GetSubmissionContextAsync(QuestionnaireVersionEntity questionnaireVersion, ApplicationUser? currentUser, SubmissionMode submissionMode, CancellationToken ct);
 
     /// <summary>
     /// Retrieves the latest version entity for a questionnaire.
@@ -93,7 +94,7 @@ internal partial class QuestionnaireSubmissionContextService : IQuestionnaireSub
             .FirstOrDefaultAsync(q => q.Questionnaire.Id == questionnaireId, ct);
     }
 
-    public async Task<QuestionnaireSubmissionContext> GetSubmissionContextAsync(QuestionnaireVersionEntity questionnaireVersion, ApplicationUser? currentUser, CancellationToken ct)
+    public async Task<QuestionnaireSubmissionContext> GetSubmissionContextAsync(QuestionnaireVersionEntity questionnaireVersion, ApplicationUser? currentUser, SubmissionMode submissionMode, CancellationToken ct)
     {
         if (questionnaireVersion is null)
         {
@@ -126,15 +127,17 @@ internal partial class QuestionnaireSubmissionContextService : IQuestionnaireSub
             }
         }
 
-        QuestionnaireSubmissionEntity? existingSubmission = null;
+        List<QuestionnaireSubmissionEntity> existingSubmissions = new();
         if (currentUser is not null)
         {
-            existingSubmission = await _dbContext.QuestionnaireSubmissions
+            existingSubmissions = await _dbContext.QuestionnaireSubmissions
                 .AsSplitQuery()
                 .Include(x => x.FieldValues)
-                .FirstOrDefaultAsync(x => x.UserId == currentUser.Id && x.Version.QuestionnaireId == questionnaireVersion.Questionnaire.Id, ct);
+                .Where(x => x.UserId == currentUser.Id && x.Version.QuestionnaireId == questionnaireVersion.Questionnaire.Id)
+                .ToListAsync(ct);
 
-            if (existingSubmission is null)
+            // If editing is only allowed for existing, but user has none, disable
+            if (!existingSubmissions.Any())
             {
                 if (questionnaireVersion.Questionnaire.SubmissionOpenMode == QuestionnaireSubmissionOpenMode.EditExistingOnly)
                 {
@@ -143,12 +146,23 @@ internal partial class QuestionnaireSubmissionContextService : IQuestionnaireSub
             }
             else
             {
+                // If any submission is approved and editing is prohibited, disable
                 if (
-                    existingSubmission.ApprovedAt is not null &&
+                    existingSubmissions.Any(s => s.ApprovedAt is not null) &&
                     questionnaireVersion.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved
                 )
                 {
                     disabledReason ??= SubmissionDisabledReason.AlreadyApproved;
+                }
+            }
+
+            // Enforce submission limit only when creating new submissions
+            if (submissionMode == SubmissionMode.CreateNew || 
+                (submissionMode == SubmissionMode.Automatic && !existingSubmissions.Any()))
+            {
+                if (eligibilityResult is not null && existingSubmissions.Count >= eligibilityResult.MaxSubmissionsPerUser)
+                {
+                    disabledReason ??= SubmissionDisabledReason.SubmissionLimitReached;
                 }
             }
         }
@@ -157,7 +171,7 @@ internal partial class QuestionnaireSubmissionContextService : IQuestionnaireSub
         {
             QuestionnaireVersion = questionnaireVersion,
             CurrentUser = currentUser,
-            ExistingSubmission = existingSubmission,
+            ExistingSubmissions = existingSubmissions,
             EligibilityResult = eligibilityResult,
             DisabledReason = disabledReason,
         };

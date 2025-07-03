@@ -17,6 +17,7 @@ public record EligibilityResult
 
     public required ImmutableHashSet<EligibilityPlanId> EligiblePlanIds { get; init; }
     public decimal Modifier { get; init; }
+    public int MaxSubmissionsPerUser { get; init; } = 1;
 
     public bool Any => EligiblePlanIds.Count > 0;
 };

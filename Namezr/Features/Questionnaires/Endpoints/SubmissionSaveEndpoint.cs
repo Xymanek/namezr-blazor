@@ -61,8 +61,32 @@ internal partial class SubmissionSaveEndpoint
             cancellationToken: ct
         );
 
-        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(questionnaireVersion, currentUser, ct);
-        QuestionnaireSubmissionEntity? submissionEntity = context.ExistingSubmission;
+        // Determine submission mode based on whether SubmissionId is provided
+        SubmissionMode submissionMode = model.SubmissionId.HasValue 
+            ? SubmissionMode.EditExisting 
+            : SubmissionMode.CreateNew;
+            
+        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(questionnaireVersion, currentUser, submissionMode, ct);
+
+        if (context.DisabledReason.HasValue)
+        {
+            // TODO
+            throw new Exception($"Submission saving is not allowed: {context.DisabledReason.Value}");
+        }
+
+        // Select the submission to edit if SubmissionId is provided, otherwise null (for new)
+        QuestionnaireSubmissionEntity? submissionEntity = null;
+        if (model.SubmissionId.HasValue)
+        {
+            submissionEntity = context.ExistingSubmissions
+                .FirstOrDefault(s => s.Id == model.SubmissionId.Value);
+
+            if (submissionEntity == null)
+            {
+                // TODO: return 400
+                throw new Exception("Submission not found or not owned by user.");
+            }
+        }
 
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
@@ -75,8 +99,6 @@ internal partial class SubmissionSaveEndpoint
         {
             ThrowFailedValuesValidation();
         }
-
-        // TODO: validate files
 
         Dictionary<Guid, UploadedFileInfo> uploadedFileInfos;
         try

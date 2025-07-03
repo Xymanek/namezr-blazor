@@ -1,0 +1,136 @@
+@rendermode InteractiveWebAssembly
+@using Namezr.Client.Public.Questionnaires
+@using Havit.Blazor.Components.Web.Bootstrap
+@using System
+@using System.Collections.Generic
+
+@inherits OwningComponentBase
+
+<div class="card mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+            <strong>Your Submissions (@Submissions?.Count ?? 0/@MaxSubmissions)</strong>
+        </span>
+        @if (CanCreateNew)
+        {
+            <button class="btn btn-primary btn-sm" @onclick="OnNewSubmissionClicked">
+                <i class="bi bi-plus-lg"></i> New Submission
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (Submissions == null || Submissions.Count == 0)
+        {
+            <div class="alert alert-info mb-0">
+                You have not made any submissions yet.
+            </div>
+        }
+        else
+        {
+            <div class="list-group mb-3">
+                @foreach (var submission in Submissions.OrderByDescending(s => s.SubmittedAt))
+                {
+                    <button type="button"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(IsSelected(submission) ? "active" : "")"
+                            @onclick="() => SelectSubmission(submission)">
+                        <div>
+                            <span class="fw-bold">Submission #@submission.Number</span>
+                            <span class="text-muted ms-2 small">@submission.SubmittedAt.ToLocalTime().ToString("g")</span>
+                        </div>
+                        <div>
+                            @if (submission.ApprovedAt.HasValue)
+                            {
+                                <span class="badge bg-success me-2">Approved</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary me-2">Pending</span>
+                            }
+                            @if (IsSelected(submission))
+                            {
+                                <span class="badge bg-primary">Selected</span>
+                            }
+                        </div>
+                    </button>
+                }
+            </div>
+        }
+
+        @if (SelectedSubmission != null)
+        {
+            <div class="mb-3">
+                <h6>Submission Details</h6>
+                <ul class="list-unstyled mb-2">
+                    <li><strong>Number:</strong> @SelectedSubmission.Number</li>
+                    <li><strong>Submitted:</strong> @SelectedSubmission.SubmittedAt.ToLocalTime().ToString("f")</li>
+                    <li>
+                        <strong>Status:</strong>
+                        @if (SelectedSubmission.ApprovedAt.HasValue)
+                        {
+                            <span class="badge bg-success">Approved</span>
+                            <span class="ms-2 small text-muted">(@SelectedSubmission.ApprovedAt.Value.ToLocalTime().ToString("g"))</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Pending</span>
+                        }
+                    </li>
+                </ul>
+            </div>
+            <SubmissionEditor SubmissionId="@SelectedSubmission.Id" OnSaved="OnSubmissionSaved" />
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<QuestionnaireSubmissionSummaryModel> Submissions { get; set; } = [];
+
+    [Parameter]
+    public int MaxSubmissions { get; set; } = 5;
+
+    [Parameter]
+    public Guid? SelectedSubmissionId { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> SelectedSubmissionIdChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnNewSubmission { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnSubmissionSaved { get; set; }
+
+    private QuestionnaireSubmissionSummaryModel? SelectedSubmission =>
+        Submissions?.FirstOrDefault(s => s.Id == SelectedSubmissionId);
+
+    private bool CanCreateNew => (Submissions?.Count ?? 0) < MaxSubmissions;
+
+    private bool IsSelected(QuestionnaireSubmissionSummaryModel submission)
+        => SelectedSubmissionId != null && submission.Id == SelectedSubmissionId;
+
+    protected override void OnParametersSet()
+    {
+        if (SelectedSubmissionId == null && Submissions != null && Submissions.Count > 0)
+        {
+            var mostRecent = Submissions.OrderByDescending(s => s.SubmittedAt).FirstOrDefault();
+            if (mostRecent != null)
+            {
+                SelectSubmission(mostRecent);
+            }
+        }
+    }
+
+    private void SelectSubmission(QuestionnaireSubmissionSummaryModel submission)
+    {
+        if (SelectedSubmissionId != submission.Id)
+        {
+            SelectedSubmissionIdChanged.InvokeAsync(submission.Id);
+        }
+    }
+
+    private void OnNewSubmissionClicked()
+    {
+        OnNewSubmission.InvokeAsync();
+    }
+}
