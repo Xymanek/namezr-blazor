@@ -161,11 +161,14 @@
                 new SubmissionCreateModel
                 {
                     QuestionnaireVersionId = QuestionnaireVersionId,
-                    Values = Values.ToDictionary(x => Guid.Parse(x.Key), x => x.Value),
+                    SubmissionId = SubmissionId,
+
                     NewFileTickets = [.._newFileTickets],
+
+                    Values = Values.ToDictionary(x => Guid.Parse(x.Key), x => x.Value),
                 }
             );
-            
+
             response.EnsureSuccessStatusCode();
 
             HxMessenger.AddInformation("Submission saved");
