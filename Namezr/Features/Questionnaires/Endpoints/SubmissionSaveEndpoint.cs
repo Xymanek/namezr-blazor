@@ -6,6 +6,7 @@ using Immediate.Handlers.Shared;
 using Medallion.Threading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
@@ -35,7 +36,7 @@ internal partial class SubmissionSaveEndpoint
         IClock clock,
         IDistributedLockProvider distributedLockProvider,
         IFieldValueSerializer fieldValueSerializer,
-        ApplicationDbContext dbContext,
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IFileUploadTicketHelper fileTicketHelper,
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
@@ -45,7 +46,8 @@ internal partial class SubmissionSaveEndpoint
         CancellationToken ct
     )
     {
-        QuestionnaireVersionEntity? questionnaireVersion = await contextService.GetQuestionnaireVersionAsync(model.QuestionnaireVersionId, ct);
+        QuestionnaireVersionEntity? questionnaireVersion =
+            await contextService.GetQuestionnaireVersionAsync(model.QuestionnaireVersionId, ct);
         if (questionnaireVersion is null)
         {
             // TODO: return 400
@@ -61,8 +63,34 @@ internal partial class SubmissionSaveEndpoint
             cancellationToken: ct
         );
 
-        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(questionnaireVersion, currentUser, ct);
-        QuestionnaireSubmissionEntity? submissionEntity = context.ExistingSubmission;
+        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(
+            new GetSubmissionContextArgs
+            {
+                QuestionnaireVersion = questionnaireVersion,
+                CurrentUser = currentUser,
+
+                SubmissionForUpdateId = model.SubmissionId,
+                SubmissionMode = model.SubmissionId.HasValue
+                    ? SubmissionMode.EditExisting
+                    : SubmissionMode.CreateNew,
+            },
+            ct
+        );
+
+        if (context.DisabledReason.HasValue)
+        {
+            // TODO
+            throw new Exception($"Submission saving is not allowed: {context.DisabledReason.Value}");
+        }
+
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+
+        // Select the submission to edit if SubmissionId is provided, otherwise null (for new)
+        QuestionnaireSubmissionEntity? submissionEntity = context.SubmissionForUpdate;
+        if (submissionEntity is not null)
+        {
+            dbContext.QuestionnaireSubmissions.Attach(submissionEntity);
+        }
 
         // TODO: map only the field configs
         QuestionnaireConfigModel configModel = questionnaireVersion.MapToConfigModel();
@@ -75,8 +103,6 @@ internal partial class SubmissionSaveEndpoint
         {
             ThrowFailedValuesValidation();
         }
-
-        // TODO: validate files
 
         Dictionary<Guid, UploadedFileInfo> uploadedFileInfos;
         try
@@ -169,7 +195,6 @@ internal partial class SubmissionSaveEndpoint
         if (submissionEntity != null)
         {
             submissionEntity.VersionId = model.QuestionnaireVersionId;
-            submissionEntity.SubmittedAt = clock.GetCurrentInstant();
 
             if (
                 questionnaireVersion.Questionnaire.ApprovalMode ==

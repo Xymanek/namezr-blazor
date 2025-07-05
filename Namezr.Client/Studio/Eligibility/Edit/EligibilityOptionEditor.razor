@@ -4,7 +4,7 @@
 @inherits Editor<Namezr.Client.Studio.Eligibility.Edit.EligibilityOptionEditModel>
 
 <div class="row">
-    <div class="col-5">
+    <div class="col-4">
         <HxSelect
             Data="EligibilityDescriptors"
             Nullable="false"
@@ -15,7 +15,7 @@
             TextSelector="GetEligibilityDescriptorDisplayName"
         />
     </div>
-    <div class="col-4">
+    <div class="col-3">
         <HxInputText
             Label="Priority group"
             Placeholder="None"
@@ -32,7 +32,18 @@
                 @bind-Value="Value.PriorityModifier"/>
         </HxTooltip>
     </div>
-
+    <div class="col-2">
+        <HxTooltip
+            Trigger="TooltipTrigger.Focus"
+            Text="Maximum number of submissions allowed per user for this eligibility option. Must be between 1 and 10."
+        >
+            <HxInputNumber
+                Label="Max submissions"
+                Min="1"
+                Max="10"
+                @bind-Value="Value.MaxSubmissionsPerUser" />
+        </HxTooltip>
+    </div>
     <div class="col-1">
         <HxButtonGroup>
             <HxButton
