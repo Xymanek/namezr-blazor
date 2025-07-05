@@ -1,4 +1,5 @@
-﻿@using Namezr.Client.Infra
+﻿@using System.Text.Json
+@using Namezr.Client.Infra
 @using Namezr.Client.Studio.Questionnaires.Edit
 @using SuperLinq
 @using vNext.BlazorComponents.FluentValidation
@@ -7,6 +8,7 @@
 
 @inject ISpaHttpClientProvider HttpClientProvider
 @inject IHxMessengerService HxMessenger
+@inject NavigationManager NavigationManager
 
 <EditForm
     Model="Values"
@@ -91,6 +93,9 @@
     public Guid? SubmissionId { get; set; }
 
     [Parameter]
+    public required Guid QuestionnaireId { get; init; }
+
+    [Parameter]
     public required Guid QuestionnaireVersionId { get; init; }
 
     [Parameter]
@@ -172,6 +177,17 @@
             response.EnsureSuccessStatusCode();
 
             HxMessenger.AddInformation("Submission saved");
+
+            // Force a page reload on new submission
+            if (SubmissionId == null)
+            {
+                string responseBody = await response.Content.ReadAsStringAsync();
+                Guid newSubmissionId = JsonSerializer.Deserialize<Guid>(responseBody);
+
+                NavigationManager.NavigateTo(
+                    $"questionnaires/{QuestionnaireId.NoHyphens()}/{newSubmissionId.NoHyphens()}"
+                );
+            }
         }
         finally
         {
