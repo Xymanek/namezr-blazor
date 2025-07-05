@@ -18,6 +18,7 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
 @using Namezr.Features.Questionnaires.Notifications
@@ -64,7 +65,7 @@
     <PublicEligibilityPresenter
         CreatorId="@_versionEntity!.Questionnaire.CreatorId"
         Configuration="_versionEntity!.Questionnaire.EligibilityConfiguration"
-        EligibilityResult="_context.EligibilityResult"
+        EligibilityResult="_context.EligibilityResult ?? EligibilityResult.None"
     />
 
     <div class="mb-2"></div>
