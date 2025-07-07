@@ -1,4 +1,5 @@
-﻿@page "/questionnaires/{QuestionnaireId:guid}"
+﻿@page "/questionnaires/{QuestionnaireId:guid}/{ExistingSubmissionId:guid?}"
+@page "/questionnaires/{QuestionnaireId:guid}/new"
 
 @using System.Collections.Immutable
 @using System.Diagnostics
@@ -17,13 +18,13 @@
 @using Namezr.Features.Eligibility.Components
 @using Namezr.Features.PublicCommon.Components
 @using Namezr.Client.Shared
+@using Namezr.Features.Eligibility.Services
 @using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
 @using Namezr.Features.Questionnaires.Notifications
 @using NodaTime
 @using vNext.BlazorComponents.FluentValidation
 @using Namezr.Features.Questionnaires.Models
-@using Namezr.Features.Eligibility.Services
 
 @inject IQuestionnaireSubmissionContextService QuestionnaireSubmissionContextService
 @inject IFieldValueSerializer FieldValueSerializer
@@ -33,6 +34,8 @@
 @inject INotificationDispatcher NotificationDispatcher
 @inject IdentityUserAccessor UserAccessor
 @inject ApplicationDbContext DbContext
+
+@if (_context is null) return;
 
 @if (_versionEntity is not null)
 {
@@ -62,12 +65,12 @@
     <PublicEligibilityPresenter
         CreatorId="@_versionEntity!.Questionnaire.CreatorId"
         Configuration="_versionEntity!.Questionnaire.EligibilityConfiguration"
-        EligibilityResult="_eligibilityResult ?? EligibilityResult.None"
+        EligibilityResult="_context.EligibilityResult ?? EligibilityResult.None"
     />
 
     <div class="mb-2"></div>
 
-    @switch (_disabledReason)
+    @switch (_context.DisabledReason)
     {
         case null:
             break;
@@ -96,29 +99,75 @@
             </HxAlert>
             break;
 
+        case SubmissionDisabledReason.SubmissionLimitReached:
+            <HxAlert Color="ThemeColor.Warning">
+                You have reached the maximum number of submissions allowed for this questionnaire.
+            </HxAlert>
+            break;
+
+        case SubmissionDisabledReason.InvalidExistingSubmissionId:
+            <HxAlert Color="ThemeColor.Warning">
+                Invalid URL - existing submission was not found or it belongs to a different user or questionnaire.
+            </HxAlert>
+            break;
+
         default:
             throw new UnreachableException();
+    }
+
+    @if (
+        _context.ExistingSubmissions.Count > 1 ||
+        (_context.ExistingSubmissions.Count > 0 && _context.CanCreateMoreSubmissions)
+    )
+    {
+        <HxCard>
+            <HeaderTemplate>
+                My submissions
+            </HeaderTemplate>
+            <BodyTemplate>
+                <div class="d-flex flex-row gap-2">
+                    @foreach (QuestionnaireSubmissionEntity submission in _context.ExistingSubmissions)
+                    {
+                        <a href="/questionnaires/@QuestionnaireId.NoHyphens()/@submission.Id.NoHyphens()"
+                           class=@("btn " + (submission.Id == _context.SubmissionForUpdate?.Id ? "btn-primary" : "btn-outline-primary"))
+                        >
+                            #@submission.Number
+                        </a>
+                    }
+
+                    @if (_context.CanCreateMoreSubmissions)
+                    {
+                        <a href="/questionnaires/@QuestionnaireId.NoHyphens()/new"
+                           class=@("btn btn-success")
+                        >
+                            <i class="bi bi-plus-lg"></i> New
+                        </a>
+                    }
+                </div>
+            </BodyTemplate>
+        </HxCard>
     }
 
     @if (ConfigModel is not null)
     {
         <SubmissionEditor
             Config="ConfigModel"
-            SubmissionId="_existingSubmission?.Id"
+            SubmissionId="_context.SubmissionForUpdate?.Id"
             InitialValues="_initialValues"
             FileUploadTickets="_fileUploadTickets"
-            AllDisabled="_disabledReason.HasValue"
+            AllDisabled="_context.DisabledReason.HasValue"
+            QuestionnaireId="QuestionnaireId"
             QuestionnaireVersionId="QuestionnaireVersionId!.Value"
         />
     }
 }
 
-@if (_existingSubmission is { ApprovedAt: not null } || SubmissionLabels is { Length: > 0 })
+@if (_context.SubmissionForUpdate is { ApprovedAt: not null } || SubmissionLabels is { Length: > 0 })
 {
     <HxCard>
         <BodyTemplate>
             <div class="d-flex flex-wrap gap-2">
-                @if (_existingSubmission.ApprovedAt != null)
+                @if (_context.SubmissionForUpdate?.ApprovedAt != null)
                 {
                     <HxBadge Color="ThemeColor.Success">
                         Approved
@@ -134,7 +183,7 @@
     </HxCard>
 }
 
-@if (_existingSubmission is not null)
+@if (_context.SubmissionForUpdate is not null)
 {
     <HxCard>
         <BodyTemplate>
@@ -179,6 +228,9 @@
     [Parameter]
     public Guid QuestionnaireId { get; set; }
 
+    [Parameter]
+    public Guid? ExistingSubmissionId { get; set; }
+
     [CascadingParameter]
     public required HttpContext HttpContext { get; set; }
 
@@ -191,43 +243,42 @@
     [SupplyParameterFromForm]
     private SubmissionCreateSubmitterCommentModel NewComment { get; set; } = new();
 
-    private EligibilityResult? _eligibilityResult;
-
     private Dictionary<string, SubmissionValueModel>? _initialValues;
     private Dictionary<Guid, string> _fileUploadTickets = new();
 
-    private SubmissionDisabledReason? _disabledReason;
-    private QuestionnaireSubmissionEntity? _existingSubmission;
+    private QuestionnaireSubmissionContext? _context;
 
     protected override async Task OnInitializedAsync()
     {
         // Stage 1: Retrieve the latest questionnaire version
-        _versionEntity = await QuestionnaireSubmissionContextService.GetLatestQuestionnaireVersionAsync(QuestionnaireId, CancellationToken.None);
+        _versionEntity = await QuestionnaireSubmissionContextService.GetLatestQuestionnaireVersionAsync(
+            QuestionnaireId, HttpContext.RequestAborted
+        );
 
         if (_versionEntity is null)
         {
             // TODO: 404
-            throw new Exception($"Questionnaire with ID {QuestionnaireId} not found.");
+            throw new($"Questionnaire with ID {QuestionnaireId} not found.");
         }
 
         // Stage 2: Retrieve the user
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
 
-        // Stage 3: Retrieve the submission context
-        var context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(_versionEntity, user, CancellationToken.None);
-
-        _existingSubmission = context.ExistingSubmission;
-        _eligibilityResult = context.EligibilityResult;
-        _disabledReason = context.DisabledReason;
+        // Stage 3: Retrieve the submission context (multiple submissions)
+        _context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(
+            PrepareContextArgs(user),
+            HttpContext.RequestAborted
+        );
 
         ConfigModel = _versionEntity.MapToConfigModel();
         QuestionnaireVersionId = _versionEntity?.Id;
 
-        if (_existingSubmission is not null)
+        if (_context.SubmissionForUpdate is not null)
         {
+            await LoadSubmissionHistory();
             _initialValues = new Dictionary<string, SubmissionValueModel>();
 
-            foreach (QuestionnaireFieldValueEntity fieldValue in _existingSubmission.FieldValues!)
+            foreach (QuestionnaireFieldValueEntity fieldValue in _context.SubmissionForUpdate.FieldValues!)
             {
                 QuestionnaireFieldType? fieldType = _versionEntity!.Fields!
                     .SingleOrDefault(fieldConfig => fieldConfig.FieldId == fieldValue.FieldId)
@@ -242,29 +293,46 @@
             }
         }
 
-        if (_disabledReason == null)
+        if (_context.DisabledReason == null)
         {
             CreateFileUploadTickets();
         }
     }
 
+    private GetSubmissionContextArgs PrepareContextArgs(ApplicationUser? user)
+    {
+        string path = HttpContext.Request.Path.Value ?? string.Empty;
+        
+        // TODO: extremely hacky check
+        bool isNewSubmission = path.Contains("/new");
+
+        return new GetSubmissionContextArgs
+        {
+            QuestionnaireVersion = _versionEntity!,
+            CurrentUser = user,
+
+            SubmissionMode = isNewSubmission ? SubmissionMode.CreateNew : SubmissionMode.Automatic,
+            SubmissionForUpdateId = ExistingSubmissionId,
+        };
+    }
+
     private async Task LoadSubmissionHistory()
     {
-        if (_existingSubmission is null)
+        if (_context!.SubmissionForUpdate is null)
         {
             return;
         }
 
         SubmissionComments = await DbContext.SubmissionHistoryEntries
             .OfType<SubmissionHistoryPublicCommentEntity>()
-            .Where(entry => entry.SubmissionId == _existingSubmission.Id)
+            .Where(entry => entry.SubmissionId == _context.SubmissionForUpdate.Id)
             .OrderByDescending(comment => comment.OccuredAt)
             .ToArrayAsync();
 
         SubmissionLabels = await DbContext.SubmissionLabels
-            .Where(label => 
+            .Where(label =>
                 label.IsSubmitterVisible &&
-                label.Submissions!.Any(submission => submission.Id == _existingSubmission.Id)
+                label.Submissions!.Any(submission => submission.Id == _context.SubmissionForUpdate.Id)
             )
             .ToArrayAsync();
     }
@@ -291,7 +359,7 @@
 
         SubmissionHistoryPublicCommentEntity comment = new()
         {
-            SubmissionId = _existingSubmission!.Id,
+            SubmissionId = _context!.SubmissionForUpdate!.Id,
             OccuredAt = Clock.GetCurrentInstant(),
 
             InstigatorUserId = submitterId,
@@ -306,28 +374,28 @@
 
         NotificationDispatcher.Dispatch(
             new SubmitterLeftCommentNotificationData
-                {
-                    CreatorId = _versionEntity!.Questionnaire.CreatorId,
-                    CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
+            {
+                CreatorId = _versionEntity!.Questionnaire.CreatorId,
+                CreatorDisplayName = _versionEntity!.Questionnaire.Creator.DisplayName,
 
-                    QuestionnaireId = _versionEntity!.Questionnaire.Id,
-                    QuestionnaireName = _versionEntity!.Questionnaire.Title,
+                QuestionnaireId = _versionEntity!.Questionnaire.Id,
+                QuestionnaireName = _versionEntity!.Questionnaire.Title,
 
-                    SubmitterId = submitterId,
-                    SubmitterName = submitter.UserName ?? string.Empty,
+                SubmitterId = submitterId,
+                SubmitterName = submitter.UserName ?? string.Empty,
 
-                    SubmissionId = _existingSubmission.Id,
-                    SubmissionNumber = _existingSubmission.Number,
+                SubmissionId = _context.SubmissionForUpdate.Id,
+                SubmissionNumber = _context.SubmissionForUpdate.Number,
 
-                    SubmissionStudioUrl = NavigationManager
-                        .ToAbsoluteUri(
-                            $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_existingSubmission.Id.NoHyphens()}"
-                        )
-                        .AbsoluteUri,
+                SubmissionStudioUrl = NavigationManager
+                    .ToAbsoluteUri(
+                        $"studio/{_versionEntity.Questionnaire.CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/submissions/{_context.SubmissionForUpdate.Id.NoHyphens()}"
+                    )
+                    .AbsoluteUri,
 
-                    CommentBody = NewComment.Content,
-                }
-                .ToNotification()
+                CommentBody = NewComment.Content,
+            }
+            .ToNotification()
         );
 
         NavigationManager.Refresh();

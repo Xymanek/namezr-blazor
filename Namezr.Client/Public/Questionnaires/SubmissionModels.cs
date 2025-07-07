@@ -3,6 +3,9 @@ using Namezr.Client.Studio.Questionnaires.Edit;
 
 namespace Namezr.Client.Public.Questionnaires;
 
+/// <summary>
+/// Represents a value for a questionnaire field in a submission.
+/// </summary>
 public class SubmissionValueModel
 {
     public string StringValue { get; set; } = string.Empty;

@@ -85,12 +85,11 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
                     SubmissionId = submission.Id,
                     SubmissionNumber = submission.Number,
 
-                    // TODO: update once we support multiple submissions per questionnaire
                     SubmissionPublicUrl = UriHelper.BuildAbsolute(
                         httpContext.Request.Scheme,
                         httpContext.Request.Host,
                         httpContext.Request.PathBase,
-                        $"/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}"
+                        $"/questionnaires/{submission.Version.Questionnaire.Id.NoHyphens()}/{submission.Id.NoHyphens()}"
                     ),
 
                     Type = request.NewPresent

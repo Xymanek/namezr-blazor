@@ -148,6 +148,13 @@ internal partial class EligibilityService : IEligibilityService
             )
             .Sum();
 
+        // Calculate max submissions per user from eligible options
+        int maxSubmissionsPerUser = configuration.Options
+            .Where(option => isMatchingPerEligibilityPlan[option.PlanId])
+            .Select(option => option.MaxSubmissionsPerUser)
+            .DefaultIfEmpty(1)
+            .Max();
+
         EligibilityResult result = new()
         {
             EligiblePlanIds = isMatchingPerEligibilityPlan
@@ -156,6 +163,7 @@ internal partial class EligibilityService : IEligibilityService
                 .ToImmutableHashSet(),
 
             Modifier = modifier,
+            MaxSubmissionsPerUser = maxSubmissionsPerUser,
         };
 
         // TODO: currently we care only about questionnaire submissions. Limit this logic somehow? 

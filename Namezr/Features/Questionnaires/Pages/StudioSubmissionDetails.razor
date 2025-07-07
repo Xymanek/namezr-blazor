@@ -436,9 +436,8 @@
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
 
-            // TODO: update once we support multiple submissions per questionnaire
             SubmissionPublicUrl = NavigationManager
-                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}/{submission.Id.NoHyphens()}")
                 .AbsoluteUri,
 
             Type = SubmissionStaffActionType.ApprovalGranted
@@ -474,7 +473,7 @@
             SubmissionId = submission.Id,
             SubmissionNumber = submission.Number,
             SubmissionPublicUrl = NavigationManager
-                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}/{submission.Id.NoHyphens()}")
                 .AbsoluteUri,
             Type = SubmissionStaffActionType.ApprovalRemoved
         });
@@ -527,9 +526,8 @@
                 SubmissionId = _submission.Id,
                 SubmissionNumber = _submission.Number,
 
-                // TODO: update once we support multiple submissions per questionnaire
                 SubmissionPublicUrl = NavigationManager
-                    .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}")
+                    .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}/{_submission.Id.NoHyphens()}")
                     .AbsoluteUri,
                 Type = SubmissionStaffActionType.CommentAdded,
 
