@@ -22,6 +22,7 @@ public partial class ApplicationDbContext : IdentityUserContext<
     {
         _dataProtectionProvider = dataProtectionProvider;
     }
+    public DbSet<Namezr.Features.Questionnaires.Data.CannedCommentEntity> CannedComments { get; set; } = null!;
 
     public static void DefaultConfigure(DbContextOptionsBuilder optionsBuilder)
     {

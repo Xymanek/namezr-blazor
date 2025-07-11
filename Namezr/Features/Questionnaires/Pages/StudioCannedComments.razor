@@ -1,0 +1,203 @@
+@page "/studio/{creatorId:guid}/questionnaires/canned-comments"
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Features.Questionnaires.Components
+@using Namezr.Components.Layout
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@layout StudioPageHeaderLayout
+
+@inject CannedCommentsService CannedCommentsService
+@inject IHxMessenger Messenger
+
+<PageTitle>
+    Canned Comments
+    <StudioTitleSuffix/>
+</PageTitle>
+
+<SectionContent SectionId="StudioPageHeaderLayout.BreadcrumbSectionId">
+    <HxBreadcrumb>
+        <ConfigurationBreadcrumbItems CreatorId="CreatorId" />
+        <HxBreadcrumbItem
+            Href=@($"/studio/{CreatorId}/questionnaires/canned-comments")
+            Text="Canned Comments"
+        />
+    </HxBreadcrumb>
+</SectionContent>
+
+<SectionContent SectionId="StudioPageHeaderLayout.TitleSectionId">
+    Canned Comments
+</SectionContent>
+
+<div class="mb-3 d-flex justify-content-end">
+    <HxButton Color="Primary" OnClick="ShowAddModal">
+        <i class="bi bi-plus-lg"></i> Add New
+    </HxButton>
+</div>
+
+@if (IsLoading)
+{
+    <HxSpinner Size="Large" />
+}
+else if (CannedComments.Count == 0)
+{
+    <div class="alert alert-info">No canned comments found.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Comment Type</th>
+                    <th>Content</th>
+                    <th style="width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var comment in CannedComments)
+                {
+                    <tr>
+                        <td>@comment.Title</td>
+                        <td>@comment.Category</td>
+                        <td>@comment.CommentType</td>
+                        <td>@Truncate(comment.Content, 60)</td>
+                        <td>
+                            <HxButton Color="Secondary" Size="Small" OnClick="@(() => ShowEditModal(comment))" class="me-1">
+                                <i class="bi bi-pencil"></i>
+                            </HxButton>
+                            <HxButton Color="Danger" Size="Small" OnClick="@(() => ConfirmDelete(comment))">
+                                <i class="bi bi-trash"></i>
+                            </HxButton>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<CannedCommentEditor
+    @ref="EditorRef"
+    Visible="EditorVisible"
+    VisibleChanged="OnEditorVisibleChanged"
+    EditModel="EditorModel"
+    OnSave="HandleSave"
+    OnCancel="HandleCancel"
+    IsEdit="IsEditMode" />
+
+@code {
+    [Parameter] public Guid CreatorId { get; set; }
+
+    private List<CannedCommentModel> CannedComments = new();
+    private bool IsLoading = true;
+
+    private bool EditorVisible = false;
+    private bool IsEditMode = false;
+    private CannedCommentSaveRequest EditorModel = new();
+    private CannedCommentEditor? EditorRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        IsLoading = true;
+        try
+        {
+            CannedComments = await CannedCommentsService.GetCannedCommentsAsync();
+        }
+        catch
+        {
+            Messenger.AddError("Failed to load canned comments.");
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void ShowAddModal()
+    {
+        EditorModel = new CannedCommentSaveRequest();
+        IsEditMode = false;
+        EditorVisible = true;
+    }
+
+    private void ShowEditModal(CannedCommentModel comment)
+    {
+        EditorModel = new CannedCommentSaveRequest
+        {
+            Id = comment.Id,
+            Title = comment.Title,
+            Content = comment.Content,
+            CommentType = comment.CommentType,
+            Category = comment.Category
+        };
+        IsEditMode = true;
+        EditorVisible = true;
+    }
+
+    private async Task HandleSave(CannedCommentSaveRequest model)
+    {
+        bool success;
+        if (IsEditMode)
+        {
+            success = await CannedCommentsService.UpdateCannedCommentAsync(model);
+            if (success)
+                Messenger.AddSuccess("Canned comment updated.");
+            else
+                Messenger.AddError("Failed to update canned comment.");
+        }
+        else
+        {
+            success = await CannedCommentsService.CreateCannedCommentAsync(model);
+            if (success)
+                Messenger.AddSuccess("Canned comment created.");
+            else
+                Messenger.AddError("Failed to create canned comment.");
+        }
+        EditorVisible = false;
+        await LoadComments();
+    }
+
+    private async Task HandleCancel()
+    {
+        EditorVisible = false;
+    }
+
+    private async Task OnEditorVisibleChanged(bool visible)
+    {
+        EditorVisible = visible;
+        if (!visible)
+        {
+            EditorModel = new CannedCommentSaveRequest();
+        }
+    }
+
+    private async Task ConfirmDelete(CannedCommentModel comment)
+    {
+        var confirmed = await Messenger.ConfirmAsync("Delete canned comment?", $"Are you sure you want to delete '{comment.Title}'?");
+        if (confirmed)
+        {
+            var success = await CannedCommentsService.DeleteCannedCommentAsync(comment.Id);
+            if (success)
+            {
+                Messenger.AddSuccess("Canned comment deleted.");
+                await LoadComments();
+            }
+            else
+            {
+                Messenger.AddError("Failed to delete canned comment.");
+            }
+        }
+    }
+
+    private string Truncate(string value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        return value.Length <= maxLength ? value : value.Substring(0, maxLength) + "...";
+    }
+}

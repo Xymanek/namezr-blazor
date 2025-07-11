@@ -306,6 +306,11 @@
                     TextSelector="@(type => type.Humanize())"
                 />
 
+                <CannedCommentSelector
+                    CommentType="@NewComment.Type"
+                    CurrentContent="@NewComment.Content"
+                    OnCannedCommentSelectedContent="HandleCannedCommentSelected" />
+
                 <HxInputTextArea @bind-Value="NewComment.Content"/>
 
                 <HxSubmit Color="ThemeColor.Primary" Text="Submit"/>
@@ -331,6 +336,17 @@
 </div>
 
 @code {
+    [Inject]
+    public CannedCommentsService CannedCommentsService { get; set; } = null!;
+
+    private async Task HandleCannedCommentSelected(string cannedContent)
+    {
+        if (!string.IsNullOrWhiteSpace(cannedContent))
+        {
+            NewComment.Content = cannedContent;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
 
     [CascadingParameter]
     public required HttpContext HttpContext { get; set; } = null!;

@@ -1,0 +1,64 @@
+@using Havit.Blazor.Components.Web.Bootstrap
+@using Namezr.Client.Studio.Questionnaires
+@using Microsoft.AspNetCore.Components.Forms
+@using FluentValidation
+@using Havit.Blazor.Components.Web
+
+<HxModal @ref="ModalRef" Visible="Visible" OnClosed="HandleCancel">
+    <EditForm Model="EditModel" OnValidSubmit="HandleValidSubmit">
+        <FluentValidationValidator />
+        <HxModalHeader>
+            @((IsEdit ? "Edit" : "Add New") + " Canned Comment")
+        </HxModalHeader>
+        <HxModalBody>
+            <HxInputText @bind-Value="EditModel.Title" Label="Title" Required="true" />
+            <HxInputTextArea @bind-Value="EditModel.Content" Label="Content" Rows="4" Required="true" />
+            <HxSelect @bind-Value="EditModel.CommentType" Label="Comment Type" Required="true">
+                <HxSelectItem Value="Internal">Internal</HxSelectItem>
+                <HxSelectItem Value="Public">Public</HxSelectItem>
+            </HxSelect>
+            <HxInputText @bind-Value="EditModel.Category" Label="Category" Required="true" />
+        </HxModalBody>
+        <HxModalFooter>
+            <HxButton Color="ThemeColor.Primary" Type="Submit">Save</HxButton>
+            <HxButton Color="ThemeColor.Secondary" OnClick="HandleCancel" Outline="true">Cancel</HxButton>
+        </HxModalFooter>
+    </EditForm>
+</HxModal>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public CannedCommentSaveRequest EditModel { get; set; } = new();
+    [Parameter] public EventCallback<CannedCommentSaveRequest> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+
+    private HxModal ModalRef;
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(EditModel);
+        await CloseModal();
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+        await CloseModal();
+    }
+
+    public async Task Show()
+    {
+        Visible = true;
+        await VisibleChanged.InvokeAsync(true);
+        await ModalRef.ShowAsync();
+    }
+
+    public async Task CloseModal()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+        await ModalRef.HideAsync();
+    }
+}

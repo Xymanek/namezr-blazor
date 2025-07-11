@@ -1,0 +1,124 @@
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Client.Studio.Questionnaires
+@inject CannedCommentsService CannedCommentsService
+
+@inherits OwningComponentBase
+
+@attribute [RenderModeWebAssemblyInteractive]
+
+@if (IsLoading)
+{
+    <HxSpinner />
+}
+else if (LoadError)
+{
+    <HxAlert Color="ThemeColor.Danger">
+        Failed to load canned comments.
+    </HxAlert>
+}
+else if (FilteredCannedComments.Count == 0)
+{
+    <!-- No canned comments available for this type/category -->
+}
+else
+{
+    <div class="mb-2">
+        <HxSelect TItem="CannedCommentModel"
+                  Data="FilteredCannedComments"
+                  @bind-Value="SelectedCannedComment"
+                  Label="Canned comments"
+                  TextSelector="@(c => c.Title)"
+                  Nullable="true"
+                  OnSelectedValueChanged="OnCannedCommentSelected" />
+        @if (Categories.Count > 1)
+        {
+            <HxSelect TItem="string"
+                      Data="Categories"
+                      @bind-Value="SelectedCategory"
+                      Label="Category"
+                      Nullable="true"
+                      OnSelectedValueChanged="OnCategoryChanged" />
+        }
+        @if (SelectedCannedComment is not null)
+        {
+            <div class="alert alert-info mt-2">
+                <strong>Preview:</strong>
+                <div>@SelectedCannedComment.Content</div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public StudioSubmissionCommentType CommentType { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnCannedCommentSelectedContent { get; set; }
+
+    [Parameter]
+    public string? CurrentContent { get; set; }
+
+    private List<CannedCommentModel> AllCannedComments = new();
+    private List<CannedCommentModel> FilteredCannedComments = new();
+    private List<string> Categories = new();
+    private string? SelectedCategory;
+    private CannedCommentModel? SelectedCannedComment;
+    private bool IsLoading = true;
+    private bool LoadError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            LoadError = false;
+            AllCannedComments = await CannedCommentsService.GetCannedCommentsAsync();
+            Categories = AllCannedComments.Select(c => c.Category).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+            FilterCannedComments();
+        }
+        catch
+        {
+            LoadError = true;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        FilterCannedComments();
+    }
+
+    private void FilterCannedComments()
+    {
+        FilteredCannedComments = AllCannedComments
+            .Where(c => c.Type == CommentType && (string.IsNullOrEmpty(SelectedCategory) || c.Category == SelectedCategory))
+            .ToList();
+        if (!FilteredCannedComments.Contains(SelectedCannedComment))
+        {
+            SelectedCannedComment = null;
+        }
+    }
+
+    private Task OnCategoryChanged(string? category)
+    {
+        SelectedCategory = category;
+        FilterCannedComments();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task OnCannedCommentSelected(CannedCommentModel? cannedComment)
+    {
+        SelectedCannedComment = cannedComment;
+        if (cannedComment is not null)
+        {
+            await OnCannedCommentSelectedContent.InvokeAsync(cannedComment.Content);
+        }
+    }
+}
