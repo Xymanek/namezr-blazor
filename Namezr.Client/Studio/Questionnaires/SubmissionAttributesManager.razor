@@ -29,10 +29,9 @@
                                         DataProvider="@((request) => ProvideKeySuggestions(request))"
                                         TextSelector="@(item => item)"
                                         ValueSelector="@(item => item)"
-                                        SearchDelay="300"
+                                        Delay="300"
                                         MinimumLength="0"
                                         CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
-                                        OnBlur="@(() => OnKeyBlur(attribute))"
                                     />
                                 </HxTooltip>
 
@@ -54,11 +53,17 @@
                             }
                         </div>
                         <div class="flex-grow-1">
-                            <HxInputText
+                            <HxAutosuggest
+                                TValue="string"
+                                TItem="string"
                                 @bind-Value="attribute.Value"
                                 Placeholder="Value"
-                                @onblur="() => UpdateAttribute(attribute)"
-                                MaxLength="@SubmissionAttributeModel.ValueMaxLength"
+                                DataProvider="@((request) => ProvideValueSuggestions(request, attribute.Key))"
+                                TextSelector="@(item => item)"
+                                ValueSelector="@(item => item)"
+                                SearchDelay="300"
+                                MinimumLength="0"
+                                OnBlur="@(() => UpdateAttribute(attribute))"
                             />
                         </div>
                     </div>
@@ -107,7 +112,7 @@
     {
         // Track original attribute keys to determine which are existing vs new
         _persistedAttributes = Attributes.ToHashSet();
-        
+
         // Load available keys for suggestions
         await LoadAvailableKeys();
     }
@@ -154,31 +159,21 @@
                !Attributes.Any(HasDuplicateKey);
     }
 
-    private void OnKeyBlur(SubmissionAttributeModel attribute)
-    {
-        // Trim whitespace when user leaves the field
-        attribute.Key = attribute.Key.Trim();
-        StateHasChanged();
-
-        // Update if valid
-        _ = UpdateAttribute(attribute);
-    }
-
     private Task<AutosuggestDataProviderResult<string>> ProvideKeySuggestions(AutosuggestDataProviderRequest request)
     {
         string searchText = request.UserInput?.Trim() ?? "";
-        
+
         // Get existing keys (case-insensitive) to exclude from suggestions
         HashSet<string> existingKeys = Attributes
             .Select(attr => attr.Key.Trim())
             .Where(key => !string.IsNullOrWhiteSpace(key))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        
+
         // Filter available keys based on user input and exclude existing keys
         List<string> filteredKeys = _availableKeys
             .Where(key => !existingKeys.Contains(key)) // Exclude existing keys
-            .Where(key => string.IsNullOrEmpty(searchText) || 
-                         key.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .Where(key => string.IsNullOrEmpty(searchText) ||
+                          key.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             .OrderBy(key => key)
             .Take(10) // Limit to 10 suggestions
             .ToList();
@@ -187,6 +182,58 @@
         {
             Data = filteredKeys
         });
+    }
+
+    private async Task<AutosuggestDataProviderResult<string>> ProvideValueSuggestions(AutosuggestDataProviderRequest request, string key)
+    {
+        string searchText = request.UserInput?.Trim() ?? "";
+
+        // Don't provide suggestions if key is empty or whitespace
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return new AutosuggestDataProviderResult<string>
+            {
+                Data = []
+            };
+        }
+
+        try
+        {
+            HttpClient httpClient = HttpClientProvider.HttpClient;
+
+            // Create request with user input in body
+            GetSubmissionAttributeValuesRequest apiRequest = new()
+            {
+                SubmissionId = SubmissionId,
+                Key = key.Trim(),
+                UserInput = searchText
+            };
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionAttributesValues,
+                apiRequest
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                GetSubmissionAttributeValuesResponse? result = await response.Content.ReadFromJsonAsync<GetSubmissionAttributeValuesResponse>();
+                List<string> filteredValues = result?.Values ?? [];
+
+                return new AutosuggestDataProviderResult<string>
+                {
+                    Data = filteredValues
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading value suggestions: {ex.Message}");
+        }
+
+        return new AutosuggestDataProviderResult<string>
+        {
+            Data = []
+        };
     }
 
     private string GetKeyTooltip(SubmissionAttributeModel attribute)

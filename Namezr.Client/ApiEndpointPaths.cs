@@ -18,6 +18,7 @@ public static class ApiEndpointPaths
 
     public const string SubmissionAttributesSet = "/api/submission-attributes/set";
     public const string SubmissionAttributesKeys = "/api/submission-attributes/keys";
+    public const string SubmissionAttributesValues = "/api/submission-attributes/values";
 
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
