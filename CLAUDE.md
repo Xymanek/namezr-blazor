@@ -108,3 +108,6 @@ dotnet run --project Namezr print-third-party-token [args]
 
 ### Command Line Startup Validation
 - To validate that the application runs, use `validate-startup` launch profile
+
+## Code Documentation Guidelines
+- Never document `Handle`/`HandleAsync` methods inside `[Handler]` class

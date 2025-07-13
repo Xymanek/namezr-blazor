@@ -21,13 +21,18 @@
                             @if (IsNewAttribute(attribute))
                             {
                                 <HxTooltip Trigger="TooltipTrigger.Focus" Text="@GetKeyTooltip(attribute)">
-                                    <HxInputText
+                                    <HxAutosuggest
+                                        TValue="string"
+                                        TItem="string"
                                         @bind-Value="attribute.Key"
                                         Placeholder="Key"
-                                        BindEvent="BindEvent.OnInput"
-                                        @onblur="() => OnKeyBlur(attribute)"
-                                        MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                        DataProvider="@((request) => ProvideKeySuggestions(request))"
+                                        TextSelector="@(item => item)"
+                                        ValueSelector="@(item => item)"
+                                        SearchDelay="300"
+                                        MinimumLength="0"
                                         CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
+                                        OnBlur="@(() => OnKeyBlur(attribute))"
                                     />
                                 </HxTooltip>
 
@@ -96,11 +101,37 @@
 
     private HashSet<SubmissionAttributeModel> _persistedAttributes = [];
     private bool _isSubmitting;
+    private List<string> _availableKeys = [];
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         // Track original attribute keys to determine which are existing vs new
         _persistedAttributes = Attributes.ToHashSet();
+        
+        // Load available keys for suggestions
+        await LoadAvailableKeys();
+    }
+
+    private async Task LoadAvailableKeys()
+    {
+        try
+        {
+            HttpClient httpClient = HttpClientProvider.HttpClient;
+            HttpResponseMessage response = await httpClient.GetAsync(
+                $"{ApiEndpointPaths.SubmissionAttributesKeys}?SubmissionId={SubmissionId}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                GetSubmissionAttributeKeysResponse? result = await response.Content.ReadFromJsonAsync<GetSubmissionAttributeKeysResponse>();
+                _availableKeys = result?.Keys ?? [];
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading available keys: {ex.Message}");
+            _availableKeys = [];
+        }
     }
 
     private bool IsNewAttribute(SubmissionAttributeModel attribute)
@@ -131,6 +162,31 @@
 
         // Update if valid
         _ = UpdateAttribute(attribute);
+    }
+
+    private Task<AutosuggestDataProviderResult<string>> ProvideKeySuggestions(AutosuggestDataProviderRequest request)
+    {
+        string searchText = request.UserInput?.Trim() ?? "";
+        
+        // Get existing keys (case-insensitive) to exclude from suggestions
+        HashSet<string> existingKeys = Attributes
+            .Select(attr => attr.Key.Trim())
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        
+        // Filter available keys based on user input and exclude existing keys
+        List<string> filteredKeys = _availableKeys
+            .Where(key => !existingKeys.Contains(key)) // Exclude existing keys
+            .Where(key => string.IsNullOrEmpty(searchText) || 
+                         key.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(key => key)
+            .Take(10) // Limit to 10 suggestions
+            .ToList();
+
+        return Task.FromResult(new AutosuggestDataProviderResult<string>
+        {
+            Data = filteredKeys
+        });
     }
 
     private string GetKeyTooltip(SubmissionAttributeModel attribute)
