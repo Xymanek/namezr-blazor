@@ -53,6 +53,7 @@
                                 @bind-Value="attribute.Value"
                                 Placeholder="Value"
                                 @onblur="() => UpdateAttribute(attribute)"
+                                MaxLength="@SubmissionAttributeModel.ValueMaxLength"
                             />
                         </div>
                     </div>

@@ -22,7 +22,8 @@ public record SetSubmissionAttributeRequest
                 .MaximumLength(SubmissionAttributeModel.KeyMaxLength);
 
             RuleFor(x => x.Value)
-                .NotNull();
+                .NotNull()
+                .MaximumLength(SubmissionAttributeModel.ValueMaxLength);
         }
     }
 }
