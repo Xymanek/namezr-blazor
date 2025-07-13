@@ -24,9 +24,17 @@
                                 <HxInputText 
                                     @bind-Value="attribute.Key" 
                                     Placeholder="Key"
+                                    BindEvent="BindEvent.OnInput"
                                     @onblur="() => UpdateAttribute(attribute)"
                                     MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                    CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
                                 />
+                                @if (HasDuplicateKey(attribute))
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        Key already exists
+                                    </div>
+                                }
                             }
                             else
                             {
@@ -52,7 +60,7 @@
                     Color="ThemeColor.Danger"
                     Size="ButtonSize.Small"
                     OnClick="() => DeleteAttribute(attribute)"
-                    Enabled="!_isSubmitting"
+                    Enabled="_persistedAttributes.Contains(attribute) && !_isSubmitting"
                 />
             </div>
         }
@@ -65,7 +73,7 @@
             Color="ThemeColor.Primary"
             Outline="true"
             OnClick="AddNewAttribute"
-            Enabled="!_isSubmitting"
+            Enabled="!_isSubmitting && CanAddNewAttribute()"
         />
         
         @if (_isSubmitting)
@@ -82,18 +90,32 @@
     [Parameter]
     public List<SubmissionAttributeModel> Attributes { get; set; } = [];
 
-    private HashSet<string> _originalAttributeKeys = [];
+    private HashSet<SubmissionAttributeModel> _persistedAttributes = [];
     private bool _isSubmitting;
 
     protected override void OnInitialized()
     {
         // Track original attribute keys to determine which are existing vs new
-        _originalAttributeKeys = Attributes.Select(attr => attr.Key).ToHashSet();
+        _persistedAttributes = Attributes.ToHashSet();
     }
 
     private bool IsNewAttribute(SubmissionAttributeModel attribute)
     {
-        return !_originalAttributeKeys.Contains(attribute.Key);
+        return !_persistedAttributes.Contains(attribute);
+    }
+
+    private bool HasDuplicateKey(SubmissionAttributeModel currentAttribute)
+    {
+        return Attributes
+            .Where(attr => attr != currentAttribute) // Exclude self
+            .Any(attr => string.Equals(attr.Key, currentAttribute.Key, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool CanAddNewAttribute()
+    {
+        // Don't allow adding if there are empty keys or duplicate keys
+        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key)) &&
+               !Attributes.Any(HasDuplicateKey);
     }
 
     private async Task UpdateAttribute(SubmissionAttributeModel attribute)
@@ -101,13 +123,16 @@
         if (string.IsNullOrWhiteSpace(attribute.Key))
             return;
 
-        await SetAttribute(attribute.Key, attribute.Value);
-        
-        // If this was a new attribute and now has a key, track it as saved
-        if (!_originalAttributeKeys.Contains(attribute.Key))
+        // Check for duplicate keys
+        if (HasDuplicateKey(attribute))
         {
-            _originalAttributeKeys.Add(attribute.Key);
+            // TODO: Show toast/error message
+            Console.WriteLine($"Duplicate key '{attribute.Key}' detected");
+            return;
         }
+
+        await SetAttribute(attribute.Key, attribute.Value);
+        _persistedAttributes.Add(attribute);
     }
 
     private async Task DeleteAttribute(SubmissionAttributeModel attribute)
@@ -119,6 +144,12 @@
 
     private void AddNewAttribute()
     {
+        // Don't allow adding new attributes if there are unsaved ones with empty keys
+        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key)))
+        {
+            return;
+        }
+
         Attributes.Add(new SubmissionAttributeModel
         {
             Key = "",
