@@ -311,4 +311,22 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Namezr.Client._Imports).Assembly);
 
+// Validate startup is an additional step to building the C# solution to ensure that the "static configuration" is valid:
+// * All application host initialization logic is executed successfully
+// * DI container passes validation
+// * Entity Framework Core model is built and validated
+// And exists (instead of running forever) for ease of use in CLI workflows, such as CI/CD pipelines.
+if (args.FirstOrDefault() == "validate-startup")
+{
+    await using ApplicationDbContext dbContext = app.Services
+        .GetRequiredService<IDbContextFactory<ApplicationDbContext>>()
+        .CreateDbContext();
+
+    // Force the model to be built and validated
+    _ = dbContext.Model;
+    
+    Console.WriteLine("Startup validation completed successfully.");
+    return;
+}
+
 app.Run();

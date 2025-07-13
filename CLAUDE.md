@@ -102,3 +102,6 @@ dotnet run --project Namezr print-third-party-token [args]
 ## API Development Guidelines
 - **API Route Management**: 
   - All API routes need to be constants in @Namezr.Client\ApiEndpointPaths.cs 
+
+### Command Line Startup Validation
+- To validate that the application runs, use `validate-startup` launch profile

@@ -18,6 +18,14 @@
         "environmentVariables": {
           "ASPNETCORE_ENVIRONMENT": "Development"
         }
+      },
+      "validate-startup": {
+        "commandName": "Project",
+        "dotnetRunMessages": true,
+        "commandLineArgs": "validate-startup",
+        "environmentVariables": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        }
       }
     }
   }
