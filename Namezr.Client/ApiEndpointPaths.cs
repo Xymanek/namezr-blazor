@@ -16,6 +16,9 @@ public static class ApiEndpointPaths
 
     public const string CannedCommentsConfigSave = "/api/canned-comments/config/save";
 
+    public const string SubmissionAttributesSet = "/api/submission-attributes/set";
+    public const string SubmissionAttributesGet = "/api/submission-attributes/get";
+
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
     public const string FilesUpload = "/api/files/upload";

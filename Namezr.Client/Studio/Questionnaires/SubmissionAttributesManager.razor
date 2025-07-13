@@ -1,0 +1,167 @@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Infra
+@using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires
+@using vNext.BlazorComponents.FluentValidation
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<div class="d-flex flex-column gap-2">
+    @if (_attributes.Count == 0)
+    {
+        <i>No attributes set</i>
+    }
+    else
+    {
+        @foreach ((SubmissionAttributeModel attribute, int index) in _attributes.Select((attr, i) => (attr, i)))
+        {
+            <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                <div class="flex-grow-1">
+                    <div class="d-flex gap-2">
+                        <div style="width: 200px;">
+                            <HxInputText 
+                                @bind-Value="attribute.Key" 
+                                Placeholder="Key"
+                                @onblur="() => UpdateAttribute(attribute)"
+                                MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                            />
+                        </div>
+                        <div class="flex-grow-1">
+                            <HxInputText 
+                                @bind-Value="attribute.Value" 
+                                Placeholder="Value"
+                                @onblur="() => UpdateAttribute(attribute)"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <HxButton
+                    Icon="BootstrapIcon.Trash"
+                    Color="ThemeColor.Danger"
+                    Size="ButtonSize.Small"
+                    OnClick="() => DeleteAttribute(attribute)"
+                    Enabled="!_isSubmitting"
+                />
+            </div>
+        }
+    }
+
+    <div class="d-flex gap-2">
+        <HxButton
+            Icon="BootstrapIcon.Plus"
+            Text="Add Attribute"
+            Color="ThemeColor.Primary"
+            Outline="true"
+            OnClick="AddNewAttribute"
+            Enabled="!_isSubmitting"
+        />
+        
+        @if (_isSubmitting)
+        {
+            <span class="text-muted">Saving...</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid SubmissionId { get; set; }
+
+    private List<SubmissionAttributeModel> _attributes = [];
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAttributes();
+    }
+
+    private async Task LoadAttributes()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionAttributesGet,
+                new GetSubmissionAttributesRequest
+                {
+                    SubmissionId = SubmissionId
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+            GetSubmissionAttributesResponse? result = await response.Content.ReadFromJsonAsync<GetSubmissionAttributesResponse>();
+            
+            if (result != null)
+            {
+                _attributes = result.Attributes;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: proper error handling/toasts
+            Console.WriteLine($"Error loading attributes: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateAttribute(SubmissionAttributeModel attribute)
+    {
+        if (string.IsNullOrWhiteSpace(attribute.Key))
+            return;
+
+        await SetAttribute(attribute.Key, attribute.Value);
+    }
+
+    private async Task DeleteAttribute(SubmissionAttributeModel attribute)
+    {
+        await SetAttribute(attribute.Key, ""); // Empty value = delete
+        _attributes.Remove(attribute);
+        StateHasChanged();
+    }
+
+    private void AddNewAttribute()
+    {
+        _attributes.Add(new SubmissionAttributeModel
+        {
+            Key = "",
+            Value = ""
+        });
+        StateHasChanged();
+    }
+
+    private async Task SetAttribute(string key, string value)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return;
+
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        _isSubmitting = true;
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionAttributesSet,
+                new SetSubmissionAttributeRequest
+                {
+                    SubmissionId = SubmissionId,
+                    Key = key.Trim(),
+                    Value = value ?? ""
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            // TODO: proper error handling/toasts
+            Console.WriteLine($"Error setting attribute: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}
