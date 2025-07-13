@@ -33,6 +33,7 @@
                             TValue="StudioSubmissionCommentType"
                             Label="Comment Type"
                             Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                            Nullable="false"
                             TextSelector="@(type => type == StudioSubmissionCommentType.InternalNote ? "Internal Note" : "Public Comment")"
                             @bind-Value="_cannedCommentForEdit.CommentType"
                         />
