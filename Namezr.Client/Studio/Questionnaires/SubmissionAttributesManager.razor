@@ -2,7 +2,6 @@
 
 @using Namezr.Client.Infra
 @using Namezr.Client.Shared
-@using Namezr.Client.Studio.Questionnaires
 
 @inject ISpaHttpClientProvider HttpClientProvider
 
@@ -21,16 +20,17 @@
                         <div style="width: 200px;">
                             @if (IsNewAttribute(attribute))
                             {
-                                <HxInputText 
-                                    @bind-Value="attribute.Key" 
-                                    Placeholder="Key"
-                                    BindEvent="BindEvent.OnInput"
-                                    @onblur="() => OnKeyBlur(attribute)"
-                                    @onfocus="() => OnKeyFocus(attribute)"
-                                    MaxLength="@SubmissionAttributeModel.KeyMaxLength"
-                                    CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
-                                    Title="@GetKeyTooltip(attribute)"
-                                />
+                                <HxTooltip Trigger="TooltipTrigger.Focus" Text="@GetKeyTooltip(attribute)">
+                                    <HxInputText
+                                        @bind-Value="attribute.Key"
+                                        Placeholder="Key"
+                                        BindEvent="BindEvent.OnInput"
+                                        @onblur="() => OnKeyBlur(attribute)"
+                                        MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                        CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
+                                    />
+                                </HxTooltip>
+
                                 @if (HasDuplicateKey(attribute))
                                 {
                                     <div class="invalid-feedback d-block">
@@ -40,8 +40,8 @@
                             }
                             else
                             {
-                                <HxInputText 
-                                    @bind-Value="attribute.Key" 
+                                <HxInputText
+                                    @bind-Value="attribute.Key"
                                     Placeholder="Key"
                                     Enabled="false"
                                     MaxLength="@SubmissionAttributeModel.KeyMaxLength"
@@ -49,8 +49,8 @@
                             }
                         </div>
                         <div class="flex-grow-1">
-                            <HxInputText 
-                                @bind-Value="attribute.Value" 
+                            <HxInputText
+                                @bind-Value="attribute.Value"
                                 Placeholder="Value"
                                 @onblur="() => UpdateAttribute(attribute)"
                             />
@@ -77,7 +77,7 @@
             OnClick="AddNewAttribute"
             Enabled="!_isSubmitting && CanAddNewAttribute()"
         />
-        
+
         @if (_isSubmitting)
         {
             <span class="text-muted">Saving...</span>
@@ -86,6 +86,7 @@
 </div>
 
 @code {
+
     [Parameter]
     public Guid SubmissionId { get; set; }
 
@@ -121,17 +122,12 @@
                !Attributes.Any(HasDuplicateKey);
     }
 
-    private void OnKeyFocus(SubmissionAttributeModel attribute)
-    {
-        // Tooltip is shown via Title attribute
-    }
-
     private void OnKeyBlur(SubmissionAttributeModel attribute)
     {
         // Trim whitespace when user leaves the field
         attribute.Key = attribute.Key.Trim();
         StateHasChanged();
-        
+
         // Update if valid
         _ = UpdateAttribute(attribute);
     }
@@ -142,12 +138,12 @@
         {
             return "Enter a unique key for this attribute. Keys are case-insensitive and whitespace is automatically trimmed.";
         }
-        
+
         if (HasDuplicateKey(attribute))
         {
             return "This key already exists. Keys must be unique (case-insensitive).";
         }
-        
+
         return "Keys are case-insensitive and whitespace is automatically trimmed.";
     }
 
@@ -225,4 +221,5 @@
             StateHasChanged();
         }
     }
+
 }
