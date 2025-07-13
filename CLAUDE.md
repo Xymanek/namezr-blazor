@@ -71,6 +71,7 @@ See README.md for complete configuration example.
 - Use `[RegisterSingleton/Scoped/Transient]` attributes for service registration
 - Prefer explicit types over `var` (unless type name > 30 chars)
 - Use trailing commas in initializers
+- Use trailing commas where possible and it's the last character of the line
 
 ### Data Access
 - Use `ApplicationDbContext` with feature-specific partial classes

@@ -7,24 +7,36 @@
 @inject ISpaHttpClientProvider HttpClientProvider
 
 <div class="d-flex flex-column gap-2">
-    @if (_attributes.Count == 0)
+    @if (Attributes.Count == 0)
     {
         <i>No attributes set</i>
     }
     else
     {
-        @foreach ((SubmissionAttributeModel attribute, int index) in _attributes.Select((attr, i) => (attr, i)))
+        @foreach (SubmissionAttributeModel attribute in Attributes)
         {
             <div class="d-flex align-items-center gap-2 p-2 border rounded">
                 <div class="flex-grow-1">
                     <div class="d-flex gap-2">
                         <div style="width: 200px;">
-                            <HxInputText 
-                                @bind-Value="attribute.Key" 
-                                Placeholder="Key"
-                                @onblur="() => UpdateAttribute(attribute)"
-                                MaxLength="@SubmissionAttributeModel.KeyMaxLength"
-                            />
+                            @if (IsNewAttribute(attribute))
+                            {
+                                <HxInputText 
+                                    @bind-Value="attribute.Key" 
+                                    Placeholder="Key"
+                                    @onblur="() => UpdateAttribute(attribute)"
+                                    MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                />
+                            }
+                            else
+                            {
+                                <HxInputText 
+                                    @bind-Value="attribute.Key" 
+                                    Placeholder="Key"
+                                    Enabled="false"
+                                    MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                />
+                            }
                         </div>
                         <div class="flex-grow-1">
                             <HxInputText 
@@ -70,14 +82,19 @@
     [Parameter]
     public List<SubmissionAttributeModel> Attributes { get; set; } = [];
 
-    private List<SubmissionAttributeModel> _attributes = [];
+    private HashSet<string> _originalAttributeKeys = [];
     private bool _isSubmitting;
 
     protected override void OnInitialized()
     {
-        _attributes = Attributes.ToList(); // Create a copy to avoid modifying the original
+        // Track original attribute keys to determine which are existing vs new
+        _originalAttributeKeys = Attributes.Select(attr => attr.Key).ToHashSet();
     }
 
+    private bool IsNewAttribute(SubmissionAttributeModel attribute)
+    {
+        return !_originalAttributeKeys.Contains(attribute.Key);
+    }
 
     private async Task UpdateAttribute(SubmissionAttributeModel attribute)
     {
@@ -85,21 +102,27 @@
             return;
 
         await SetAttribute(attribute.Key, attribute.Value);
+        
+        // If this was a new attribute and now has a key, track it as saved
+        if (!_originalAttributeKeys.Contains(attribute.Key))
+        {
+            _originalAttributeKeys.Add(attribute.Key);
+        }
     }
 
     private async Task DeleteAttribute(SubmissionAttributeModel attribute)
     {
         await SetAttribute(attribute.Key, ""); // Empty value = delete
-        _attributes.Remove(attribute);
+        Attributes.Remove(attribute);
         StateHasChanged();
     }
 
     private void AddNewAttribute()
     {
-        _attributes.Add(new SubmissionAttributeModel
+        Attributes.Add(new SubmissionAttributeModel
         {
             Key = "",
-            Value = ""
+            Value = "",
         });
         StateHasChanged();
     }
@@ -120,7 +143,7 @@
                 {
                     SubmissionId = SubmissionId,
                     Key = key.Trim(),
-                    Value = value ?? ""
+                    Value = value,
                 }
             );
 
