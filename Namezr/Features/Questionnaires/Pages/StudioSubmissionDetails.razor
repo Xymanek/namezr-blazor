@@ -287,6 +287,49 @@
         </BodyTemplate>
     </HxCard>
 
+    @if (_cannedComments.Length > 0)
+    {
+        <HxCard>
+            <HeaderTemplate>
+                Quick Comments
+            </HeaderTemplate>
+            <BodyTemplate>
+                <div class="d-flex flex-column gap-2">
+                    @foreach (CannedCommentEntity cannedComment in _cannedComments)
+                    {
+                        <form 
+                            method="post"
+                            @formname=@($"apply-canned-comment-{cannedComment.Id}") 
+                            @onsubmit="() => OnApplyCannedComment(cannedComment)"
+                        >
+                            <AntiforgeryToken/>
+
+                            <div class="d-flex align-items-start gap-3 p-2 border rounded">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <HxBadge
+                                            Color="@(cannedComment.CommentType == StudioSubmissionCommentType.InternalNote ? ThemeColor.Warning : ThemeColor.Info)">
+                                            @(cannedComment.CommentType == StudioSubmissionCommentType.InternalNote ? "Internal" : "Public")
+                                        </HxBadge>
+                                        <strong>@cannedComment.Title</strong>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <TruncatedText Text="@cannedComment.Content" MaxLength="50"/>
+                                    </div>
+                                </div>
+                                <HxSubmit
+                                    Color="ThemeColor.Primary"
+                                    Size="ButtonSize.Small"
+                                    Text="Apply"
+                                />
+                            </div>
+                        </form>
+                    }
+                </div>
+            </BodyTemplate>
+        </HxCard>
+    }
+
     <HxCard>
         <HeaderTemplate>
             Leave a comment
@@ -357,6 +400,8 @@
     private List<SubmissionLabelModel> _appliedLabels = [];
     private List<SubmissionLabelModel> _possibleLabels = [];
 
+    private CannedCommentEntity[] _cannedComments = [];
+
     protected override async Task OnInitializedAsync()
     {
         NewComment ??= new StudioSubmissionCommentModel();
@@ -396,6 +441,13 @@
 
         _appliedLabels = _submission!.Labels!.Select(SubmissionLabelMapper.ToModel).ToList();
         _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
+
+        // Load canned comments for this creator
+        _cannedComments = await dbContext.CannedComments
+            .Where(comment => comment.CreatorId == CreatorId && comment.IsActive)
+            .OrderBy(comment => comment.CommentType)
+            .ThenBy(comment => comment.Title)
+            .ToArrayAsync();
 
         _eligibilityPlans = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
@@ -536,6 +588,63 @@
         }
 
         // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
+        NavigationManager.Refresh();
+    }
+
+    private async Task OnApplyCannedComment(CannedCommentEntity cannedComment)
+    {
+        await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        SubmissionHistoryEntryEntity historyEntry = cannedComment.CommentType switch
+        {
+            StudioSubmissionCommentType.InternalNote => new SubmissionHistoryInternalNoteEntity
+            {
+                Content = cannedComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+            StudioSubmissionCommentType.PublicComment => new SubmissionHistoryPublicCommentEntity
+            {
+                Content = cannedComment.Content,
+                OccuredAt = Clock.GetCurrentInstant(),
+                InstigatorIsStaff = true,
+                InstigatorIsProgrammatic = false,
+                InstigatorUserId = UserAccessor.GetRequiredUserId(HttpContext),
+                SubmissionId = _submission!.Id,
+            },
+
+            _ => throw new UnreachableException(),
+        };
+
+        dbContext.SubmissionHistoryEntries.Add(historyEntry);
+        await dbContext.SaveChangesAsync();
+
+        // Dispatch notification for public staff comment
+        if (cannedComment.CommentType == StudioSubmissionCommentType.PublicComment)
+        {
+            NotificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+            {
+                CreatorId = CreatorId,
+                CreatorDisplayName = _submission.Version.Questionnaire.Creator.DisplayName,
+                QuestionnaireId = QuestionnaireId,
+                QuestionnaireName = _submission.Version.Questionnaire.Title,
+                SubmitterId = _submission!.UserId,
+                SubmissionId = _submission.Id,
+                SubmissionNumber = _submission.Number,
+
+                SubmissionPublicUrl = NavigationManager
+                    .ToAbsoluteUri($"/questionnaires/{QuestionnaireId.NoHyphens()}/{_submission.Id.NoHyphens()}")
+                    .AbsoluteUri,
+                Type = SubmissionStaffActionType.CommentAdded,
+
+                CommentBody = cannedComment.Content
+            });
+        }
+
+        // Refresh the page to show the new comment
         NavigationManager.Refresh();
     }
 

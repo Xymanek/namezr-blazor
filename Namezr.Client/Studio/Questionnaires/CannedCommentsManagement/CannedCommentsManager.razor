@@ -1,0 +1,34 @@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+
+@inject NavigationManager NavigationManager
+
+<div class="d-flex flex-column gap-1 mb-2">
+    @for (int i = 0; i < CannedComments.Count; i++)
+    {
+        CannedCommentModel cannedComment = CannedComments[i];
+        int iComment = i;
+
+        <CannedCommentManagementEntry
+            CreatorId="CreatorId"
+            CannedCommentStored="cannedComment"
+            OnSaved="newComment => CannedComments[iComment] = newComment"
+        />
+    }
+</div>
+
+<CannedCommentManagementEntry
+    CreatorId="CreatorId"
+    OnSaved="() => NavigationManager.Refresh()"
+/>
+
+@code {
+
+    [Parameter]
+    public List<CannedCommentModel> CannedComments { get; set; } = [];
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+    
+}

@@ -14,6 +14,8 @@ public static class ApiEndpointPaths
     public const string SubmissionLabelsConfigSave = "/api/submission-labels/config/save";
     public const string SubmissionLabelsPresenceMutate = "/api/submission-labels/presence-mutate";
 
+    public const string CannedCommentsConfigSave = "/api/canned-comments/config/save";
+
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
 
     public const string FilesUpload = "/api/files/upload";
