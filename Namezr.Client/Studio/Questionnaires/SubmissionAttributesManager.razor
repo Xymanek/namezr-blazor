@@ -3,7 +3,6 @@
 @using Namezr.Client.Infra
 @using Namezr.Client.Shared
 @using Namezr.Client.Studio.Questionnaires
-@using vNext.BlazorComponents.FluentValidation
 
 @inject ISpaHttpClientProvider HttpClientProvider
 
@@ -68,43 +67,17 @@
     [Parameter]
     public Guid SubmissionId { get; set; }
 
+    [Parameter]
+    public List<SubmissionAttributeModel> Attributes { get; set; } = [];
+
     private List<SubmissionAttributeModel> _attributes = [];
     private bool _isSubmitting;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await LoadAttributes();
+        _attributes = Attributes.ToList(); // Create a copy to avoid modifying the original
     }
 
-    private async Task LoadAttributes()
-    {
-        HttpClient httpClient = HttpClientProvider.HttpClient;
-
-        try
-        {
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
-                ApiEndpointPaths.SubmissionAttributesGet,
-                new GetSubmissionAttributesRequest
-                {
-                    SubmissionId = SubmissionId
-                }
-            );
-
-            response.EnsureSuccessStatusCode();
-            GetSubmissionAttributesResponse? result = await response.Content.ReadFromJsonAsync<GetSubmissionAttributesResponse>();
-            
-            if (result != null)
-            {
-                _attributes = result.Attributes;
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            // TODO: proper error handling/toasts
-            Console.WriteLine($"Error loading attributes: {ex.Message}");
-        }
-    }
 
     private async Task UpdateAttribute(SubmissionAttributeModel attribute)
     {
