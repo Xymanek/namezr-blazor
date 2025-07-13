@@ -25,9 +25,11 @@
                                     @bind-Value="attribute.Key" 
                                     Placeholder="Key"
                                     BindEvent="BindEvent.OnInput"
-                                    @onblur="() => UpdateAttribute(attribute)"
+                                    @onblur="() => OnKeyBlur(attribute)"
+                                    @onfocus="() => OnKeyFocus(attribute)"
                                     MaxLength="@SubmissionAttributeModel.KeyMaxLength"
                                     CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
+                                    Title="@GetKeyTooltip(attribute)"
                                 />
                                 @if (HasDuplicateKey(attribute))
                                 {
@@ -106,21 +108,52 @@
 
     private bool HasDuplicateKey(SubmissionAttributeModel currentAttribute)
     {
+        string currentKeyTrimmed = currentAttribute.Key.Trim();
         return Attributes
             .Where(attr => attr != currentAttribute) // Exclude self
-            .Any(attr => string.Equals(attr.Key, currentAttribute.Key, StringComparison.OrdinalIgnoreCase));
+            .Any(attr => string.Equals(attr.Key.Trim(), currentKeyTrimmed, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool CanAddNewAttribute()
     {
         // Don't allow adding if there are empty keys or duplicate keys
-        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key)) &&
+        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())) &&
                !Attributes.Any(HasDuplicateKey);
+    }
+
+    private void OnKeyFocus(SubmissionAttributeModel attribute)
+    {
+        // Tooltip is shown via Title attribute
+    }
+
+    private void OnKeyBlur(SubmissionAttributeModel attribute)
+    {
+        // Trim whitespace when user leaves the field
+        attribute.Key = attribute.Key.Trim();
+        StateHasChanged();
+        
+        // Update if valid
+        _ = UpdateAttribute(attribute);
+    }
+
+    private string GetKeyTooltip(SubmissionAttributeModel attribute)
+    {
+        if (string.IsNullOrWhiteSpace(attribute.Key))
+        {
+            return "Enter a unique key for this attribute. Keys are case-insensitive and whitespace is automatically trimmed.";
+        }
+        
+        if (HasDuplicateKey(attribute))
+        {
+            return "This key already exists. Keys must be unique (case-insensitive).";
+        }
+        
+        return "Keys are case-insensitive and whitespace is automatically trimmed.";
     }
 
     private async Task UpdateAttribute(SubmissionAttributeModel attribute)
     {
-        if (string.IsNullOrWhiteSpace(attribute.Key))
+        if (string.IsNullOrWhiteSpace(attribute.Key.Trim()))
             return;
 
         // Check for duplicate keys
@@ -131,7 +164,7 @@
             return;
         }
 
-        await SetAttribute(attribute.Key, attribute.Value);
+        await SetAttribute(attribute.Key.Trim(), attribute.Value);
         _persistedAttributes.Add(attribute);
     }
 
@@ -145,7 +178,7 @@
     private void AddNewAttribute()
     {
         // Don't allow adding new attributes if there are unsaved ones with empty keys
-        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key)))
+        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())))
         {
             return;
         }
@@ -160,7 +193,8 @@
 
     private async Task SetAttribute(string key, string value)
     {
-        if (string.IsNullOrWhiteSpace(key))
+        string trimmedKey = key.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedKey))
             return;
 
         HttpClient httpClient = HttpClientProvider.HttpClient;
@@ -173,7 +207,7 @@
                 new SetSubmissionAttributeRequest
                 {
                     SubmissionId = SubmissionId,
-                    Key = key.Trim(),
+                    Key = trimmedKey,
                     Value = value,
                 }
             );

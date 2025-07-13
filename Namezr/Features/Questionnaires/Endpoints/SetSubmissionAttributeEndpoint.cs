@@ -32,11 +32,15 @@ internal partial class SetSubmissionAttributeEndpoint
         if (submission == null) throw new Exception("Bad submission ID");
         await ValidateAccess();
 
-        // Find existing attribute
+        // Trim and normalize the key
+        string normalizedKey = request.Key.Trim();
+        
+        // Find existing attribute (case-insensitive)
         SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
             .AsTracking()
             .SingleOrDefaultAsync(
-                attr => attr.SubmissionId == request.SubmissionId && attr.Key == request.Key,
+                attr => attr.SubmissionId == request.SubmissionId && 
+                         attr.Key.ToLower() == normalizedKey.ToLower(),
                 ct
             );
 
@@ -61,7 +65,7 @@ internal partial class SetSubmissionAttributeEndpoint
                 SubmissionAttributeEntity newAttribute = new()
                 {
                     SubmissionId = request.SubmissionId,
-                    Key = request.Key,
+                    Key = normalizedKey,
                     Value = request.Value
                 };
                 dbContext.SubmissionAttributes.Add(newAttribute);
