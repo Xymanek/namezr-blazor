@@ -10,7 +10,6 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
-[Behaviors] // Clear out the validation
 [MapPost(ApiEndpointPaths.SubmissionAttributesSet)]
 internal partial class SetSubmissionAttributeEndpoint
 {
@@ -33,15 +32,13 @@ internal partial class SetSubmissionAttributeEndpoint
         if (submission == null) throw new Exception("Bad submission ID");
         await ValidateAccess();
 
-        // Validate key length
-        if (request.Key.Length > 50) throw new Exception("Key too long");
-
         // Find existing attribute
         SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
             .AsTracking()
-            .SingleOrDefaultAsync(attr => 
-                attr.SubmissionId == request.SubmissionId && 
-                attr.Key == request.Key, ct);
+            .SingleOrDefaultAsync(
+                attr => attr.SubmissionId == request.SubmissionId && attr.Key == request.Key,
+                ct
+            );
 
         if (string.IsNullOrEmpty(request.Value))
         {
@@ -61,7 +58,7 @@ internal partial class SetSubmissionAttributeEndpoint
             else
             {
                 // Create new attribute
-                var newAttribute = new SubmissionAttributeEntity
+                SubmissionAttributeEntity newAttribute = new()
                 {
                     SubmissionId = request.SubmissionId,
                     Key = request.Key,
