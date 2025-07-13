@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Namezr.Client.Shared;
 using Namezr.Features.Questionnaires.Data;
 
 namespace Namezr.Features.Questionnaires.Pages;
@@ -20,8 +21,3 @@ public class StudioSubmissionCommentModel
     }
 }
 
-public enum StudioSubmissionCommentType
-{
-    InternalNote,
-    PublicComment,
-}

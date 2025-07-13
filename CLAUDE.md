@@ -95,3 +95,10 @@ Uses ticket-based file uploads with storage in configured path. Files are refere
 # Print third-party tokens for debugging
 dotnet run --project Namezr print-third-party-token [args]
 ```
+
+## Database Guidelines
+- Enums should be stored as numbers in the database. Such enums should have all values explicitly specified with a comment that the values must never change
+
+## API Development Guidelines
+- **API Route Management**: 
+  - All API routes need to be constants in @Namezr.Client\ApiEndpointPaths.cs 

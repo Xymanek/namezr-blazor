@@ -1,0 +1,171 @@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client
+@using Namezr.Client.Infra
+@using Namezr.Client.Shared
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+@if (_cannedCommentForEdit != null)
+{
+    <HxCard>
+        <HeaderTemplate>
+            @if (CannedCommentStored != null)
+            {
+                <span>Edit Canned Comment</span>
+            }
+            else
+            {
+                <span>New Canned Comment</span>
+            }
+        </HeaderTemplate>
+
+        <BodyTemplate>
+            <EditForm Model="_cannedCommentForEdit" OnValidSubmit="HandleValidSubmit">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <HxInputText Label="Title" @bind-Value="@_cannedCommentForEdit.Title"/>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <HxSelect
+                            TItem="StudioSubmissionCommentType"
+                            TValue="StudioSubmissionCommentType"
+                            Label="Comment Type"
+                            Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                            TextSelector="@(type => type == StudioSubmissionCommentType.InternalNote ? "Internal Note" : "Public Comment")"
+                            @bind-Value="_cannedCommentForEdit.CommentType"
+                        />
+                    </div>
+
+                    <div class="col-12">
+                        <HxInputTextArea
+                            Label="Content"
+                            @bind-Value="@_cannedCommentForEdit.Content"
+                            Rows="4"
+                        />
+                    </div>
+
+                    <div class="col-12">
+                        <HxCheckbox Label="Active" @bind-Value="@_cannedCommentForEdit.IsActive"/>
+                    </div>
+
+                    <div class="col-12">
+                        <HxSubmit Text="Save" Color="ThemeColor.Primary" Spinner="_isSaving"/>
+
+                        @if (CannedCommentStored != null)
+                        {
+                            <HxButton
+                                type="button"
+                                Text="Cancel"
+                                Color="ThemeColor.Secondary"
+                                Enabled="!_isSaving"
+                                OnClick="() => _cannedCommentForEdit = null"
+                            />
+                        }
+                    </div>
+                </div>
+            </EditForm>
+        </BodyTemplate>
+    </HxCard>
+}
+else if (CannedCommentStored != null)
+{
+    <HxCard>
+        <HeaderTemplate>
+            @CannedCommentStored.Title
+            <HxBadge Color="@(CannedCommentStored.CommentType == StudioSubmissionCommentType.InternalNote ? ThemeColor.Warning : ThemeColor.Info)">
+                @(CannedCommentStored.CommentType == StudioSubmissionCommentType.InternalNote ? "Internal" : "Public")
+            </HxBadge>
+            @if (!CannedCommentStored.IsActive)
+            {
+                <HxBadge Color="ThemeColor.Secondary">Inactive</HxBadge>
+            }
+        </HeaderTemplate>
+        <BodyTemplate>
+            <p class="text-muted mb-2">@CannedCommentStored.Content</p>
+            <HxButton
+                Icon="BootstrapIcon.Pencil"
+                Text="Edit"
+                Color="ThemeColor.Primary"
+                Size="ButtonSize.Small"
+                OnClick="StartEdit"
+            />
+        </BodyTemplate>
+    </HxCard>
+}
+
+@code {
+
+    [Parameter]
+    public CannedCommentModel? CannedCommentStored
+    {
+        get;
+        set
+        {
+            field = value;
+            InitEditPostStoredSet();
+        }
+    }
+
+    [Parameter]
+    public EventCallback<CannedCommentModel> OnSaved { get; set; }
+
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
+    private CannedCommentModel? _cannedCommentForEdit;
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        InitEditPostStoredSet();
+    }
+
+    private void InitEditPostStoredSet()
+    {
+        if (CannedCommentStored != null)
+        {
+            _cannedCommentForEdit = null;
+        }
+        else if (_cannedCommentForEdit == null)
+        {
+            _cannedCommentForEdit = new CannedCommentModel();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+        CannedCommentModel commentForSubmit = _cannedCommentForEdit!.Clone();
+
+        _isSaving = true;
+        try
+        {
+            HttpResponseMessage response = await httpClient
+                .PostAsJsonAsync(ApiEndpointPaths.CannedCommentsConfigSave, new CannedCommentSaveRequest
+                {
+                    CreatorId = CreatorId,
+                    CannedComment = commentForSubmit,
+                });
+
+            response.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+
+        CannedCommentStored = commentForSubmit;
+        StateHasChanged();
+
+        await OnSaved.InvokeAsync(commentForSubmit);
+    }
+
+    private void StartEdit()
+    {
+        _cannedCommentForEdit = CannedCommentStored!.Clone();
+    }
+
+}

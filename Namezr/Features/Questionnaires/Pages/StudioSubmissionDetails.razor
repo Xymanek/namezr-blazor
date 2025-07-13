@@ -306,6 +306,21 @@
                     TextSelector="@(type => type.Humanize())"
                 />
 
+                @if (_cannedComments.Count > 0)
+                {
+                    <HxSelect 
+                        TItem="CannedCommentModel" 
+                        TValue="CannedCommentModel?" 
+                        Label="Canned Comment (Optional)"
+                        Data="_cannedComments.Where(c => c.CommentType == NewComment.Type && c.IsActive)"
+                        Nullable="true"
+                        @bind-Value="_selectedCannedComment"
+                        TextSelector="@(comment => comment.Title)"
+                        OnValueChanged="OnCannedCommentSelected"
+                        Hint="Select a pre-written comment to auto-fill the content below"
+                    />
+                }
+
                 <HxInputTextArea @bind-Value="NewComment.Content"/>
 
                 <HxSubmit Color="ThemeColor.Primary" Text="Submit"/>
@@ -356,6 +371,9 @@
 
     private List<SubmissionLabelModel> _appliedLabels = [];
     private List<SubmissionLabelModel> _possibleLabels = [];
+    
+    private List<CannedCommentModel> _cannedComments = [];
+    private CannedCommentModel? _selectedCannedComment;
 
     protected override async Task OnInitializedAsync()
     {
@@ -396,6 +414,13 @@
 
         _appliedLabels = _submission!.Labels!.Select(SubmissionLabelMapper.ToModel).ToList();
         _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
+
+        // Load canned comments for this creator
+        CannedCommentEntity[] cannedCommentEntities = await dbContext.CannedComments
+            .Where(comment => comment.CreatorId == CreatorId && comment.IsActive)
+            .OrderBy(comment => comment.Title)
+            .ToArrayAsync();
+        _cannedComments = cannedCommentEntities.Select(CannedCommentMapper.ToModel).ToList();
 
         _eligibilityPlans = EligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
@@ -537,6 +562,15 @@
 
         // Refresh the page to show the new comment and break "are you sure you want to submit" on reload
         NavigationManager.Refresh();
+    }
+
+    private void OnCannedCommentSelected(CannedCommentModel? cannedComment)
+    {
+        if (cannedComment != null && NewComment != null)
+        {
+            NewComment.Content = cannedComment.Content;
+            NewComment.Type = cannedComment.CommentType;
+        }
     }
 
 }
