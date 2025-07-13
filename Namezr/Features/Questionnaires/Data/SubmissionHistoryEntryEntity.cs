@@ -104,6 +104,24 @@ public class SubmissionHistoryPublicCommentEntity : SubmissionHistoryEntryEntity
 /// </summary>
 public class SubmissionHistoryStaffViewedEntity : SubmissionHistoryEntryEntity;
 
+/// <summary>
+/// Staff updated a submission attribute.
+/// </summary>
+public class SubmissionHistoryAttributeUpdatedEntity : SubmissionHistoryEntryEntity
+{
+    public required string Key { get; set; }
+    
+    /// <summary>
+    /// If empty, the attribute was deleted.
+    /// </summary>
+    public required string Value { get; set; }
+    
+    /// <summary>
+    /// If empty, the attribute was just created.
+    /// </summary>
+    public required string PreviousValue { get; set; }
+}
+
 internal class SubmissionHistoryEntryEntityConfiguration :
     IEntityTypeConfiguration<SubmissionHistoryEntryEntity>,
     IEntityTypeConfiguration<SubmissionHistoryLabelAppliedEntity>,
@@ -140,6 +158,7 @@ internal class SubmissionHistoryEntryEntityConfiguration :
             .HasValue<SubmissionHistoryInternalNoteEntity>(7)
             .HasValue<SubmissionHistoryPublicCommentEntity>(8)
             .HasValue<SubmissionHistoryStaffViewedEntity>(9)
+            .HasValue<SubmissionHistoryAttributeUpdatedEntity>(10)
             .IsComplete();
     }
 

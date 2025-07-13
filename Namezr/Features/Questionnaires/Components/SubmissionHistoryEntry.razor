@@ -70,6 +70,33 @@
                 case SubmissionHistoryStaffViewedEntity:
                     <span>viewed the submission</span>
                     break;
+
+                case SubmissionHistoryAttributeUpdatedEntity attributeEntry:
+                    @if (string.IsNullOrEmpty(attributeEntry.Value))
+                    {
+                        <span>deleted attribute</span>
+                        <code>@attributeEntry.Key</code>
+                        <span>(was</span>
+                        <code>@attributeEntry.PreviousValue</code>
+                        <span>)</span>
+                    }
+                    else if (string.IsNullOrEmpty(attributeEntry.PreviousValue))
+                    {
+                        <span>added attribute</span>
+                        <code>@attributeEntry.Key</code>
+                        <span>to</span>
+                        <code>@attributeEntry.Value</code>
+                    }
+                    else
+                    {
+                        <span>updated attribute</span>
+                        <code>@attributeEntry.Key</code>
+                        <span>from</span>
+                        <code>@attributeEntry.PreviousValue</code>
+                        <span>to</span>
+                        <code>@attributeEntry.Value</code>
+                    }
+                    break;
             }
         </div>
     </div>
@@ -118,6 +145,7 @@
         SubmissionHistoryInternalNoteEntity => BootstrapIcon.StickyFill,
         SubmissionHistoryPublicCommentEntity => BootstrapIcon.ChatFill,
         SubmissionHistoryStaffViewedEntity => BootstrapIcon.Eye,
+        SubmissionHistoryAttributeUpdatedEntity => BootstrapIcon.Tags,
 
         _ => throw new UnreachableException("Unknown entry type: " + Entry.GetType()),
     };

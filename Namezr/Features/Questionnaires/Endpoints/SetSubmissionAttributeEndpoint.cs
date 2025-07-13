@@ -5,6 +5,7 @@ using Namezr.Client;
 using Namezr.Client.Studio.Questionnaires;
 using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
+using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
@@ -18,6 +19,7 @@ internal partial class SetSubmissionAttributeEndpoint
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IdentityUserAccessor userAccessor,
         IHttpContextAccessor httpContextAccessor,
+        ISubmissionAuditService auditService,
         CancellationToken ct
     )
     {
@@ -34,13 +36,13 @@ internal partial class SetSubmissionAttributeEndpoint
 
         // Trim and normalize the key
         string normalizedKey = request.Key.Trim();
-        
+
         // Find existing attribute (case-insensitive)
         SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
             .AsTracking()
             .SingleOrDefaultAsync(
-                attr => attr.SubmissionId == request.SubmissionId && 
-                         attr.Key.ToLower() == normalizedKey.ToLower(),
+                attr => attr.SubmissionId == request.SubmissionId &&
+                        attr.Key.ToLower() == normalizedKey.ToLower(),
                 ct
             );
 
@@ -49,6 +51,11 @@ internal partial class SetSubmissionAttributeEndpoint
             // Delete attribute if value is empty
             if (existingAttribute != null)
             {
+                // Log deletion before removing
+                dbContext.SubmissionHistoryEntries.Add(auditService.AttributeDeleted(
+                    submission, normalizedKey, existingAttribute.Value
+                ));
+
                 dbContext.SubmissionAttributes.Remove(existingAttribute);
             }
         }
@@ -57,7 +64,16 @@ internal partial class SetSubmissionAttributeEndpoint
             if (existingAttribute != null)
             {
                 // Update existing attribute
+                string previousValue = existingAttribute.Value;
                 existingAttribute.Value = request.Value;
+
+                // Only log if value actually changed
+                if (previousValue != request.Value)
+                {
+                    dbContext.SubmissionHistoryEntries.Add(auditService.AttributeUpdated(
+                        submission, normalizedKey, request.Value, previousValue
+                    ));
+                }
             }
             else
             {
@@ -69,6 +85,11 @@ internal partial class SetSubmissionAttributeEndpoint
                     Value = request.Value
                 };
                 dbContext.SubmissionAttributes.Add(newAttribute);
+
+                // Log creation
+                dbContext.SubmissionHistoryEntries.Add(auditService.AttributeUpdated(
+                    submission, normalizedKey, request.Value, null
+                ));
             }
         }
 

@@ -22,6 +22,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 - **Submission:** Public users can submit responses if eligible; eligibility is checked per questionnaire.
 - **Approval Workflow:** Submissions can require approval, be auto-approved, or be closed.
 - **Labels & Comments:** Submissions support labels and threaded comments (public and staff).
+- **Submission Attributes:** Staff can add custom key-value metadata to submissions for internal tracking and organization.
 - **Bulk & File Operations:** Download submission files individually or in bulk.
 - **Selection Series:** Studio tools for managing selection rounds and batches.
 
@@ -53,7 +54,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 ---
 
 ## Endpoints (Immediate.Apis)
-- **Questionnaires:** Create, update, submit, download files, bulk download, mutate labels.
+- **Questionnaires:** Create, update, submit, download files, bulk download, mutate labels, manage submission attributes.
 - **Creators:** Onboarding, staff management, support target management.
 - **Eligibility:** Eligibility checks and configuration.
 - **Polls:** Create and manage polls.
@@ -73,6 +74,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
   - Manage creator profile, staff, and support targets.
   - Create and manage questionnaires, submissions, and polls.
   - Review, approve, and comment on submissions.
+  - Add custom attributes to submissions for internal tracking.
   - Manage eligibility and selection series.
   - View and manage supporters.
 
@@ -175,6 +177,43 @@ This approach ensures that only authenticated users with valid external support 
 - All UI should use Havit.Blazor components where possible.
 - Static rendering is enforced for all server-side code; interactive features must be in the WASM client.
 - All endpoints are implemented using Immediate.Apis.
+
+---
+
+## Submission Attributes
+
+Submission attributes provide a flexible way for staff to add custom metadata to questionnaire submissions for internal tracking, organization, and workflow management.
+
+### Features
+- **Key-Value Storage:** Each attribute consists of a string key (max 50 characters) and value (max 5000 characters).
+- **Staff-Only Access:** Only creator staff can view, add, edit, or delete submission attributes.
+- **Case-Insensitive Keys:** Attribute keys are case-insensitive with automatic whitespace trimming.
+- **Unique Keys:** Each submission can have only one attribute per key (case-insensitive).
+- **Real-Time Validation:** UI provides immediate feedback for duplicate keys and validation errors.
+- **Contextual Tooltips:** Focus tooltips guide users about key behavior and validation rules.
+
+### User Experience
+- **Inline Editing:** Staff can add and edit attributes directly in the submission details view.
+- **Readonly Keys:** Once saved, attribute keys become readonly to maintain data integrity.
+- **Auto-Save:** Attributes are automatically saved when users blur input fields.
+- **Visual Feedback:** Invalid states (duplicate keys, validation errors) are clearly indicated.
+
+### Technical Implementation
+- **Database:** Stored in `SubmissionAttributes` table with composite primary key (SubmissionId, Key).
+- **API Endpoint:** `POST /api/submission-attributes/set` handles create/update/delete operations.
+- **Validation:** FluentValidation ensures data integrity on both client and server.
+- **Audit Trail:** All attribute changes are logged in submission history with full context.
+
+### Audit & History
+- **Complete Tracking:** All attribute creation, updates, and deletions are audited.
+- **Change Context:** Audit logs include staff member, timestamps, keys, values, and previous values.
+- **History Integration:** Attribute changes appear in submission history alongside other events.
+
+### Use Cases
+- **Internal Notes:** Add processing notes, priority levels, or status indicators.
+- **Categorization:** Tag submissions with custom categories for filtering and reporting.
+- **Workflow Tracking:** Record processing stages, assignments, or completion status.
+- **Integration Data:** Store external system IDs or references for cross-platform workflows.
 
 ---
 
