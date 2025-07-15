@@ -57,6 +57,14 @@
     >
         Image grid
     </a>
+    <a
+        href=@($"{ApiEndpointPaths.QuestionnaireSubmissionsExportCsv}?QuestionnaireId={QuestionnaireId.NoHyphens()}")
+        target="_blank"
+        class="btn btn-secondary ms-2"
+    >
+        <HxIcon Icon="BootstrapIcon.FileEarmarkSpreadsheet" />
+        Export CSV
+    </a>
 </SectionContent>
 
 <SubmissionsTable

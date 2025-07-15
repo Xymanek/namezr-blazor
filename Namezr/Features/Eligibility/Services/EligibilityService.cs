@@ -33,6 +33,27 @@ public interface IEligibilityService
     EligibilityResult? GetCachedEligibility(Guid userId, EligibilityConfigurationEntity configuration);
 }
 
+public static class EligibilityServiceExtensions
+{
+    public static async Task<EligibilityResult> GetCachedEligibilityOrClassify(
+        this IEligibilityService service,
+        Guid userId, EligibilityConfigurationEntity configuration,
+        UserStatusSyncEagerness syncEagerness
+    )
+    {
+        EligibilityResult? result = service.GetCachedEligibility(userId, configuration);
+        
+        if (result != null)
+        {
+            return result;
+        }
+
+        return await service.ClassifyEligibility(
+            userId, configuration, syncEagerness
+        );
+    }
+}
+
 [AutoConstructor]
 [RegisterSingleton]
 internal partial class EligibilityService : IEligibilityService
