@@ -4,8 +4,8 @@ namespace Namezr.Client.Shared;
 
 public class SubmissionAttributeModel
 {
-    public required string Key { get; set; }
-    public required string Value { get; set; }
+    public string? Key { get; set; }
+    public string? Value { get; set; }
 
     public const int KeyMaxLength = 50;
     public const int ValueMaxLength = 5000;

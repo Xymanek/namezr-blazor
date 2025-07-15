@@ -21,6 +21,10 @@
                             @if (IsNewAttribute(attribute))
                             {
                                 <HxTooltip Trigger="TooltipTrigger.Focus" Text="@GetKeyTooltip(attribute)">
+                                    @*
+                                        TODO: HxAutosuggest does not support non-suggested inputs
+                                        and HxSearchBox does not support binding to Value
+                                    *@
                                     <HxAutosuggest
                                         TValue="string"
                                         TItem="string"
@@ -31,8 +35,7 @@
                                         ValueSelector="@(item => item)"
                                         Delay="300"
                                         MinimumLength="0"
-                                        CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
-                                    />
+                                        CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"/>
                                 </HxTooltip>
 
                                 @if (HasDuplicateKey(attribute))
@@ -146,16 +149,16 @@
 
     private bool HasDuplicateKey(SubmissionAttributeModel currentAttribute)
     {
-        string currentKeyTrimmed = currentAttribute.Key.Trim();
+        string currentKeyTrimmed = currentAttribute.Key?.Trim() ?? string.Empty;
         return Attributes
             .Where(attr => attr != currentAttribute) // Exclude self
-            .Any(attr => string.Equals(attr.Key.Trim(), currentKeyTrimmed, StringComparison.OrdinalIgnoreCase));
+            .Any(attr => string.Equals(attr.Key?.Trim(), currentKeyTrimmed, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool CanAddNewAttribute()
     {
         // Don't allow adding if there are empty keys or duplicate keys
-        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())) &&
+        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key?.Trim())) &&
                !Attributes.Any(HasDuplicateKey);
     }
 
@@ -165,7 +168,7 @@
 
         // Get existing keys (case-insensitive) to exclude from suggestions
         HashSet<string> existingKeys = Attributes
-            .Select(attr => attr.Key.Trim())
+            .Select(attr => attr.Key?.Trim() ?? string.Empty)
             .Where(key => !string.IsNullOrWhiteSpace(key))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -184,7 +187,9 @@
         });
     }
 
-    private async Task<AutosuggestDataProviderResult<string>> ProvideValueSuggestions(AutosuggestDataProviderRequest request, string key)
+    private async Task<AutosuggestDataProviderResult<string>> ProvideValueSuggestions(
+        AutosuggestDataProviderRequest request, string? key
+    )
     {
         string searchText = request.UserInput?.Trim() ?? "";
 
@@ -253,7 +258,7 @@
 
     private async Task UpdateAttribute(SubmissionAttributeModel attribute)
     {
-        if (string.IsNullOrWhiteSpace(attribute.Key.Trim()))
+        if (string.IsNullOrWhiteSpace(attribute.Key?.Trim()))
             return;
 
         // Check for duplicate keys
@@ -278,7 +283,7 @@
     private void AddNewAttribute()
     {
         // Don't allow adding new attributes if there are unsaved ones with empty keys
-        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())))
+        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key?.Trim())))
         {
             return;
         }
@@ -291,9 +296,9 @@
         StateHasChanged();
     }
 
-    private async Task SetAttribute(string key, string value)
+    private async Task SetAttribute(string? key, string? value)
     {
-        string trimmedKey = key.Trim();
+        string? trimmedKey = key?.Trim();
         if (string.IsNullOrWhiteSpace(trimmedKey))
             return;
 
@@ -308,7 +313,7 @@
                 {
                     SubmissionId = SubmissionId,
                     Key = trimmedKey,
-                    Value = value,
+                    Value = value ?? string.Empty,
                 }
             );
 

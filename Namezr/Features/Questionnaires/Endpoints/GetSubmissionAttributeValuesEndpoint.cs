@@ -43,7 +43,7 @@ internal partial class GetSubmissionAttributeValuesEndpoint
         IQueryable<string> valuesQuery = dbContext.SubmissionAttributes
             .Where(attr => 
                 attr.Submission.Version.QuestionnaireId == questionnaireId &&
-                string.Equals(attr.Key, request.Key, StringComparison.OrdinalIgnoreCase) &&
+                attr.Key.ToLower() == request.Key.ToLower() &&
                 !string.IsNullOrWhiteSpace(attr.Value))
             .Select(attr => attr.Value)
             .Distinct();
