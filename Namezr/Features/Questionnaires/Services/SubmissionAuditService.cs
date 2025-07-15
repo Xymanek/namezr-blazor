@@ -59,6 +59,21 @@ internal interface ISubmissionAuditService
         SubmissionFileData file,
         bool inBatch
     );
+
+    [MustUseReturnValue]
+    SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string value,
+        string? previousValue
+    );
+
+    [MustUseReturnValue]
+    SubmissionHistoryAttributeUpdatedEntity AttributeDeleted(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string previousValue
+    );
 }
 
 [AutoConstructor]
@@ -343,5 +358,54 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         var entry = StaffView(submission);
         dbContext.SubmissionHistoryEntries.Add(entry);
         await dbContext.SaveChangesAsync(ct);
+    }
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string value,
+        string? previousValue)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} set attribute '{Key}' to '{Value}' for submission {SubmissionId} (previous: '{PreviousValue}')",
+            userId, key, value, submission.Id, previousValue ?? "(none)");
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submission.Id,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+            Key = key,
+            Value = value,
+            PreviousValue = previousValue ?? string.Empty,
+        };
+    }
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeDeleted(
+        QuestionnaireSubmissionEntity submission,
+        string key,
+        string previousValue)
+    {
+        Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
+
+        _logger.LogInformation(
+            "Staff member {UserId} deleted attribute '{Key}' (previousValue: '{Value}') from submission {SubmissionId}",
+            userId, key, previousValue, submission.Id);
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submission.Id,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = true,
+            InstigatorUserId = userId,
+            Key = key,
+            PreviousValue = previousValue,
+            Value = string.Empty,
+        };
     }
 }

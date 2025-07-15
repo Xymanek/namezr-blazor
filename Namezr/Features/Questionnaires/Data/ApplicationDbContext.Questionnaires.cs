@@ -20,6 +20,7 @@ public partial class ApplicationDbContext
 
     public DbSet<SubmissionLabelEntity> SubmissionLabels { get; set; } = null!;
     public DbSet<CannedCommentEntity> CannedComments { get; set; } = null!;
+    public DbSet<SubmissionAttributeEntity> SubmissionAttributes { get; set; } = null!;
 
     private static void OnModelCreatingQuestionnaires(ModelBuilder modelBuilder)
     {

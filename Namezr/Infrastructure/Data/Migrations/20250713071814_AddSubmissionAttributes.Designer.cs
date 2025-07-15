@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Namezr.Infrastructure.Data;
 using NodaTime;
@@ -14,9 +15,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Namezr.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250713071814_AddSubmissionAttributes")]
+    partial class AddSubmissionAttributes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -659,8 +662,7 @@ namespace Namezr.Infrastructure.Data.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasColumnType("text");
 
                     b.HasKey("SubmissionId", "Key");
 
@@ -940,25 +942,6 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
 
                     b.HasDiscriminator().HasValue(6);
-                });
-
-            modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryAttributeUpdatedEntity", b =>
-                {
-                    b.HasBaseType("Namezr.Features.Questionnaires.Data.SubmissionHistoryEntryEntity");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PreviousValue")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasDiscriminator().HasValue(10);
                 });
 
             modelBuilder.Entity("Namezr.Features.Questionnaires.Data.SubmissionHistoryFileDownloadedEntity", b =>

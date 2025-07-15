@@ -287,6 +287,15 @@
         </BodyTemplate>
     </HxCard>
 
+    <HxCard>
+        <HeaderTemplate>
+            Staff Attributes
+        </HeaderTemplate>
+        <BodyTemplate>
+            <SubmissionAttributesManager SubmissionId="SubmissionId" Attributes="_submissionAttributes" />
+        </BodyTemplate>
+    </HxCard>
+
     @if (_cannedComments.Length > 0)
     {
         <HxCard>
@@ -401,6 +410,7 @@
     private List<SubmissionLabelModel> _possibleLabels = [];
 
     private CannedCommentEntity[] _cannedComments = [];
+    private List<SubmissionAttributeModel> _submissionAttributes = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -441,6 +451,18 @@
 
         _appliedLabels = _submission!.Labels!.Select(SubmissionLabelMapper.ToModel).ToList();
         _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
+
+        // Load submission attributes
+        SubmissionAttributeEntity[] submissionAttributes = await dbContext.SubmissionAttributes
+            .Where(attr => attr.SubmissionId == SubmissionId)
+            .OrderBy(attr => attr.Key)
+            .ToArrayAsync();
+
+        _submissionAttributes = submissionAttributes.Select(attr => new SubmissionAttributeModel
+        {
+            Key = attr.Key,
+            Value = attr.Value
+        }).ToList();
 
         // Load canned comments for this creator
         _cannedComments = await dbContext.CannedComments

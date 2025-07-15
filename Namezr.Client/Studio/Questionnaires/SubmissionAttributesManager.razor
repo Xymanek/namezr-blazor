@@ -1,0 +1,226 @@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Infra
+@using Namezr.Client.Shared
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<div class="d-flex flex-column gap-2">
+    @if (Attributes.Count == 0)
+    {
+        <i>No attributes set</i>
+    }
+    else
+    {
+        @foreach (SubmissionAttributeModel attribute in Attributes)
+        {
+            <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                <div class="flex-grow-1">
+                    <div class="d-flex gap-2">
+                        <div style="width: 200px;">
+                            @if (IsNewAttribute(attribute))
+                            {
+                                <HxTooltip Trigger="TooltipTrigger.Focus" Text="@GetKeyTooltip(attribute)">
+                                    <HxInputText
+                                        @bind-Value="attribute.Key"
+                                        Placeholder="Key"
+                                        BindEvent="BindEvent.OnInput"
+                                        @onblur="() => OnKeyBlur(attribute)"
+                                        MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                        CssClass="@(HasDuplicateKey(attribute) ? "is-invalid" : "")"
+                                    />
+                                </HxTooltip>
+
+                                @if (HasDuplicateKey(attribute))
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        Key already exists
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <HxInputText
+                                    @bind-Value="attribute.Key"
+                                    Placeholder="Key"
+                                    Enabled="false"
+                                    MaxLength="@SubmissionAttributeModel.KeyMaxLength"
+                                />
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <HxInputText
+                                @bind-Value="attribute.Value"
+                                Placeholder="Value"
+                                @onblur="() => UpdateAttribute(attribute)"
+                                MaxLength="@SubmissionAttributeModel.ValueMaxLength"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <HxButton
+                    Icon="BootstrapIcon.Trash"
+                    Color="ThemeColor.Danger"
+                    Size="ButtonSize.Small"
+                    OnClick="() => DeleteAttribute(attribute)"
+                    Enabled="_persistedAttributes.Contains(attribute) && !_isSubmitting"
+                />
+            </div>
+        }
+    }
+
+    <div class="d-flex gap-2">
+        <HxButton
+            Icon="BootstrapIcon.Plus"
+            Text="Add Attribute"
+            Color="ThemeColor.Primary"
+            Outline="true"
+            OnClick="AddNewAttribute"
+            Enabled="!_isSubmitting && CanAddNewAttribute()"
+        />
+
+        @if (_isSubmitting)
+        {
+            <span class="text-muted">Saving...</span>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public Guid SubmissionId { get; set; }
+
+    [Parameter]
+    public List<SubmissionAttributeModel> Attributes { get; set; } = [];
+
+    private HashSet<SubmissionAttributeModel> _persistedAttributes = [];
+    private bool _isSubmitting;
+
+    protected override void OnInitialized()
+    {
+        // Track original attribute keys to determine which are existing vs new
+        _persistedAttributes = Attributes.ToHashSet();
+    }
+
+    private bool IsNewAttribute(SubmissionAttributeModel attribute)
+    {
+        return !_persistedAttributes.Contains(attribute);
+    }
+
+    private bool HasDuplicateKey(SubmissionAttributeModel currentAttribute)
+    {
+        string currentKeyTrimmed = currentAttribute.Key.Trim();
+        return Attributes
+            .Where(attr => attr != currentAttribute) // Exclude self
+            .Any(attr => string.Equals(attr.Key.Trim(), currentKeyTrimmed, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool CanAddNewAttribute()
+    {
+        // Don't allow adding if there are empty keys or duplicate keys
+        return !Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())) &&
+               !Attributes.Any(HasDuplicateKey);
+    }
+
+    private void OnKeyBlur(SubmissionAttributeModel attribute)
+    {
+        // Trim whitespace when user leaves the field
+        attribute.Key = attribute.Key.Trim();
+        StateHasChanged();
+
+        // Update if valid
+        _ = UpdateAttribute(attribute);
+    }
+
+    private string GetKeyTooltip(SubmissionAttributeModel attribute)
+    {
+        if (string.IsNullOrWhiteSpace(attribute.Key))
+        {
+            return "Enter a unique key for this attribute. Keys are case-insensitive and whitespace is automatically trimmed.";
+        }
+
+        if (HasDuplicateKey(attribute))
+        {
+            return "This key already exists. Keys must be unique (case-insensitive).";
+        }
+
+        return "Keys are case-insensitive and whitespace is automatically trimmed.";
+    }
+
+    private async Task UpdateAttribute(SubmissionAttributeModel attribute)
+    {
+        if (string.IsNullOrWhiteSpace(attribute.Key.Trim()))
+            return;
+
+        // Check for duplicate keys
+        if (HasDuplicateKey(attribute))
+        {
+            // TODO: Show toast/error message
+            Console.WriteLine($"Duplicate key '{attribute.Key}' detected");
+            return;
+        }
+
+        await SetAttribute(attribute.Key.Trim(), attribute.Value);
+        _persistedAttributes.Add(attribute);
+    }
+
+    private async Task DeleteAttribute(SubmissionAttributeModel attribute)
+    {
+        await SetAttribute(attribute.Key, ""); // Empty value = delete
+        Attributes.Remove(attribute);
+        StateHasChanged();
+    }
+
+    private void AddNewAttribute()
+    {
+        // Don't allow adding new attributes if there are unsaved ones with empty keys
+        if (Attributes.Any(attr => string.IsNullOrWhiteSpace(attr.Key.Trim())))
+        {
+            return;
+        }
+
+        Attributes.Add(new SubmissionAttributeModel
+        {
+            Key = "",
+            Value = "",
+        });
+        StateHasChanged();
+    }
+
+    private async Task SetAttribute(string key, string value)
+    {
+        string trimmedKey = key.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedKey))
+            return;
+
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        _isSubmitting = true;
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionAttributesSet,
+                new SetSubmissionAttributeRequest
+                {
+                    SubmissionId = SubmissionId,
+                    Key = trimmedKey,
+                    Value = value,
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            // TODO: proper error handling/toasts
+            Console.WriteLine($"Error setting attribute: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+}
