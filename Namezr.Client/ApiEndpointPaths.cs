@@ -11,6 +11,8 @@ public static class ApiEndpointPaths
     public const string QuestionnaireSubmissionsBulkDownloadFiles =
         "/api/questionnaires-submissions/bulk-download-file";
 
+    public const string QuestionnaireSubmissionsExportCsv = "/api/questionnaires-submissions/export-csv";
+
     public const string SubmissionLabelsConfigSave = "/api/submission-labels/config/save";
     public const string SubmissionLabelsPresenceMutate = "/api/submission-labels/presence-mutate";
 
