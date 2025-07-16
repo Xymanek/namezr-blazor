@@ -5,6 +5,7 @@
 @using Namezr.Client.Infra
 @using Namezr.Client.Public.Questionnaires
 @using Namezr.Client.Studio.Questionnaires.Edit
+@using Namezr.Client.Studio.Questionnaires.Selection
 @using Namezr.Client.Types
 @using Namzer.BlazorPortals
 
@@ -29,6 +30,15 @@
             OnClick="() => _removeLabelModal!.ShowAsync()"
         >
             Remove labels
+        </HxDropdownItem>
+
+        <HxDropdownDivider/>
+        <HxDropdownItem
+            Icon="BootstrapIcon.PlusCircle"
+            Enabled="!IsUpdatingLabels && SelectedItems.Any()"
+            OnClick="() => LoadSelectionSeriesAndShowModal()"
+        >
+            Add to selection
         </HxDropdownItem>
 
         @{
@@ -71,7 +81,33 @@
         CreatorId="CreatorId"
         Options="PossibleLabels"
         OnSelected="RemoveLabel"
-    />    
+    />
+
+    <SelectionSeriesPickerModal
+        @ref="_selectionSeriesModal"
+        HeaderText="Select series to add submissions to"
+        Options="_selectionSeries"
+        OnSelected="AddToSelection"
+    />
+
+    @if (_addToSelectionResult != null && _showResultAlert)
+    {
+        <div class="alert @(_addToSelectionResult.SkippedSubmissions.Length > 0 ? "alert-warning" : "alert-success") alert-dismissible fade show" role="alert">
+            <strong>Add to Selection Result</strong>
+            <p class="mb-1">Added @_addToSelectionResult.AddedCount submissions to selection.</p>
+            @if (_addToSelectionResult.SkippedSubmissions.Length > 0)
+            {
+                <p class="mb-1">Skipped @_addToSelectionResult.SkippedSubmissions.Length submissions:</p>
+                <ul class="mb-0">
+                    @foreach (SkippedSubmissionInfo skipped in _addToSelectionResult.SkippedSubmissions)
+                    {
+                        <li>@skipped.UserDisplayName (#@skipped.SubmissionNumber): @skipped.Reason</li>
+                    }
+                </ul>
+            }
+            <button type="button" class="btn-close" @onclick="() => _showResultAlert = false" aria-label="Close"></button>
+        </div>
+    }
 </BodyEndPortal>
 
 @code {
@@ -104,6 +140,11 @@
 
     private LabelPickerModal? _applyLabelModal;
     private LabelPickerModal? _removeLabelModal;
+    private SelectionSeriesPickerModal? _selectionSeriesModal;
+
+    private List<SelectionSeriesModel> _selectionSeries = [];
+    private ManualAddEntriesResponse? _addToSelectionResult;
+    private bool _showResultAlert;
 
     private string BulkDownloadsSubmissionQuery
         => string.Join("&", SelectedItems.Select(item => "n=" + item.Number));
@@ -153,6 +194,75 @@
                     else await OnLabelRemoved.InvokeAsync((item, label));
                 })
                 .WhenAll();
+        }
+        finally
+        {
+            await IsUpdatingLabelsChanged.InvokeAsync(false);
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSelectionSeriesAndShowModal()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        try
+        {
+            SelectionSeriesListRequest listRequest = new()
+            {
+                QuestionnaireId = QuestionnaireId,
+            };
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SelectionSeriesList,
+                listRequest
+            );
+            
+            if (response.IsSuccessStatusCode)
+            {
+                SelectionSeriesModel[]? series = await response.Content.ReadFromJsonAsync<SelectionSeriesModel[]>();
+                _selectionSeries = series?.ToList() ?? [];
+            }
+            else
+            {
+                // Fallback - use empty list
+                _selectionSeries = [];
+            }
+
+            await _selectionSeriesModal!.ShowAsync();
+        }
+        catch
+        {
+            // TODO: proper error handling
+            _selectionSeries = [];
+            await _selectionSeriesModal!.ShowAsync();
+        }
+    }
+
+    private async Task AddToSelection(SelectionSeriesModel series)
+    {
+        await _selectionSeriesModal!.HideAsync();
+
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        await IsUpdatingLabelsChanged.InvokeAsync(true);
+        try
+        {
+            ManualAddEntriesRequest request = new()
+            {
+                SeriesId = series.Id,
+                SubmissionIds = SelectedItems.Select(item => item.Id).ToArray(),
+            };
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SelectionManualAddEntries,
+                request
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            _addToSelectionResult = await response.Content.ReadFromJsonAsync<ManualAddEntriesResponse>();
+            _showResultAlert = true;
         }
         finally
         {
