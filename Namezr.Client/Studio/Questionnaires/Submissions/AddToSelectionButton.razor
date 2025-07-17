@@ -1,0 +1,129 @@
+@* Note: this component is meant to be used only from other WASM components, not from SSR *@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Infra
+@using Namezr.Client.Studio.Questionnaires.Selection
+@using Namzer.BlazorPortals
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<HxButton 
+    Text="Add to selection" 
+    Icon="BootstrapIcon.PlusCircle" 
+    Color="ThemeColor.Primary"
+    OnClick="LoadSelectionSeriesAndShowModal"
+/>
+
+<BodyEndPortal>
+    <SelectionSeriesPickerModal
+        @ref="_selectionSeriesModal"
+        HeaderText="Select series to add submission to"
+        Options="_selectionSeries"
+        OnSelected="AddToSelection"
+        CreatorId="CreatorId"
+        QuestionnaireId="QuestionnaireId"
+    />
+
+    @if (_addToSelectionResult != null && _showResultAlert)
+    {
+        <div class="alert @(_addToSelectionResult.SkippedSubmissions.Length > 0 ? "alert-warning" : "alert-success") alert-dismissible fade show" role="alert">
+            <strong>Add to Selection Result</strong>
+            <p class="mb-1">Added @_addToSelectionResult.AddedCount submissions to selection.</p>
+            @if (_addToSelectionResult.SkippedSubmissions.Length > 0)
+            {
+                <p class="mb-1">Skipped @_addToSelectionResult.SkippedSubmissions.Length submissions:</p>
+                <ul class="mb-0">
+                    @foreach (SkippedSubmissionInfo skipped in _addToSelectionResult.SkippedSubmissions)
+                    {
+                        <li>@skipped.UserDisplayName (#@skipped.SubmissionNumber): @skipped.Reason</li>
+                    }
+                </ul>
+            }
+            <button type="button" class="btn-close" @onclick="() => _showResultAlert = false" aria-label="Close"></button>
+        </div>
+    }
+</BodyEndPortal>
+
+@code {
+    [Parameter]
+    public required Guid CreatorId { get; set; }
+
+    [Parameter]
+    public required Guid QuestionnaireId { get; set; }
+
+    [Parameter]
+    public required Guid SubmissionId { get; set; }
+
+    private SelectionSeriesPickerModal? _selectionSeriesModal;
+    private List<SelectionSeriesModel> _selectionSeries = [];
+    private ManualAddEntriesResponse? _addToSelectionResult;
+    private bool _showResultAlert;
+
+    private async Task LoadSelectionSeriesAndShowModal()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        try
+        {
+            SelectionSeriesListRequest listRequest = new()
+            {
+                QuestionnaireId = QuestionnaireId,
+            };
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SelectionSeriesList,
+                listRequest
+            );
+            
+            if (response.IsSuccessStatusCode)
+            {
+                SelectionSeriesModel[]? series = await response.Content.ReadFromJsonAsync<SelectionSeriesModel[]>();
+                _selectionSeries = series?.ToList() ?? [];
+            }
+            else
+            {
+                // Fallback - use empty list
+                _selectionSeries = [];
+            }
+
+            await _selectionSeriesModal!.ShowAsync();
+        }
+        catch
+        {
+            // TODO: proper error handling
+            _selectionSeries = [];
+            await _selectionSeriesModal!.ShowAsync();
+        }
+    }
+
+    private async Task AddToSelection(SelectionSeriesModel series)
+    {
+        await _selectionSeriesModal!.HideAsync();
+
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        try
+        {
+            ManualAddEntriesRequest request = new()
+            {
+                SeriesId = series.Id,
+                SubmissionIds = [SubmissionId],
+            };
+
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SelectionManualAddEntries,
+                request
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            _addToSelectionResult = await response.Content.ReadFromJsonAsync<ManualAddEntriesResponse>();
+            _showResultAlert = true;
+            StateHasChanged();
+        }
+        catch
+        {
+            // TODO: proper error handling
+        }
+    }
+}
