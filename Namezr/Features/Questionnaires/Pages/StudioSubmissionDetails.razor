@@ -23,6 +23,7 @@
 @using Namezr.Features.Creators.Services
 @using Namezr.Components
 @using Namezr.Client.Studio.Questionnaires
+@using Namezr.Client.Studio.Questionnaires.Submissions
 @using Namezr.Features.Notifications.Contracts
 @using Namezr.Features.Questionnaires.Mappers
 @using vNext.BlazorComponents.FluentValidation
@@ -68,24 +69,29 @@
 </SectionContent>
 
 <SectionContent SectionId="StudioPageHeaderLayout.ButtonsSectionId">
-    @if (_submission.ApprovedAt is not null)
-    {
-        <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
-            <HxSubmit
-                Text="Remove approval"
-                Color="@ThemeColor.Danger"
-            />
-        </EditForm>
-    }
-    else
-    {
-        <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
-            <HxSubmit
-                Text="Approve"
-                Color="@ThemeColor.Success"
-            />
-        </EditForm>
-    }
+    <div class="d-flex flex-row gap-2">
+        <AddToSelectionButton
+            CreatorId="CreatorId"
+            QuestionnaireId="QuestionnaireId"
+            SubmissionId="SubmissionId"/>
+
+        @if (_submission.ApprovedAt is not null)
+        {
+            <EditForm Model="new object()" FormName="remove-approval" OnValidSubmit="HandleRemoveApproval">
+                <HxSubmit
+                    Text="Remove approval"
+                    Color="@ThemeColor.Danger"/>
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="new object()" FormName="grant-approval" OnValidSubmit="HandleGrantApproval">
+                <HxSubmit
+                    Text="Approve"
+                    Color="@ThemeColor.Success"/>
+            </EditForm>
+        }
+    </div>
 </SectionContent>
 
 <div class="d-flex flex-column gap-3">

@@ -76,7 +76,7 @@
             <tr>
                 <td colspan="3" class="text-center">
                     <strong>
-                        Rolled
+                        @(batch.BatchType == SelectionBatchType.Manual ? "Manually selected" : "Rolled")
                         <RelativeTime Value="batch.RollCompletedAt.ToDateTimeOffset()"/>
                     </strong>
                 </td>

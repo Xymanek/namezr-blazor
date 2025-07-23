@@ -21,6 +21,8 @@ public static class ApiEndpointPaths
     public const string SubmissionAttributesSet = "/api/submission-attributes/set";
 
     public const string SelectionNewBatch = "/api/selection-series/new-batch";
+    public const string SelectionManualAddEntries = "/api/selection-series/manual-add-entries";
+    public const string SelectionSeriesList = "/api/selection-series/list";
 
     public const string FilesUpload = "/api/files/upload";
     public const string FilesDownloadNew = "/api/files/download-new";

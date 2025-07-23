@@ -1,0 +1,85 @@
+@* Note: this component is meant to be used only from other WASM components, not from SSR *@
+@rendermode InteractiveWebAssembly
+
+<HxModal
+    @ref="_innerModal"
+    CloseOnEscape="!PreventInteraction"
+    ShowCloseButton="!PreventInteraction"
+    Backdrop="ModalBackdrop.Static"
+>
+    <HeaderTemplate>
+        <div class="flex-grow-1 d-flex justify-content-between align-items-center gap-3">
+            <div>@HeaderText</div>
+            <div>
+                <HxTooltip Text="Create new selection series">
+                    <a
+                        href="@($"/studio/{CreatorId.NoHyphens()}/questionnaires/{QuestionnaireId.NoHyphens()}/selection")"
+                        target="_blank"
+                        class="btn btn-success btn-sm"
+                    >
+                        <i class="bi bi-plus"></i>
+                    </a>
+                </HxTooltip>
+            </div>
+        </div>
+    </HeaderTemplate>
+
+    <BodyTemplate>
+        <HxListGroup Flush="true">
+            @foreach (SelectionSeriesModel series in Options)
+            {
+                <HxListGroupItem OnClick="() => OnSelected.InvokeAsync(series)">
+                    @series.Name
+                </HxListGroupItem>
+            }
+
+            @if (!Options.Any())
+            {
+                <HxListGroupItem>
+                    <i>No selection series available</i>
+                </HxListGroupItem>
+            }
+        </HxListGroup>
+
+        @BodyEnd
+    </BodyTemplate>
+</HxModal>
+
+@code {
+
+    private HxModal? _innerModal;
+
+    [Parameter]
+    public bool PreventInteraction { get; set; }
+
+    [Parameter]
+    public string? HeaderText { get; set; }
+
+    [Parameter]
+    public IList<SelectionSeriesModel> Options { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<SelectionSeriesModel> OnSelected { get; set; }
+
+    [Parameter]
+    public RenderFragment? BodyEnd { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid QuestionnaireId { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await _innerModal!.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        if (_innerModal == null) return;
+
+        await _innerModal.HideAsync();
+    }
+
+}
