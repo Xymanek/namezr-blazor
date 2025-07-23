@@ -230,6 +230,7 @@ public partial class SelectionWorker : ISelectionWorker
 
             RollStartedAt = rollStartTime,
             RollCompletedAt = rollCompletedAt,
+            BatchType = SelectionBatchType.Automatic,
 
             Entries = batchEntities,
         });

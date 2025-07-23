@@ -88,6 +88,7 @@ internal partial class ManualAddEntriesEndpoint
                 SeriesId = series.Id,
                 RollStartedAt = now,
                 RollCompletedAt = now,
+                BatchType = SelectionBatchType.Manual,
                 Entries = entriesToAdd,
             };
 
