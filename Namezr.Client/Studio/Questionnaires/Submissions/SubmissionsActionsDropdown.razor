@@ -10,6 +10,7 @@
 @using Namzer.BlazorPortals
 
 @inject ISpaHttpClientProvider HttpClientProvider
+@inject IHxMessengerService HxMessenger
 
 <HxDropdown>
     <HxDropdownToggleElement ElementName="div" role="button">
@@ -92,24 +93,27 @@
         QuestionnaireId="QuestionnaireId"
     />
 
-    @if (_addToSelectionResult != null && _showResultAlert)
-    {
-        <div class="alert @(_addToSelectionResult.SkippedSubmissions.Length > 0 ? "alert-warning" : "alert-success") alert-dismissible fade show" role="alert">
-            <strong>Add to Selection Result</strong>
-            <p class="mb-1">Added @_addToSelectionResult.AddedCount submissions to selection.</p>
-            @if (_addToSelectionResult.SkippedSubmissions.Length > 0)
+    <HxModal @ref="_skippedSubmissionsModal" Title="Skipped Submissions" Size="ModalSize.Large">
+        <BodyTemplate>
+            @if (_skippedSubmissions != null && _skippedSubmissions.Length > 0)
             {
-                <p class="mb-1">Skipped @_addToSelectionResult.SkippedSubmissions.Length submissions:</p>
-                <ul class="mb-0">
-                    @foreach (SkippedSubmissionInfo skipped in _addToSelectionResult.SkippedSubmissions)
+                <p>The following submissions could not be added to the selection:</p>
+                <ul>
+                    @foreach (SkippedSubmissionInfo skipped in _skippedSubmissions)
                     {
                         <li>@skipped.UserDisplayName (#@skipped.SubmissionNumber): @skipped.Reason</li>
                     }
                 </ul>
             }
-            <button type="button" class="btn-close" @onclick="() => _showResultAlert = false" aria-label="Close"></button>
-        </div>
-    }
+        </BodyTemplate>
+        <FooterTemplate>
+            <HxButton
+                Color="ThemeColor.Secondary"
+                Text="Close"
+                OnClick="() => _skippedSubmissionsModal!.HideAsync()"
+                />
+        </FooterTemplate>
+    </HxModal>
 </BodyEndPortal>
 
 @code {
@@ -143,10 +147,10 @@
     private LabelPickerModal? _applyLabelModal;
     private LabelPickerModal? _removeLabelModal;
     private SelectionSeriesPickerModal? _selectionSeriesModal;
+    private HxModal? _skippedSubmissionsModal;
 
     private List<SelectionSeriesModel> _selectionSeries = [];
-    private ManualAddEntriesResponse? _addToSelectionResult;
-    private bool _showResultAlert;
+    private SkippedSubmissionInfo[]? _skippedSubmissions;
 
     private string BulkDownloadsSubmissionQuery
         => string.Join("&", SelectedItems.Select(item => "n=" + item.Number));
@@ -263,8 +267,20 @@
 
             response.EnsureSuccessStatusCode();
 
-            _addToSelectionResult = await response.Content.ReadFromJsonAsync<ManualAddEntriesResponse>();
-            _showResultAlert = true;
+            ManualAddEntriesResponse? result = await response.Content.ReadFromJsonAsync<ManualAddEntriesResponse>();
+            
+            if (result != null)
+            {
+                if (result.SkippedSubmissions.Length > 0)
+                {
+                    _skippedSubmissions = result.SkippedSubmissions;
+                    await _skippedSubmissionsModal!.ShowAsync();
+                }
+                else
+                {
+                    HxMessenger.AddInformation($"Added {result.AddedCount} submission{(result.AddedCount == 1 ? "" : "s")} to selection");
+                }
+            }
         }
         finally
         {
