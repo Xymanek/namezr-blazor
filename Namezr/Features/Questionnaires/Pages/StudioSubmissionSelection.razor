@@ -64,7 +64,7 @@
     <thead>
     <tr>
         <th>User</th>
-        <th>Submission ID</th>
+        <th>Submission</th>
         <th></th>
     </tr>
     </thead>
@@ -99,7 +99,7 @@
                                     @submission.User.UserName
                                 </a>
                             </td>
-                            <td>@submission.Id</td>
+                            <td>#@submission.Number</td>
                             <td>
                                 <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()/submissions/@submission.Id.NoHyphens()"
                                    class="btn btn-primary">
