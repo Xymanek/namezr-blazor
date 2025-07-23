@@ -98,6 +98,8 @@ internal partial class ManualAddEntriesEndpoint
             }
 
             dbContext.SelectionBatches.Add(batch);
+            series.CompletedSelectionMarker = Guid.NewGuid();
+
             await dbContext.SaveChangesAsync(ct);
         }
 
