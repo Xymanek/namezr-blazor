@@ -32,6 +32,8 @@ internal partial class NewBatchEndpoint
             request.BatchOptions.AllowRestarts,
             request.BatchOptions.ForceRecalculateEligibility,
             request.BatchOptions.NumberOfEntriesToSelect,
+            request.BatchOptions.IncludedLabelIds,
+            request.BatchOptions.ExcludedLabelIds,
             ct
         );
 

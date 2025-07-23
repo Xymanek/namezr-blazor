@@ -8,6 +8,9 @@ public class NewSelectionBatchOptionsModel
     public bool ForceRecalculateEligibility { get; set; }
 
     public int NumberOfEntriesToSelect { get; set; }
+
+    public List<Guid> IncludedLabelIds { get; set; } = [];
+    public List<Guid> ExcludedLabelIds { get; set; } = [];
     
     [RegisterSingleton(typeof(IValidator<NewSelectionBatchOptionsModel>))]
     public class Validator : AbstractValidator<NewSelectionBatchOptionsModel>

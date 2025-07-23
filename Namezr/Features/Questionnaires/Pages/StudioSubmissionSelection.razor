@@ -10,6 +10,7 @@
 @using Namezr.Client.Studio.Questionnaires.Selection
 @using Microsoft.AspNetCore.Components.Sections
 @using Namezr.Features.Questionnaires.Components
+@using Namezr.Features.Questionnaires.Mappers
 @using Namezr.Client.Shared
 @using Namezr.Components
 
@@ -54,6 +55,7 @@
 
 <NewSelectionBatchForm
     SelectionSeriesId="SelectionId"
+    PossibleLabels="_possibleLabels"
 />
 
 <h4>Results</h4>
@@ -214,6 +216,7 @@
 
     private QuestionnaireEntity? _questionnaire;
     private SelectionSeriesEntity? _selectionSeries;
+    private List<SubmissionLabelModel> _possibleLabels = [];
 
     [SupplyParameterFromForm]
     private NewSelectionBatchOptionsModel? NewSelectionBatchOptions { get; set; }
@@ -238,6 +241,12 @@
             .ThenInclude(candidate => (candidate as QuestionnaireSubmissionEntity)!.User)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == SelectionId);
+
+        SubmissionLabelEntity[] possibleLabels = await dbContext.SubmissionLabels
+            .Where(label => label.CreatorId == CreatorId)
+            .ToArrayAsync();
+
+        _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
     }
 
     private IEnumerable<SelectionUserDataEntity> GetUserDataSorted()

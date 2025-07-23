@@ -19,6 +19,8 @@ public interface ISelectionWorker
         bool allowRestarts,
         bool forceRecalculateEligibility,
         int numberOfEntriesToSelect,
+        List<Guid> includedLabelIds,
+        List<Guid> excludedLabelIds,
         CancellationToken ct = default
     );
 }
@@ -36,6 +38,8 @@ public partial class SelectionWorker : ISelectionWorker
         bool allowRestarts,
         bool forceRecalculateEligibility,
         int numberOfEntriesToSelect, // TODO: slightly better name to indicate that only picks count
+        List<Guid> includedLabelIds,
+        List<Guid> excludedLabelIds,
         CancellationToken ct = default
     )
     {
@@ -56,7 +60,8 @@ public partial class SelectionWorker : ISelectionWorker
         Dictionary<Guid, EligibilityResult> userEligibilities = new();
 
         // 1) Fetch all candidates
-        List<(SelectionCandidateEntity Candidate, Guid UserId)> candidates = await GetAllCandidates(seriesEntity, ct);
+        List<(SelectionCandidateEntity Candidate, Guid UserId)> candidates =
+            await GetAllCandidates(seriesEntity, includedLabelIds, excludedLabelIds, ct);
 
         // 1.2) Remove all ineligible users
 
@@ -324,6 +329,8 @@ public partial class SelectionWorker : ISelectionWorker
     /// </remarks>
     private async Task<List<(SelectionCandidateEntity, Guid UserId)>> GetAllCandidates(
         SelectionSeriesEntity series,
+        List<Guid> includedLabelIds,
+        List<Guid> excludedLabelIds,
         CancellationToken ct
     )
     {
@@ -333,10 +340,21 @@ public partial class SelectionWorker : ISelectionWorker
         {
             case EligibilityConfigurationOwnershipType.Questionnaire:
             {
-                QuestionnaireSubmissionEntity[] submissions = await dbContext.QuestionnaireSubmissions
+                IQueryable<QuestionnaireSubmissionEntity> query = dbContext.QuestionnaireSubmissions
                     .Where(s => s.Version.Questionnaire.Id == series.QuestionnaireId)
-                    .Where(s => s.ApprovedAt != null)
-                    .ToArrayAsync(ct);
+                    .Where(s => s.ApprovedAt != null);
+
+                if (includedLabelIds.Count > 0)
+                {
+                    query = query.Where(s => s.Labels!.Any(label => includedLabelIds.Contains(label.Id)));
+                }
+
+                if (excludedLabelIds.Count > 0)
+                {
+                    query = query.Where(s => s.Labels!.All(label => !excludedLabelIds.Contains(label.Id)));
+                }
+
+                QuestionnaireSubmissionEntity[] submissions = await query.ToArrayAsync(ct);
 
                 return submissions
                     .Select(s => ((SelectionCandidateEntity)s, s.UserId))

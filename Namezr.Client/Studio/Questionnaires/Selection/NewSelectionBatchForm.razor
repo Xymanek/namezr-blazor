@@ -1,6 +1,7 @@
 ﻿@rendermode InteractiveWebAssembly
 
 @using Namezr.Client.Infra
+@using Namezr.Client.Shared
 @using vNext.BlazorComponents.FluentValidation
 
 @inject ISpaHttpClientProvider HttpClientProvider
@@ -19,28 +20,56 @@
         >
             <FluentValidationValidator/>
 
-            <div class="d-flex justify-content-stretch gap-3">
-                <HxCheckbox
-                    CssClass="flex-grow-1"
-                    Label="Allow starting new cycle"
-                    @bind-Value="Model!.AllowRestarts"
+            <div class="row">
+                <div class="col-lg-3">
+                    <HxCheckbox
+                        Label="Allow starting new cycle"
+                        @bind-Value="Model!.AllowRestarts"
+                    />
+                </div>
+                <div class="col-lg-3">
+                    <HxCheckbox
+                        Label="Force recalculate eligibility"
+                        @bind-Value="Model!.ForceRecalculateEligibility"
+                    />
+                </div>
+                <div class="col-lg-3">
+                    <HxInputNumber
+                        Label="Number of entries to select"
+                        @bind-Value="Model!.NumberOfEntriesToSelect"
+                    />
+                </div>
+                <div class="col-lg-3 d-flex align-items-end">
+                    <HxSubmit
+                        Enabled="RendererInfo.IsInteractive"
+                        Color="ThemeColor.Success"
+                        Text="Roll"
+                        CssClass="w-100"
+                    />
+                </div>
+            </div>
 
-                />
-                <HxCheckbox
-                    CssClass="flex-grow-1"
-                    Label="Force recalculate eligibility"
-                    @bind-Value="Model!.ForceRecalculateEligibility"
-                />
-                <HxInputNumber
-                    CssClass="flex-grow-1"
-                    Label="Number of entries to select"
-                    @bind-Value="Model!.NumberOfEntriesToSelect"
-                />
-                <HxSubmit
-                    Enabled="RendererInfo.IsInteractive"
-                    Color="ThemeColor.Success"
-                    Text="Roll"
-                />
+            <div class="row mt-3">
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Included labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="Model!.IncludedLabelIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"
+                    />
+                </div>
+                <div class="col-lg-6">
+                    <HxMultiSelect
+                        Label="Excluded labels"
+                        EmptyText="No filter"
+                        Data="PossibleLabels"
+                        @bind-Value="Model!.ExcludedLabelIds"
+                        ValueSelector="@(x => x.Id)"
+                        TextSelector="@(label => label.Text)"
+                    />
+                </div>
             </div>
         </EditForm>
     </BodyTemplate>
@@ -50,6 +79,9 @@
 
     [Parameter]
     public Guid SelectionSeriesId { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
     
     private NewSelectionBatchOptionsModel Model { get; } = new();
 
