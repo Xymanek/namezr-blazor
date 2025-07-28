@@ -27,6 +27,8 @@ public class QuestionnaireFieldConfigurationEntity
     public QuestionnaireTextFieldOptionsModel? TextOptions { get; set; }
     public QuestionnaireNumberFieldOptionsModel? NumberOptions { get; set; }
     public QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; set; }
+
+    public FieldAutomationType? Automation { get; set; }
 }
 
 internal class QuestionnaireFieldConfigurationEntityConfiguration

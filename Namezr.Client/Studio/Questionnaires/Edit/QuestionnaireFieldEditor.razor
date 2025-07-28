@@ -136,6 +136,23 @@
             />
         </div>
     }
+
+    <div class="row">
+        <div class="col-12">
+            <HxSelect
+                TItem="(FieldAutomationType type, string label)"
+                TValue="FieldAutomationType?"
+                Label="Field Automation"
+                @bind-Value="Value.Automation"
+                Data="FieldAutomationTypes"
+                AutoSort="@false"
+                ValueSelector="@(x => x.type)"
+                TextSelector="@(x => x.label)"
+                Nullable="true"
+                NullText="No automation"
+            />
+        </div>
+    </div>
 </div>
 
 @code {
@@ -169,6 +186,11 @@
         (QuestionnaireFieldType.Text, "Text"),
         (QuestionnaireFieldType.Number, "Number"),
         (QuestionnaireFieldType.FileUpload, "File upload")
+    ];
+
+    private static readonly IReadOnlyList<(FieldAutomationType type, string label)> FieldAutomationTypes =
+    [
+        (FieldAutomationType.X2CharacterBin, "XCOM2 Character Bin")
     ];
 
 }
