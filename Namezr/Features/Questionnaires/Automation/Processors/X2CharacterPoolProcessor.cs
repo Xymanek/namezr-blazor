@@ -136,7 +136,7 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 InstigatorIsProgrammatic = true,
             });
 
-            // If single character, add biography comment
+            // If single character, add all character properties as submission attributes
             if (characterCount == 1)
             {
                 CharacterPoolDataElement character = characterPool.NativeCharacters[0];
@@ -146,6 +146,76 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 activity?.SetTag("has_biography", true);
 
                 LogAddingCharacterBiography($"{character.FirstName} {character.LastName}", fileData.Name);
+
+                // Add all character properties as submission attributes
+                List<SubmissionAttributeEntity> attributes =
+                [
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.first_name",
+                        Value = character.FirstName ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.last_name",
+                        Value = character.LastName ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.nickname", Value = character.NickName ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.class",
+                        Value = character.SoldierClassTemplateName ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.country", Value = character.Country ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.background_text",
+                        Value = character.BackgroundText ?? ""
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_soldier",
+                        Value = character.AllowedTypeSoldier.ToString()
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_vip",
+                        Value = character.AllowedTypeVIP.ToString()
+                    },
+                    new()
+                    {
+                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_dark_vip",
+                        Value = character.AllowedTypeDarkVIP.ToString()
+                    }
+                ];
+
+                // Add appearance data from ExtraDatas (single character pool has only one entry)
+                // Could be 0 if non-AM character pool
+                if (characterPool.ExtraDatas.Count > 0)
+                {
+                    ExtraDataEntry extraData = characterPool.ExtraDatas[0];
+                    
+                    foreach (AppearanceInfoStruct appearanceInfo in extraData.AppearanceStore)
+                    {
+                        foreach ((string key, string value) in appearanceInfo.Appearance.Values)
+                        {
+                            attributes.Add(new SubmissionAttributeEntity
+                            {
+                                SubmissionId = submission.Id,
+                                Key = $"xcom2.character.am.{appearanceInfo.GenderArmorTemplate}.{key}",
+                                Value = value
+                            });
+                        }
+                    }
+                }
+
+                dbContext.SubmissionAttributes.AddRange(attributes);
 
                 StringBuilder biographyBuilder = new();
 
