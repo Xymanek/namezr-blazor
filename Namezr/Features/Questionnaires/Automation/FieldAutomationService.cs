@@ -1,6 +1,5 @@
-using AutoRegisterInject;
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Infrastructure.Data;
@@ -8,7 +7,7 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Automation;
 
 [RegisterScoped]
-public class FieldAutomationService : IFieldAutomationService
+public partial class FieldAutomationService : IFieldAutomationService
 {
     private readonly IReadOnlyDictionary<FieldAutomationType, IFieldAutomationProcessor> _processors;
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
@@ -41,9 +40,7 @@ public class FieldAutomationService : IFieldAutomationService
             catch (Exception ex)
             {
                 // Log unexpected errors in background processing
-                _logger.LogError(ex, 
-                    "Unexpected error in background field automation processing for submission {SubmissionId}",
-                    submission.Id);
+                LogUnexpectedErrorInBackgroundProcessing(ex, submission.Id);
             }
         });
     }
@@ -58,6 +55,13 @@ public class FieldAutomationService : IFieldAutomationService
         CancellationToken cancellationToken
     )
     {
+        // ReSharper disable once ExplicitCallerInfoArgument
+        using Activity? activity = Diagnostics.ActivitySource.StartActivity("ProcessFieldAutomation");
+        activity?.SetTag("submission.id", submission.Id.ToString());
+        activity?.SetTag("submission.version_id", submission.VersionId.ToString());
+
+        LogStartingFieldAutomationProcessing(submission.Id);
+
         // Important: do not load submission.FieldValues here as we may have had another update since this was started
 
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -68,6 +72,9 @@ public class FieldAutomationService : IFieldAutomationService
             .Include(fc => fc.Field)
             .ToDictionaryAsync(fc => fc.FieldId, cancellationToken);
 
+        activity?.SetTag("field_configs.count", fieldConfigs.Count);
+        LogFoundFieldConfigsWithAutomation(fieldConfigs.Count, submission.Id);
+
         foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
         {
             if (!fieldConfigs.TryGetValue(fieldValue.FieldId, out QuestionnaireFieldConfigurationEntity? fieldConfig))
@@ -75,18 +82,43 @@ public class FieldAutomationService : IFieldAutomationService
 
             if (_processors.TryGetValue(fieldConfig.Automation!.Value, out IFieldAutomationProcessor? processor))
             {
+                LogProcessingFieldAutomation(fieldConfig.FieldId, fieldConfig.Automation.Value, submission.Id);
+
                 try
                 {
                     await processor.ProcessAsync(submission, fieldConfig, fieldValue, cancellationToken);
+                    LogSuccessfullyProcessedFieldAutomation(fieldConfig.FieldId, submission.Id);
                 }
                 catch (Exception ex)
                 {
+                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     // Log the error but don't fail the entire submission process
-                    _logger.LogError(ex, 
-                        "Field automation failed for submission {SubmissionId}, field {FieldId}, automation type {AutomationType}",
-                        submission.Id, fieldConfig.FieldId, fieldConfig.Automation);
+                    LogFieldAutomationFailed(ex, submission.Id, fieldConfig.FieldId, fieldConfig.Automation.Value);
                 }
             }
         }
+
+        LogCompletedFieldAutomationProcessing(submission.Id);
     }
+
+    [LoggerMessage(LogLevel.Debug, "Starting field automation processing for submission {SubmissionId}")]
+    private partial void LogStartingFieldAutomationProcessing(Guid submissionId);
+
+    [LoggerMessage(LogLevel.Debug, "Found {FieldConfigCount} fields with automation for submission {SubmissionId}")]
+    private partial void LogFoundFieldConfigsWithAutomation(int fieldConfigCount, Guid submissionId);
+
+    [LoggerMessage(LogLevel.Debug, "Processing field {FieldId} with automation type {AutomationType} for submission {SubmissionId}")]
+    private partial void LogProcessingFieldAutomation(Guid fieldId, FieldAutomationType automationType, Guid submissionId);
+
+    [LoggerMessage(LogLevel.Debug, "Successfully processed field {FieldId} automation for submission {SubmissionId}")]
+    private partial void LogSuccessfullyProcessedFieldAutomation(Guid fieldId, Guid submissionId);
+
+    [LoggerMessage(LogLevel.Error, "Field automation failed for submission {SubmissionId}, field {FieldId}, automation type {AutomationType}")]
+    private partial void LogFieldAutomationFailed(Exception ex, Guid submissionId, Guid fieldId, FieldAutomationType automationType);
+
+    [LoggerMessage(LogLevel.Error, "Unexpected error in background field automation processing for submission {SubmissionId}")]
+    private partial void LogUnexpectedErrorInBackgroundProcessing(Exception ex, Guid submissionId);
+
+    [LoggerMessage(LogLevel.Debug, "Completed field automation processing for submission {SubmissionId}")]
+    private partial void LogCompletedFieldAutomationProcessing(Guid submissionId);
 }

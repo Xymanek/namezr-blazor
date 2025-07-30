@@ -1,5 +1,5 @@
+using System.Diagnostics;
 using System.Text;
-using AutoRegisterInject;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
@@ -14,25 +14,14 @@ using X2CharacterPool.Serialization;
 namespace Namezr.Features.Questionnaires.Automation.Processors;
 
 [RegisterScoped]
-public class X2CharacterPoolProcessor : IFieldAutomationProcessor
+[AutoConstructor]
+public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFieldValueSerializer _fieldValueSerializer;
     private readonly IClock _clock;
-
-    public X2CharacterPoolProcessor(
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFileStorageService fileStorageService,
-        IFieldValueSerializer fieldValueSerializer,
-        IClock clock
-    )
-    {
-        _dbContextFactory = dbContextFactory;
-        _fileStorageService = fileStorageService;
-        _fieldValueSerializer = fieldValueSerializer;
-        _clock = clock;
-    }
+    private readonly ILogger<X2CharacterPoolProcessor> _logger;
 
     public FieldAutomationType AutomationType => FieldAutomationType.X2CharacterBin;
 
@@ -43,9 +32,20 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
         CancellationToken cancellationToken = default
     )
     {
+        // ReSharper disable once ExplicitCallerInfoArgument
+        using Activity? activity = Diagnostics.ActivitySource.StartActivity("X2CharacterPoolProcessor.ProcessAsync");
+        activity?.SetTag("submission.id", submission.Id.ToString());
+        activity?.SetTag("field.id", fieldConfig.FieldId.ToString());
+
+        LogStartingX2Processing(submission.Id, fieldConfig.FieldId);
+
         // Only process file upload fields
         if (fieldConfig.Field.Type != QuestionnaireFieldType.FileUpload)
+        {
+            activity?.SetTag("skipped.reason", "not_file_upload");
+            LogSkippingNotFileUpload(fieldConfig.FieldId);
             return;
+        }
 
         // Parse the field value to get uploaded files
         SubmissionValueModel submissionValue = _fieldValueSerializer.Deserialize(
@@ -54,9 +54,16 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
         );
 
         if (submissionValue.FileValue == null || submissionValue.FileValue.Count == 0)
+        {
+            activity?.SetTag("skipped.reason", "no_files");
+            LogSkippingNoFiles(fieldConfig.FieldId);
             return;
+        }
 
-        using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        activity?.SetTag("files.count", submissionValue.FileValue.Count);
+        LogProcessingFiles(submissionValue.FileValue.Count, submission.Id, fieldConfig.FieldId);
+
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         foreach (SubmissionFileData fileData in submissionValue.FileValue)
         {
@@ -64,6 +71,7 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+        LogCompletedX2Processing(submission.Id, fieldConfig.FieldId);
     }
 
     private async Task ProcessSingleFileAsync(
@@ -73,6 +81,13 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
         CancellationToken cancellationToken
     )
     {
+        using Activity? activity = Diagnostics.ActivitySource.StartActivity("X2CharacterPoolProcessor.ProcessSingleFile");
+        activity?.SetTag("file.id", fileData.Id.ToString());
+        activity?.SetTag("file.name", fileData.Name);
+        activity?.SetTag("file.size_bytes", fileData.SizeBytes);
+
+        LogProcessingFile(fileData.Name, fileData.Id, submission.Id);
+
         try
         {
             using FileStream fileStream = _fileStorageService.OpenRead(fileData.Id);
@@ -81,6 +96,9 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
             CharacterPool characterPool = await CharacterPool.Load(reader);
 
             int characterCount = characterPool.NativeCharacters.Count;
+            activity?.SetTag("character.count", characterCount);
+
+            LogSuccessfullyParsedFile(fileData.Name, characterCount);
 
             // Add submission attribute with character count
             SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
@@ -103,6 +121,8 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 });
             }
 
+            activity?.SetTag("validation.success", true);
+
             // Add validation success comment
             string validationMessage = $"✅ XCOM2 Character Pool validation successful for file '{fileData.Name}'\n" +
                                        $"Characters found: {characterCount}";
@@ -120,6 +140,13 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
             if (characterCount == 1)
             {
                 CharacterPoolDataElement character = characterPool.NativeCharacters[0];
+                activity?.SetTag("character.first_name", character.FirstName);
+                activity?.SetTag("character.last_name", character.LastName);
+                activity?.SetTag("character.class", character.SoldierClassTemplateName);
+                activity?.SetTag("has_biography", true);
+
+                LogAddingCharacterBiography($"{character.FirstName} {character.LastName}", fileData.Name);
+
                 StringBuilder biographyBuilder = new();
 
                 biographyBuilder.AppendLine($"📋 Character Biography for '{fileData.Name}':");
@@ -149,9 +176,20 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
                     InstigatorIsProgrammatic = true,
                 });
             }
+            else
+            {
+                activity?.SetTag("has_biography", false);
+                LogSkippingCharacterBiography(characterCount, fileData.Name);
+            }
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("validation.success", false);
+            activity?.SetTag("error.message", ex.Message);
+
+            LogValidationFailed(ex, fileData.Name, fileData.Id, submission.Id);
+
             // Add validation failure comment
             string errorMessage = $"❌ XCOM2 Character Pool validation failed for file '{fileData.Name}'\n" +
                                   $"Error: {ex.Message}";
@@ -166,4 +204,34 @@ public class X2CharacterPoolProcessor : IFieldAutomationProcessor
             });
         }
     }
+
+    [LoggerMessage(LogLevel.Debug, "Starting X2 Character Pool processing for submission {SubmissionId}, field {FieldId}")]
+    private partial void LogStartingX2Processing(Guid submissionId, Guid fieldId);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping field {FieldId} - not a file upload field")]
+    private partial void LogSkippingNotFileUpload(Guid fieldId);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping field {FieldId} - no files to process")]
+    private partial void LogSkippingNoFiles(Guid fieldId);
+
+    [LoggerMessage(LogLevel.Debug, "Processing {FileCount} files for submission {SubmissionId}, field {FieldId}")]
+    private partial void LogProcessingFiles(int fileCount, Guid submissionId, Guid fieldId);
+
+    [LoggerMessage(LogLevel.Debug, "Completed X2 Character Pool processing for submission {SubmissionId}, field {FieldId}")]
+    private partial void LogCompletedX2Processing(Guid submissionId, Guid fieldId);
+
+    [LoggerMessage(LogLevel.Debug, "Processing X2 character pool file {FileName} ({FileId}) for submission {SubmissionId}")]
+    private partial void LogProcessingFile(string fileName, Guid fileId, Guid submissionId);
+
+    [LoggerMessage(LogLevel.Information, "Successfully parsed X2 character pool file {FileName} - found {CharacterCount} characters")]
+    private partial void LogSuccessfullyParsedFile(string fileName, int characterCount);
+
+    [LoggerMessage(LogLevel.Debug, "Adding character biography for {CharacterName} ({FileName})")]
+    private partial void LogAddingCharacterBiography(string characterName, string fileName);
+
+    [LoggerMessage(LogLevel.Debug, "Skipping character biography - {CharacterCount} characters found in {FileName}")]
+    private partial void LogSkippingCharacterBiography(int characterCount, string fileName);
+
+    [LoggerMessage(LogLevel.Warning, "X2 character pool validation failed for file {FileName} ({FileId}) in submission {SubmissionId}")]
+    private partial void LogValidationFailed(Exception ex, string fileName, Guid fileId, Guid submissionId);
 }
