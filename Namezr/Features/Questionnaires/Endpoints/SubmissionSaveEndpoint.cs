@@ -263,7 +263,7 @@ internal partial class SubmissionSaveEndpoint
         await dbContext.SaveChangesAsync(ct);
 
         // Process field automation in background after saving submission
-        fieldAutomationService.ProcessFieldAutomationAsync(submissionEntity);
+        fieldAutomationService.ProcessFieldAutomationInBackground(submissionEntity);
 
         return submissionEntity.Id;
 

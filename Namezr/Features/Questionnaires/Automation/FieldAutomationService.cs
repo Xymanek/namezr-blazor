@@ -25,7 +25,11 @@ public class FieldAutomationService : IFieldAutomationService
         _logger = logger;
     }
 
-    public void ProcessFieldAutomationAsync(QuestionnaireSubmissionEntity submission)
+    /// <param name="submission">
+    /// <see cref="P:Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity.FieldValues"/>
+    /// must be loaded
+    /// </param>
+    public void ProcessFieldAutomationInBackground(QuestionnaireSubmissionEntity submission)
     {
         // Process field automation in background
         Task.Run(async () =>
@@ -44,22 +48,27 @@ public class FieldAutomationService : IFieldAutomationService
         });
     }
 
+    /// <param name="submission">
+    /// <see cref="P:Namezr.Features.Questionnaires.Data.QuestionnaireSubmissionEntity.FieldValues"/>
+    /// must be loaded
+    /// </param>
+    /// <param name="cancellationToken"></param>
     private async Task ProcessFieldAutomationInternalAsync(
         QuestionnaireSubmissionEntity submission,
         CancellationToken cancellationToken
     )
     {
-        if (submission.FieldValues == null)
-            return;
+        // Important: do not load submission.FieldValues here as we may have had another update since this was started
 
-        using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         // Load field configurations for automation
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigs = await dbContext.QuestionnaireFieldConfigurations
             .Where(fc => fc.VersionId == submission.VersionId && fc.Automation != null)
+            .Include(fc => fc.Field)
             .ToDictionaryAsync(fc => fc.FieldId, cancellationToken);
 
-        foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues)
+        foreach (QuestionnaireFieldValueEntity fieldValue in submission.FieldValues!)
         {
             if (!fieldConfigs.TryGetValue(fieldValue.FieldId, out QuestionnaireFieldConfigurationEntity? fieldConfig))
                 continue;
