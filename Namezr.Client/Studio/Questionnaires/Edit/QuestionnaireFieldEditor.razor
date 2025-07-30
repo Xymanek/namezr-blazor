@@ -11,7 +11,7 @@
             Label="Field type"
             Enabled="!ForbidTypeChangeFields.Contains(Value.Id)"
             @bind-Value="Value.Type"
-            @bind-Value:after="() => OnSyncOptionsToNewType.InvokeAsync(Value.Type)"
+            @bind-Value:after="OnFieldTypeChanged"
             Data="QuestionnaireFieldTypes"
             AutoSort="@false"
             ValueSelector="@(x => x.type)"
@@ -137,22 +137,25 @@
         </div>
     }
 
-    <div class="row">
-        <div class="col-12">
-            <HxSelect
-                TItem="(FieldAutomationType type, string label)"
-                TValue="FieldAutomationType?"
-                Label="Field Automation"
-                @bind-Value="Value.Automation"
-                Data="FieldAutomationTypes"
-                AutoSort="@false"
-                ValueSelector="@(x => x.type)"
-                TextSelector="@(x => x.label)"
-                Nullable="true"
-                NullText="No automation"
-            />
+    @if (AvailableAutomationTypes.Count > 0)
+    {
+        <div class="row">
+            <div class="col-12">
+                <HxSelect
+                    TItem="(FieldAutomationType type, string label)"
+                    TValue="FieldAutomationType?"
+                    Label="Field Automation"
+                    @bind-Value="Value.Automation"
+                    Data="AvailableAutomationTypes"
+                    AutoSort="@false"
+                    ValueSelector="@(x => x.type)"
+                    TextSelector="@(x => x.label)"
+                    Nullable="true"
+                    NullText="No automation"
+                />
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 @code {
@@ -192,5 +195,32 @@
     [
         (FieldAutomationType.X2CharacterBin, "XCOM2 Character Bin")
     ];
+
+    private IReadOnlyList<(FieldAutomationType type, string label)> AvailableAutomationTypes
+    {
+        get
+        {
+            // X2CharacterBin is only available for file upload fields
+            if (Value.Type == QuestionnaireFieldType.FileUpload)
+            {
+                return FieldAutomationTypes;
+            }
+            
+            // No automation options for other field types
+            return [];
+        }
+    }
+
+    private async Task OnFieldTypeChanged()
+    {
+        // Clear automation if it's no longer valid for the new field type
+        if (Value.Automation.HasValue && !AvailableAutomationTypes.Any(x => x.type == Value.Automation.Value))
+        {
+            Value.Automation = null;
+        }
+        
+        // Call the external callback
+        await OnSyncOptionsToNewType.InvokeAsync(Value.Type);
+    }
 
 }
