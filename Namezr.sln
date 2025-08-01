@@ -14,6 +14,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namezr.BackendServiceDefaul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Namzer.BlazorPortals", "Namzer.BlazorPortals\Namzer.BlazorPortals.csproj", "{457BC885-D087-477B-B8F3-8ACD8BAF6FB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "X2CharacterPool", "X2CharacterPool\X2CharacterPool.csproj", "{5A965D0E-8A55-4E48-9A53-17E84E6DB471}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "X2CharacterPool.Tests", "X2CharacterPool.Tests\X2CharacterPool.Tests.csproj", "{776AD996-5343-41CF-860D-7A5DAEF2F86E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{457BC885-D087-477B-B8F3-8ACD8BAF6FB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{457BC885-D087-477B-B8F3-8ACD8BAF6FB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{457BC885-D087-477B-B8F3-8ACD8BAF6FB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A965D0E-8A55-4E48-9A53-17E84E6DB471}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A965D0E-8A55-4E48-9A53-17E84E6DB471}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A965D0E-8A55-4E48-9A53-17E84E6DB471}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A965D0E-8A55-4E48-9A53-17E84E6DB471}.Release|Any CPU.Build.0 = Release|Any CPU
+		{776AD996-5343-41CF-860D-7A5DAEF2F86E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{776AD996-5343-41CF-860D-7A5DAEF2F86E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{776AD996-5343-41CF-860D-7A5DAEF2F86E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{776AD996-5343-41CF-860D-7A5DAEF2F86E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

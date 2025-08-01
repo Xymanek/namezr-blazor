@@ -11,6 +11,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Namezr.BackendServiceDefaults\Namezr.BackendServiceDefaults.csproj" />
         <ProjectReference Include="..\Namezr.Client\Namezr.Client.csproj"/>
+        <ProjectReference Include="..\X2CharacterPool\X2CharacterPool.csproj"/>
     </ItemGroup>
     
     <ItemGroup>

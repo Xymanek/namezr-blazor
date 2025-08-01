@@ -19,7 +19,7 @@ internal partial class SetSubmissionAttributeEndpoint
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         IdentityUserAccessor userAccessor,
         IHttpContextAccessor httpContextAccessor,
-        ISubmissionAuditService auditService,
+        IAttributeUpdaterService attributeUpdater,
         CancellationToken ct
     )
     {
@@ -34,66 +34,16 @@ internal partial class SetSubmissionAttributeEndpoint
         if (submission == null) throw new Exception("Bad submission ID");
         await ValidateAccess();
 
-        // Trim and normalize the key
-        string normalizedKey = request.Key.Trim();
-
-        // Find existing attribute (case-insensitive)
-        SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
-            .AsTracking()
-            .SingleOrDefaultAsync(
-                attr => attr.SubmissionId == request.SubmissionId &&
-                        attr.Key.ToLower() == normalizedKey.ToLower(),
-                ct
-            );
-
-        if (string.IsNullOrEmpty(request.Value))
+        await attributeUpdater.UpdateAttributeAsync(new AttributeUpdateCommand
         {
-            // Delete attribute if value is empty
-            if (existingAttribute != null)
-            {
-                // Log deletion before removing
-                dbContext.SubmissionHistoryEntries.Add(auditService.AttributeDeleted(
-                    submission, normalizedKey, existingAttribute.Value
-                ));
+            InstigatorIsProgrammatic = false,
 
-                dbContext.SubmissionAttributes.Remove(existingAttribute);
-            }
-        }
-        else
-        {
-            if (existingAttribute != null)
-            {
-                // Update existing attribute
-                string previousValue = existingAttribute.Value;
-                existingAttribute.Value = request.Value;
+            SubmissionId = submission.Id,
 
-                // Only log if value actually changed
-                if (previousValue != request.Value)
-                {
-                    dbContext.SubmissionHistoryEntries.Add(auditService.AttributeUpdated(
-                        submission, normalizedKey, request.Value, previousValue
-                    ));
-                }
-            }
-            else
-            {
-                // Create new attribute
-                SubmissionAttributeEntity newAttribute = new()
-                {
-                    SubmissionId = request.SubmissionId,
-                    Key = normalizedKey,
-                    Value = request.Value
-                };
-                dbContext.SubmissionAttributes.Add(newAttribute);
+            Key = request.Key,
+            Value = request.Value,
+        }, ct);
 
-                // Log creation
-                dbContext.SubmissionHistoryEntries.Add(auditService.AttributeUpdated(
-                    submission, normalizedKey, request.Value, null
-                ));
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
         return;
 
         async Task ValidateAccess()

@@ -571,6 +571,9 @@ namespace Namezr.Infrastructure.Data.Migrations
                     b.Property<Guid>("VersionId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Automation")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -654,13 +657,13 @@ namespace Namezr.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Key")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasMaxLength(15000)
+                        .HasColumnType("character varying(15000)");
 
                     b.HasKey("SubmissionId", "Key");
 

@@ -7,8 +7,8 @@ public class SubmissionAttributeModel
     public required string Key { get; set; }
     public required string Value { get; set; }
 
-    public const int KeyMaxLength = 50;
-    public const int ValueMaxLength = 5000;
+    public const int KeyMaxLength = 200;
+    public const int ValueMaxLength = 15_000;
 
     [RegisterSingleton(typeof(IValidator<SubmissionAttributeModel>))]
     public class SubmissionAttributeModelValidator : AbstractValidator<SubmissionAttributeModel>
