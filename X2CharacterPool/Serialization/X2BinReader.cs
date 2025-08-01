@@ -209,9 +209,10 @@ public class X2BinReader
         };
     }
 
-    public async ValueTask SkipStructContents(StructPropertyHeader header)
+    public ValueTask SkipStructContents(StructPropertyHeader header)
     {
         Stream.Seek(header.ContentSizeBytes, SeekOrigin.Current);
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask<StructProperty> ReadStructContents(StructPropertyHeader header)

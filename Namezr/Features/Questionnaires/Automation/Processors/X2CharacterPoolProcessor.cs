@@ -15,13 +15,14 @@ namespace Namezr.Features.Questionnaires.Automation.Processors;
 
 [RegisterScoped]
 [AutoConstructor]
-public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
+internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFieldValueSerializer _fieldValueSerializer;
     private readonly IClock _clock;
     private readonly ILogger<X2CharacterPoolProcessor> _logger;
+    private readonly IAttributeUpdaterService _attributeUpdater;
 
     public FieldAutomationType AutomationType => FieldAutomationType.X2CharacterBin;
 
@@ -148,49 +149,68 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 LogAddingCharacterBiography($"{character.FirstName} {character.LastName}", fileData.Name);
 
                 // Add all character properties as submission attributes
-                List<SubmissionAttributeEntity> attributes =
+                List<AttributeUpdateCommand> attributes =
                 [
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.first_name",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.first_name",
                         Value = character.FirstName ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.last_name",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.last_name",
                         Value = character.LastName ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.nickname", Value = character.NickName ?? ""
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.nickname", Value = character.NickName ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.class",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.class",
                         Value = character.SoldierClassTemplateName ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.country", Value = character.Country ?? ""
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.country", 
+                        Value = character.Country ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.background_text",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.background_text",
                         Value = character.BackgroundText ?? ""
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_soldier",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.allowed_type_soldier",
                         Value = character.AllowedTypeSoldier.ToString()
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_vip",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.allowed_type_vip",
                         Value = character.AllowedTypeVIP.ToString()
                     },
                     new()
                     {
-                        SubmissionId = submission.Id, Key = "xcom2.character.allowed_type_dark_vip",
+                        InstigatorIsProgrammatic = true,
+                        SubmissionId = submission.Id,
+                        Key = "xcom2.character.allowed_type_dark_vip",
                         Value = character.AllowedTypeDarkVIP.ToString()
                     }
                 ];
@@ -205,8 +225,9 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                     {
                         foreach ((string key, string value) in appearanceInfo.Appearance.Values)
                         {
-                            attributes.Add(new SubmissionAttributeEntity
+                            attributes.Add(new AttributeUpdateCommand
                             {
+                                InstigatorIsProgrammatic = true,
                                 SubmissionId = submission.Id,
                                 Key = $"xcom2.character.am.{appearanceInfo.GenderArmorTemplate}.{key}",
                                 Value = value
@@ -215,7 +236,10 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                     }
                 }
 
-                dbContext.SubmissionAttributes.AddRange(attributes);
+                foreach (AttributeUpdateCommand update in attributes)
+                {
+                    await _attributeUpdater.StageAttributeUpdateAsync(update, dbContext, CancellationToken.None);
+                }
 
                 StringBuilder biographyBuilder = new();
 
@@ -261,8 +285,7 @@ public partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
             LogValidationFailed(ex, fileData.Name, fileData.Id, submission.Id);
 
             // Add validation failure comment
-            string errorMessage = $"❌ XCOM2 Character Pool validation failed for file '{fileData.Name}'\n" +
-                                  $"Error: {ex.Message}";
+            string errorMessage = $"❌ XCOM2 Character Pool validation failed for file '{fileData.Name}'";
 
             dbContext.SubmissionHistoryEntries.Add(new SubmissionHistoryInternalNoteEntity
             {

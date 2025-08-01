@@ -9,7 +9,7 @@ public interface IProperty
 
 public interface IProperty<out TValue> : IProperty
 {
-    TValue Value { get; }
+    new TValue Value { get; }
 }
 
 public interface ISimpleProperty<out TValue> : IProperty<TValue>, IPropertyHeader

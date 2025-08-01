@@ -62,7 +62,15 @@ internal interface ISubmissionAuditService
 
     [MustUseReturnValue]
     SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
-        QuestionnaireSubmissionEntity submission,
+        Guid submissionId,
+        string key,
+        string value,
+        string? previousValue
+    );
+
+    [MustUseReturnValue]
+    SubmissionHistoryAttributeUpdatedEntity AttributeUpdatedProgrammatic(
+        Guid submissionId,
         string key,
         string value,
         string? previousValue
@@ -70,7 +78,14 @@ internal interface ISubmissionAuditService
 
     [MustUseReturnValue]
     SubmissionHistoryAttributeUpdatedEntity AttributeDeleted(
-        QuestionnaireSubmissionEntity submission,
+        Guid submissionId,
+        string key,
+        string previousValue
+    );
+
+    [MustUseReturnValue]
+    SubmissionHistoryAttributeUpdatedEntity AttributeDeletedProgrammatic(
+        Guid submissionId,
         string key,
         string previousValue
     );
@@ -360,8 +375,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(
-        QuestionnaireSubmissionEntity submission,
+    public SubmissionHistoryAttributeUpdatedEntity AttributeUpdated(Guid submissionId,
         string key,
         string value,
         string? previousValue)
@@ -370,11 +384,11 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         _logger.LogInformation(
             "Staff member {UserId} set attribute '{Key}' to '{Value}' for submission {SubmissionId} (previous: '{PreviousValue}')",
-            userId, key, value, submission.Id, previousValue ?? "(none)");
+            userId, key, value, submissionId, previousValue ?? "(none)");
 
         return new SubmissionHistoryAttributeUpdatedEntity
         {
-            SubmissionId = submission.Id,
+            SubmissionId = submissionId,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = true,
@@ -385,8 +399,31 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         };
     }
 
-    public SubmissionHistoryAttributeUpdatedEntity AttributeDeleted(
-        QuestionnaireSubmissionEntity submission,
+    public SubmissionHistoryAttributeUpdatedEntity AttributeUpdatedProgrammatic(
+        Guid submissionId,
+        string key, 
+        string value,
+        string? previousValue
+    )
+    {
+        _logger.LogInformation(
+            "System set attribute '{Key}' to '{Value}' for submission {SubmissionId} (previous: '{PreviousValue}')",
+            key, value, submissionId, previousValue ?? "(none)"
+        );
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submissionId,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = true,
+            InstigatorIsStaff = false,
+            Key = key,
+            Value = value,
+            PreviousValue = previousValue ?? string.Empty,
+        };
+    }
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeDeleted(Guid submissionId,
         string key,
         string previousValue)
     {
@@ -394,15 +431,38 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
 
         _logger.LogInformation(
             "Staff member {UserId} deleted attribute '{Key}' (previousValue: '{Value}') from submission {SubmissionId}",
-            userId, key, previousValue, submission.Id);
+            userId, key, previousValue, submissionId);
 
         return new SubmissionHistoryAttributeUpdatedEntity
         {
-            SubmissionId = submission.Id,
+            SubmissionId = submissionId,
             OccuredAt = _clock.GetCurrentInstant(),
             InstigatorIsProgrammatic = false,
             InstigatorIsStaff = true,
             InstigatorUserId = userId,
+            Key = key,
+            PreviousValue = previousValue,
+            Value = string.Empty,
+        };
+    }
+
+    public SubmissionHistoryAttributeUpdatedEntity AttributeDeletedProgrammatic(
+        Guid submissionId,
+        string key,
+        string previousValue
+    )
+    {
+        _logger.LogInformation(
+            "System deleted attribute '{Key}' (previousValue: '{Value}') from submission {SubmissionId}",
+            key, previousValue, submissionId
+        );
+
+        return new SubmissionHistoryAttributeUpdatedEntity
+        {
+            SubmissionId = submissionId,
+            OccuredAt = _clock.GetCurrentInstant(),
+            InstigatorIsProgrammatic = false,
+            InstigatorIsStaff = false,
             Key = key,
             PreviousValue = previousValue,
             Value = string.Empty,
