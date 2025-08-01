@@ -461,7 +461,7 @@ internal partial class SubmissionAuditService : ISubmissionAuditService
         {
             SubmissionId = submissionId,
             OccuredAt = _clock.GetCurrentInstant(),
-            InstigatorIsProgrammatic = false,
+            InstigatorIsProgrammatic = true,
             InstigatorIsStaff = false,
             Key = key,
             PreviousValue = previousValue,

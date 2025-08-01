@@ -25,7 +25,7 @@ internal interface IAttributeUpdaterService
 }
 
 [AutoConstructor]
-[RegisterSingleton]
+[RegisterScoped] // ISubmissionAuditService is scoped
 internal partial class AttributeUpdaterService : IAttributeUpdaterService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
@@ -89,11 +89,15 @@ internal partial class AttributeUpdaterService : IAttributeUpdaterService
         {
             if (existingAttribute != null)
             {
-                // Update existing attribute
-                existingAttribute.Value = command.Value;
+                // Skip update if the value is the same
+                if (existingAttribute.Value != command.Value)
+                {
+                    // Update existing attribute
+                    existingAttribute.Value = command.Value;
 
-                // Log update
-                AuditUpdate(dbContext, command, existingAttribute);
+                    // Log update
+                    AuditUpdate(dbContext, command, existingAttribute);
+                }
             }
             else
             {
@@ -200,7 +204,16 @@ public record AttributeUpdateCommand
 {
     public required Guid SubmissionId { get; init; }
 
+    /// <summary>
+    /// The <see cref="SubmissionAttributeEntity.Key"/>
+    /// </summary>
     public required string Key { get; init; }
+    
+    /// <summary>
+    /// The <see cref="SubmissionAttributeEntity.Value"/>.
+    ///
+    /// Pass <see cref="F:System.String.Empty"/> to delete the attribute.
+    /// </summary>
     public required string Value { get; init; }
 
     public required bool InstigatorIsProgrammatic { get; init; }

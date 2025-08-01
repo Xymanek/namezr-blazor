@@ -17,6 +17,32 @@ namespace Namezr.Features.Questionnaires.Automation.Processors;
 [AutoConstructor]
 internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
 {
+    private const string AttributeKeyCharacterCount = "x2_character_count";
+    private const string AttributeKeyFirstName = "xcom2.character.first_name";
+    private const string AttributeKeyLastName = "xcom2.character.last_name";
+    private const string AttributeKeyNickname = "xcom2.character.nickname";
+    private const string AttributeKeyClass = "xcom2.character.class";
+    private const string AttributeKeyCountry = "xcom2.character.country";
+    private const string AttributeKeyBackgroundText = "xcom2.character.background_text";
+    private const string AttributeKeyAllowedTypeSoldier = "xcom2.character.allowed_type_soldier";
+    private const string AttributeKeyAllowedTypeVip = "xcom2.character.allowed_type_vip";
+    private const string AttributeKeyAllowedTypeDarkVip = "xcom2.character.allowed_type_dark_vip";
+    private const string AttributeKeyAppearanceManagerPrefix = "xcom2.character.am";
+
+    private static readonly IReadOnlySet<string> AttributeKeys = new HashSet<string>
+    {
+        AttributeKeyCharacterCount,
+        AttributeKeyFirstName,
+        AttributeKeyLastName,
+        AttributeKeyNickname,
+        AttributeKeyClass,
+        AttributeKeyCountry,
+        AttributeKeyBackgroundText,
+        AttributeKeyAllowedTypeSoldier,
+        AttributeKeyAllowedTypeVip,
+        AttributeKeyAllowedTypeDarkVip,
+    };
+
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFieldValueSerializer _fieldValueSerializer;
@@ -82,16 +108,20 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
         CancellationToken cancellationToken
     )
     {
-        using Activity? activity = Diagnostics.ActivitySource.StartActivity("X2CharacterPoolProcessor.ProcessSingleFile");
+        using Activity? activity = Diagnostics.ActivitySource
+            .StartActivity("X2CharacterPoolProcessor.ProcessSingleFile");
         activity?.SetTag("file.id", fileData.Id.ToString());
         activity?.SetTag("file.name", fileData.Name);
         activity?.SetTag("file.size_bytes", fileData.SizeBytes);
 
         LogProcessingFile(fileData.Name, fileData.Id, submission.Id);
 
+        bool clearCharacterAttributes = true;
+        bool clearCharCountAttribute = true; // TODO
+
         try
         {
-            using FileStream fileStream = _fileStorageService.OpenRead(fileData.Id);
+            await using FileStream fileStream = _fileStorageService.OpenRead(fileData.Id);
             X2BinReader reader = await X2BinFileReadInitializer.InitializeAsync(fileStream);
 
             CharacterPool characterPool = await CharacterPool.Load(reader);
@@ -102,25 +132,18 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
             LogSuccessfullyParsedFile(fileData.Name, characterCount);
 
             // Add submission attribute with character count
-            SubmissionAttributeEntity? existingAttribute = await dbContext.SubmissionAttributes
-                .FirstOrDefaultAsync(
-                    a => a.SubmissionId == submission.Id && a.Key == "x2_character_count",
-                    cancellationToken
-                );
-
-            if (existingAttribute != null)
-            {
-                existingAttribute.Value = characterCount.ToString();
-            }
-            else
-            {
-                dbContext.SubmissionAttributes.Add(new SubmissionAttributeEntity
+            await _attributeUpdater.StageAttributeUpdateAsync(
+                new AttributeUpdateCommand
                 {
+                    InstigatorIsProgrammatic = true,
                     SubmissionId = submission.Id,
-                    Key = "x2_character_count",
+                    Key = AttributeKeyCharacterCount,
                     Value = characterCount.ToString(),
-                });
-            }
+                },
+                dbContext,
+                cancellationToken
+            );
+            clearCharCountAttribute = false;
 
             activity?.SetTag("validation.success", true);
 
@@ -140,6 +163,8 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
             // If single character, add all character properties as submission attributes
             if (characterCount == 1)
             {
+                clearCharacterAttributes = false;
+
                 CharacterPoolDataElement character = characterPool.NativeCharacters[0];
                 activity?.SetTag("character.first_name", character.FirstName);
                 activity?.SetTag("character.last_name", character.LastName);
@@ -147,6 +172,7 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 activity?.SetTag("has_biography", true);
 
                 LogAddingCharacterBiography($"{character.FirstName} {character.LastName}", fileData.Name);
+                // TODO: remove all existing AM attributes
 
                 // Add all character properties as submission attributes
                 List<AttributeUpdateCommand> attributes =
@@ -155,62 +181,63 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.first_name",
+                        Key = AttributeKeyFirstName,
                         Value = character.FirstName ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.last_name",
+                        Key = AttributeKeyLastName,
                         Value = character.LastName ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.nickname", Value = character.NickName ?? ""
+                        Key = AttributeKeyNickname,
+                        Value = character.NickName ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.class",
+                        Key = AttributeKeyClass,
                         Value = character.SoldierClassTemplateName ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.country", 
+                        Key = AttributeKeyCountry,
                         Value = character.Country ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.background_text",
+                        Key = AttributeKeyBackgroundText,
                         Value = character.BackgroundText ?? ""
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.allowed_type_soldier",
+                        Key = AttributeKeyAllowedTypeSoldier,
                         Value = character.AllowedTypeSoldier.ToString()
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.allowed_type_vip",
+                        Key = AttributeKeyAllowedTypeVip,
                         Value = character.AllowedTypeVIP.ToString()
                     },
                     new()
                     {
                         InstigatorIsProgrammatic = true,
                         SubmissionId = submission.Id,
-                        Key = "xcom2.character.allowed_type_dark_vip",
+                        Key = AttributeKeyAllowedTypeDarkVip,
                         Value = character.AllowedTypeDarkVIP.ToString()
                     }
                 ];
@@ -220,7 +247,14 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 if (characterPool.ExtraDatas.Count > 0)
                 {
                     ExtraDataEntry extraData = characterPool.ExtraDatas[0];
-                    
+
+                    await RemoveAbsentArmorAttributes(
+                        dbContext,
+                        extraData.AppearanceStore,
+                        submission,
+                        cancellationToken
+                    );
+
                     foreach (AppearanceInfoStruct appearanceInfo in extraData.AppearanceStore)
                     {
                         foreach ((string key, string value) in appearanceInfo.Appearance.Values)
@@ -229,7 +263,7 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                             {
                                 InstigatorIsProgrammatic = true,
                                 SubmissionId = submission.Id,
-                                Key = $"xcom2.character.am.{appearanceInfo.GenderArmorTemplate}.{key}",
+                                Key = $"{GetAppearanceInfoPrefix(appearanceInfo)}.{key}",
                                 Value = value
                             });
                         }
@@ -246,13 +280,13 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 biographyBuilder.AppendLine($"📋 Character Biography for '{fileData.Name}':");
                 biographyBuilder.AppendLine($"First Name: {character.FirstName}");
                 biographyBuilder.AppendLine($"Last Name: {character.LastName}");
-                
+
                 if (!string.IsNullOrWhiteSpace(character.NickName))
                     biographyBuilder.AppendLine($"Nickname: {character.NickName}");
 
                 biographyBuilder.AppendLine($"Class: {character.SoldierClassTemplateName}");
                 biographyBuilder.AppendLine($"Country: {character.Country}");
-                
+
                 if (!string.IsNullOrWhiteSpace(character.BackgroundText))
                     biographyBuilder.AppendLine($"Background: {character.BackgroundText}");
 
@@ -296,9 +330,34 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
                 InstigatorIsProgrammatic = true,
             });
         }
+
+        // This handles cases like valid submission (with existing attributes) updated with an invalid file
+
+        if (clearCharCountAttribute)
+        {
+            await _attributeUpdater.StageAttributeUpdateAsync(
+                new AttributeUpdateCommand
+                {
+                    InstigatorIsProgrammatic = true,
+                    SubmissionId = submission.Id,
+                    Key = AttributeKeyCharacterCount,
+                    Value = string.Empty,
+                },
+                dbContext,
+                cancellationToken
+            );
+        }
+
+        if (clearCharacterAttributes)
+        {
+            await RemoveAllCharacterAttributes(dbContext, submission, cancellationToken);
+        }
     }
 
-    [LoggerMessage(LogLevel.Debug, "Starting X2 Character Pool processing for submission {SubmissionId}, field {FieldId}")]
+    [LoggerMessage(
+        LogLevel.Debug,
+        "Starting X2 Character Pool processing for submission {SubmissionId}, field {FieldId}"
+    )]
     private partial void LogStartingX2Processing(Guid submissionId, Guid fieldId);
 
     [LoggerMessage(LogLevel.Debug, "Skipping field {FieldId} - not a file upload field")]
@@ -310,13 +369,22 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
     [LoggerMessage(LogLevel.Debug, "Processing {FileCount} files for submission {SubmissionId}, field {FieldId}")]
     private partial void LogProcessingFiles(int fileCount, Guid submissionId, Guid fieldId);
 
-    [LoggerMessage(LogLevel.Debug, "Completed X2 Character Pool processing for submission {SubmissionId}, field {FieldId}")]
+    [LoggerMessage(
+        LogLevel.Debug,
+        "Completed X2 Character Pool processing for submission {SubmissionId}, field {FieldId}"
+    )]
     private partial void LogCompletedX2Processing(Guid submissionId, Guid fieldId);
 
-    [LoggerMessage(LogLevel.Debug, "Processing X2 character pool file {FileName} ({FileId}) for submission {SubmissionId}")]
+    [LoggerMessage(
+        LogLevel.Debug,
+        "Processing X2 character pool file {FileName} ({FileId}) for submission {SubmissionId}"
+    )]
     private partial void LogProcessingFile(string fileName, Guid fileId, Guid submissionId);
 
-    [LoggerMessage(LogLevel.Information, "Successfully parsed X2 character pool file {FileName} - found {CharacterCount} characters")]
+    [LoggerMessage(
+        LogLevel.Information,
+        "Successfully parsed X2 character pool file {FileName} - found {CharacterCount} characters"
+    )]
     private partial void LogSuccessfullyParsedFile(string fileName, int characterCount);
 
     [LoggerMessage(LogLevel.Debug, "Adding character biography for {CharacterName} ({FileName})")]
@@ -325,6 +393,104 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
     [LoggerMessage(LogLevel.Debug, "Skipping character biography - {CharacterCount} characters found in {FileName}")]
     private partial void LogSkippingCharacterBiography(int characterCount, string fileName);
 
-    [LoggerMessage(LogLevel.Warning, "X2 character pool validation failed for file {FileName} ({FileId}) in submission {SubmissionId}")]
+    [LoggerMessage(
+        LogLevel.Warning,
+        "X2 character pool validation failed for file {FileName} ({FileId}) in submission {SubmissionId}"
+    )]
     private partial void LogValidationFailed(Exception ex, string fileName, Guid fileId, Guid submissionId);
+
+    private async Task RemoveAllCharacterAttributes(
+        ApplicationDbContext dbContext,
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken cancellationToken
+    )
+    {
+        LogRemovingCharacterAttributes(submission.Id);
+
+        foreach (string key in AttributeKeys)
+        {
+            await _attributeUpdater.StageAttributeUpdateAsync(
+                new AttributeUpdateCommand
+                {
+                    InstigatorIsProgrammatic = true,
+                    SubmissionId = submission.Id,
+                    Key = key,
+                    Value = string.Empty, // Empty string is semantically same as deleted
+                },
+                dbContext,
+                cancellationToken
+            );
+        }
+
+        SubmissionAttributeEntity[] appearanceManagerAttributes = await dbContext.SubmissionAttributes
+            .AsTracking()
+            .Where(a => a.SubmissionId == submission.Id)
+            .Where(a => a.Key.ToLower().StartsWith(AttributeKeyAppearanceManagerPrefix.ToLower()))
+            .ToArrayAsync(cancellationToken);
+
+        foreach (SubmissionAttributeEntity attribute in appearanceManagerAttributes)
+        {
+            await _attributeUpdater.StageAttributeUpdateAsync(
+                new AttributeUpdateCommand
+                {
+                    InstigatorIsProgrammatic = true,
+                    SubmissionId = submission.Id,
+                    Key = attribute.Key,
+                    Value = string.Empty, // Empty string is semantically same as deleted
+                },
+                dbContext,
+                cancellationToken
+            );
+        }
+    }
+
+    [LoggerMessage(LogLevel.Debug, "Removing all character attributes for submission {SubmissionId}")]
+    private partial void LogRemovingCharacterAttributes(Guid submissionId);
+
+    private async Task RemoveAbsentArmorAttributes(
+        ApplicationDbContext dbContext,
+        IEnumerable<AppearanceInfoStruct> presentAppearances,
+        QuestionnaireSubmissionEntity submission,
+        CancellationToken cancellationToken
+    )
+    {
+        IQueryable<SubmissionAttributeEntity> query = dbContext.SubmissionAttributes
+                .AsTracking()
+                .Where(a => a.SubmissionId == submission.Id)
+
+                // Only consider Appearance Manager attributes
+                .Where(a => a.Key.ToLower().StartsWith(AttributeKeyAppearanceManagerPrefix.ToLower()))
+            ;
+
+        // Exclude all attributes that start with the present appearance info prefixes
+        // ReSharper disable once LoopCanBeConvertedToQuery - much harder to read
+        foreach (AppearanceInfoStruct presentAppearance in presentAppearances)
+        {
+            string appearancePrefix = GetAppearanceInfoPrefix(presentAppearance);
+            query = query.Where(a => !a.Key.ToLower().StartsWith(appearancePrefix.ToLower()));
+        }
+
+        SubmissionAttributeEntity[] appearanceManagerAttributes = await query
+            .ToArrayAsync(cancellationToken);
+
+        foreach (SubmissionAttributeEntity attribute in appearanceManagerAttributes)
+        {
+            await _attributeUpdater.StageAttributeUpdateAsync(
+                new AttributeUpdateCommand
+                {
+                    InstigatorIsProgrammatic = true,
+                    SubmissionId = submission.Id,
+                    Key = attribute.Key,
+                    Value = string.Empty, // Empty string is semantically same as deleted
+                },
+                dbContext,
+                cancellationToken
+            );
+        }
+    }
+
+    private static string GetAppearanceInfoPrefix(AppearanceInfoStruct appearanceInfo)
+    {
+        return AttributeKeyAppearanceManagerPrefix + "." + appearanceInfo.GenderArmorTemplate;
+    }
 }
