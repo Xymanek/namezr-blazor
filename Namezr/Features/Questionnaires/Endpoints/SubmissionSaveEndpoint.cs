@@ -22,6 +22,7 @@ using NodaTime;
 using Namezr.Features.Questionnaires.Models;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Identity.Helpers;
+using Namezr.Features.Questionnaires.Automation;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
@@ -41,6 +42,7 @@ internal partial class SubmissionSaveEndpoint
         ISubmissionAuditService auditService,
         INotificationDispatcher notificationDispatcher,
         IQuestionnaireSubmissionContextService contextService,
+        IFieldAutomationService fieldAutomationService,
         IdentityUserAccessor userAccessor,
         IHttpContextAccessor httpContextAccessor,
         CancellationToken ct
@@ -58,7 +60,7 @@ internal partial class SubmissionSaveEndpoint
         ApplicationUser? currentUser = await userAccessor.GetUserAsync(httpContextAccessor.HttpContext!);
 
         // Ensure 1 submission per ques per user, even in race conditions.
-        await using var _ = await distributedLockProvider.AcquireLockAsync(
+        await using var _2 = await distributedLockProvider.AcquireLockAsync(
             GetLockName(questionnaireVersion.QuestionnaireId, currentUser!.Id),
             cancellationToken: ct
         );
@@ -259,6 +261,9 @@ internal partial class SubmissionSaveEndpoint
         }
 
         await dbContext.SaveChangesAsync(ct);
+
+        // Process field automation in background after saving submission
+        fieldAutomationService.ProcessFieldAutomationInBackground(submissionEntity);
 
         return submissionEntity.Id;
 

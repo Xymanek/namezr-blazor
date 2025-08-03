@@ -21,5 +21,8 @@ internal class QuestionnaireFieldValueEntityConfiguration : IEntityTypeConfigura
     public void Configure(EntityTypeBuilder<QuestionnaireFieldValueEntity> builder)
     {
         builder.HasKey(x => new { x.SubmissionId, x.FieldId });
+
+        // Note: The FieldConfiguration relationship will be handled through manual querying
+        // since EF Core can't handle the complex foreign key relationship with nested properties
     }
 }

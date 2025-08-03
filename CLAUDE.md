@@ -108,3 +108,9 @@ dotnet run --project Namezr print-third-party-token [args]
 
 ### Command Line Startup Validation
 - To validate that the application runs, use `validate-startup` launch profile
+
+## OpenTelemetry Guidelines
+- Use `Namezr.Diagnostics.ActivitySource` (but the namespace should be omitted) for creating new activities
+
+## Logging Guidelines
+- Logging should use the `[LoggerMessage]` pattern

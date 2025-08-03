@@ -69,6 +69,8 @@ public class QuestionnaireFieldEditModel
     public QuestionnaireNumberFieldOptionsModel? NumberOptions { get; set; }
     public QuestionnaireFileUploadFieldOptionsModel? FileUploadOptions { get; set; }
 
+    public FieldAutomationType? Automation { get; set; }
+
     [RegisterSingleton(typeof(IValidator<QuestionnaireFieldEditModel>))]
     internal sealed class Validator : AbstractValidator<QuestionnaireFieldEditModel>
     {
@@ -208,4 +210,9 @@ public enum QuestionnaireSubmissionOpenMode
     Open,
     EditExistingOnly,
     Closed,
+}
+
+public enum FieldAutomationType
+{
+    X2CharacterBin = 1,
 }

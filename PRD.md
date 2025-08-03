@@ -23,6 +23,7 @@ Namezr is a feature-rich Blazor Web App for managing creators, supporters, quest
 - **Approval Workflow:** Submissions can require approval, be auto-approved, or be closed.
 - **Labels & Comments:** Submissions support labels and threaded comments (public and staff).
 - **Submission Attributes:** Staff can add custom key-value metadata to submissions for internal tracking and organization.
+- **Field Automation:** Automated processing of submitted files with configurable automation types (e.g., XCOM2 Character Bin validation).
 - **Bulk & File Operations:** Download submission files individually or in bulk.
 - **Selection Series:** Studio tools for managing selection rounds and batches.
 
@@ -214,6 +215,57 @@ Submission attributes provide a flexible way for staff to add custom metadata to
 - **Categorization:** Tag submissions with custom categories for filtering and reporting.
 - **Workflow Tracking:** Record processing stages, assignments, or completion status.
 - **Integration Data:** Store external system IDs or references for cross-platform workflows.
+
+---
+
+## Field Automation
+
+Field automation provides intelligent processing of submitted files and data, automatically extracting metadata and providing validation results to streamline staff workflows.
+
+### Features
+- **Configurable Automation Types:** Each questionnaire field can be configured with specific automation processing.
+- **Background Processing:** Automation runs asynchronously without blocking submission responses.
+- **Extensible Architecture:** Plugin-based system allows easy addition of new automation types.
+- **Error Handling:** Robust error handling with detailed logging for troubleshooting.
+
+### Automation Types
+
+#### XCOM2 Character Bin
+Specialized automation for processing XCOM 2 character pool binary files (.bin):
+- **File Validation:** Validates uploaded files are properly formatted XCOM 2 character pools.
+- **Character Count:** Automatically adds `x2_character_count` attribute with the number of characters found.
+- **Character Biography:** For single-character pools, extracts and posts detailed character information including:
+  - First Name, Last Name, Nickname
+  - Soldier Class and Character Template
+  - Country of Origin
+  - Background Text
+  - Allowed Unit Types (Soldier, VIP, Dark VIP)
+- **Validation Results:** Posts success/failure status as private staff comments with detailed error messages.
+
+### User Experience
+- **Studio Configuration:** Staff can enable automation on any field type through the questionnaire editor.
+- **Transparent Processing:** Users submit files normally; automation happens in the background.
+- **Immediate Feedback:** Users receive immediate submission confirmation while processing occurs asynchronously.
+- **Staff Visibility:** Automation results appear as private comments and attributes in submission details.
+
+### Technical Implementation
+- **Service Architecture:** `IFieldAutomationService` with pluggable processors via `IFieldAutomationProcessor`.
+- **Background Execution:** Uses `Task.Run` for non-blocking file processing.
+- **Database Integration:** Results stored as submission attributes and history entries.
+- **Logging:** Comprehensive error logging with structured data for monitoring.
+- **Binary Processing:** Utilizes X2CharacterPool library for parsing XCOM 2 game files.
+
+### Workflow Integration
+- **Post-Submission Processing:** Automation triggers after successful submission save.
+- **Staff Workflow Enhancement:** Reduces manual file validation and data extraction work.
+- **Audit Trail:** All automation results are logged in submission history.
+- **Error Recovery:** Failed automation doesn't affect submission acceptance.
+
+### Extensibility
+The automation system is designed for easy extension:
+- **New Processors:** Implement `IFieldAutomationProcessor` for new automation types.
+- **Field Type Support:** Any field type can have automation (currently optimized for file uploads).
+- **Configuration Options:** Automation types can be easily added to the studio UI dropdown.
 
 ---
 
