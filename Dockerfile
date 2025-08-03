@@ -8,6 +8,8 @@ COPY ["Directory.Packages.props", "."]
 COPY ["Namezr/Namezr.csproj", "Namezr/"]
 COPY ["Namezr.BackendServiceDefaults/Namezr.BackendServiceDefaults.csproj", "Namezr.BackendServiceDefaults/"]
 COPY ["Namezr.Client/Namezr.Client.csproj", "Namezr.Client/"]
+COPY ["Namzer.BlazorPortals/Namzer.BlazorPortals.csproj", "Namzer.BlazorPortals/"]
+COPY ["X2CharacterPool/X2CharacterPool.csproj", "X2CharacterPool/"]
 
 RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     dotnet restore "Namezr/Namezr.csproj"
