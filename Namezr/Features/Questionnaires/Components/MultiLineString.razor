@@ -1,0 +1,16 @@
+﻿@using System.Web
+
+@GetMarkupText()
+
+@code
+{
+    [Parameter] public string? Text { get; set; }
+
+    private MarkupString GetMarkupText()
+    {
+        string encodedText = HttpUtility.HtmlEncode(Text ?? string.Empty);
+        string replacedText = GetNewLineRegex().Replace(encodedText, "<br />");
+
+        return new MarkupString(replacedText);
+    }
+}
