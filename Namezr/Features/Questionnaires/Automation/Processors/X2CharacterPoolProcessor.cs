@@ -117,7 +117,7 @@ internal partial class X2CharacterPoolProcessor : IFieldAutomationProcessor
         LogProcessingFile(fileData.Name, fileData.Id, submission.Id);
 
         bool clearCharacterAttributes = true;
-        bool clearCharCountAttribute = true; // TODO
+        bool clearCharCountAttribute = true;
 
         try
         {
