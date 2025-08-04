@@ -37,10 +37,11 @@ internal partial class ManualAddEntriesEndpoint
             .SingleAsync(s => s.Id == request.SeriesId, cancellationToken: ct);
 
         // Get all submissions to be added
+        IEnumerable<Guid> requestSubmissionIds = request.SubmissionIds;
         QuestionnaireSubmissionEntity[] submissions = await dbContext.QuestionnaireSubmissions
             .AsNoTracking()
             .Include(s => s.User)
-            .Where(s => request.SubmissionIds.Contains(s.Id))
+            .Where(s => requestSubmissionIds.Contains(s.Id))
             .ToArrayAsync(ct);
 
         // Check which submissions are already in the current cycle
