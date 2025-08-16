@@ -2,6 +2,7 @@
 @using Namezr.Client.Types
 @using vNext.BlazorComponents.FluentValidation
 @using Namezr.Client.Studio.Eligibility.Edit
+@using System.Text.Json
 
 @rendermode InteractiveWebAssembly
 
@@ -225,7 +226,15 @@
 
             HxMessenger.AddInformation("Questionnaire saved");
 
-            // TODO: redirect to studio questionnaire details page
+            // Redirect to details page for new questionnaires
+            if (!QuestionnaireId.HasValue)
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Guid createdId = JsonSerializer.Deserialize<Guid>(responseContent);
+                
+                string detailsUrl = $"/studio/{CreatorId.NoHyphens()}/questionnaires/{createdId.NoHyphens()}";
+                NavigationManager.NavigateTo(detailsUrl);
+            }
         }
         finally
         {
