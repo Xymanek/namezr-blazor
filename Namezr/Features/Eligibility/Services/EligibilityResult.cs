@@ -4,8 +4,7 @@ using Namezr.Client.Types;
 namespace Namezr.Features.Eligibility.Services;
 
 /// <remarks>
-/// Keep this object small due to
-/// <see cref="P:Namezr.Features.Eligibility.Services.EligibilityCache.Cache"/>
+/// Keep this object small for efficient caching
 /// </remarks>
 public record EligibilityResult
 {

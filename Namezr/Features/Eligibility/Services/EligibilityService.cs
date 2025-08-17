@@ -1,8 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using AutoConstructor;
+using AutoRegisterInject;
 using CommunityToolkit.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Services;
 using Namezr.Features.Eligibility.Data;
@@ -27,10 +28,10 @@ public interface IEligibilityService
     );
 
     /// <summary>
-    /// Fetches the memory-cached eligibility. Will not query the DB or external services
+    /// Fetches the cached eligibility. Will not query the DB or external services
     /// </summary>
     /// <returns>Null if the requested pair was not found in cache</returns>
-    EligibilityResult? GetCachedEligibility(Guid userId, EligibilityConfigurationEntity configuration);
+    Task<EligibilityResult?> GetCachedEligibilityAsync(Guid userId, EligibilityConfigurationEntity configuration);
 }
 
 public static class EligibilityServiceExtensions
@@ -41,7 +42,7 @@ public static class EligibilityServiceExtensions
         UserStatusSyncEagerness syncEagerness
     )
     {
-        EligibilityResult? result = service.GetCachedEligibility(userId, configuration);
+        EligibilityResult? result = await service.GetCachedEligibilityAsync(userId, configuration);
         
         if (result != null)
         {
@@ -60,7 +61,7 @@ internal partial class EligibilityService : IEligibilityService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IConsumerStatusService _statusService;
-    private readonly EligibilityCache _cache;
+    private readonly IEligibilityCache _cache;
 
     public IEnumerable<EligibilityPlan> GetEligibilityDescriptorsFromAllSupportPlans(
         IEnumerable<SupportPlan> supportPlans
@@ -188,10 +189,7 @@ internal partial class EligibilityService : IEligibilityService
         };
 
         // TODO: currently we care only about questionnaire submissions. Limit this logic somehow? 
-        using ICacheEntry cacheEntry = _cache.Cache.CreateEntry(GetCacheKey(userId, configuration));
-        cacheEntry.AbsoluteExpirationRelativeToNow = CachedExpirationTime;
-        cacheEntry.Value = result;
-        cacheEntry.Size = 1;
+        await _cache.SetAsync(userId, configuration, result, CachedExpirationTime);
 
         return result;
     }
@@ -199,30 +197,10 @@ internal partial class EligibilityService : IEligibilityService
     // Think about this - no eligibility should be cached for shorter?
     private static readonly TimeSpan CachedExpirationTime = TimeSpan.FromHours(5);
 
-    public EligibilityResult? GetCachedEligibility(Guid userId, EligibilityConfigurationEntity configuration)
+    public async Task<EligibilityResult?> GetCachedEligibilityAsync(Guid userId, EligibilityConfigurationEntity configuration)
     {
-        return _cache.Cache.Get<EligibilityResult>(GetCacheKey(userId, configuration));
+        return await _cache.GetAsync(userId, configuration);
     }
-
-    private static object GetCacheKey(Guid userId, EligibilityConfigurationEntity configuration)
-    {
-        return (userId, configuration.Id);
-    }
-}
-
-[RegisterSingleton]
-internal class EligibilityCache(ILoggerFactory loggerFactory)
-{
-    public IMemoryCache Cache { get; } = new MemoryCache(
-        new MemoryCacheOptions
-        {
-            // Need to think about this.
-            // Ideally, we would fit all creators into this, but that would be 
-            // (creators) * (users participating per creator) * (activities per creator)
-            SizeLimit = 2000,
-        },
-        loggerFactory
-    );
 }
 
 file static class EnumerableExtensions
