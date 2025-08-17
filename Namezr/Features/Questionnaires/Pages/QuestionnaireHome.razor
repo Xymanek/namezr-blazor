@@ -186,6 +186,12 @@
 @if (_context.SubmissionForUpdate is not null)
 {
     <HxCard>
+        <HeaderTemplate>
+            <div>
+                <h5 class="mb-1">Comments</h5>
+                <small class="text-muted">Use this section to communicate with the staff about your submission</small>
+            </div>
+        </HeaderTemplate>
         <BodyTemplate>
             <EditForm Model="NewComment" FormName="new-comment" OnValidSubmit="OnValidSubmitNewComment">
                 <FluentValidationValidator/>
