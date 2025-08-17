@@ -11,7 +11,7 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build and validate
     runs-on: ubuntu-latest
     
     steps:
@@ -27,7 +27,7 @@ jobs:
       run: dotnet restore ./Namezr/
       
     - name: Build solution
-      run: dotnet build --no-restore --configuration Release .\Namezr\
+      run: dotnet build --no-restore --configuration Release ./Namezr/
       
 #    - name: Publish artifacts
 #      run: dotnet publish --no-build --configuration Release --output ./publish
@@ -38,6 +38,9 @@ jobs:
 #        name: build-artifacts
 #        path: ./publish
 #        retention-days: 30
+
+    - name: Validate startup
+      run: dotnet run --no-build --project Namezr --configuration Release --launch-profile validate-startup
 
   test:
     name: Test
