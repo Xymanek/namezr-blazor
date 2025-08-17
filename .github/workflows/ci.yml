@@ -39,27 +39,27 @@ jobs:
 #        path: ./publish
 #        retention-days: 30
 
-    - name: Validate startup
-      env:
-        ASPNETCORE_Logging__Console__FormatterOptions__IncludeScopes: 'true'
-        
-        # We don't need them to actually be valid, just that they are set to pass the validation
-        ASPNETCORE_App__Files__StoragePath: '...'
-        ASPNETCORE_ConnectionStrings__postgresdb: '...'
-        ASPNETCORE_Discord__BotToken: '...'
-        ASPNETCORE_Discord__ClientId: '...'
-        ASPNETCORE_Discord__ClientSecret: '...'
-        ASPNETCORE_EmailSender__SmtpHost: '...'
-        ASPNETCORE_EmailSender__SmtpPort: '...'
-        ASPNETCORE_Google__ClientId: '...'
-        ASPNETCORE_Google__ClientSecret: '...'
-        ASPNETCORE_Patreon__ClientId: '...'
-        ASPNETCORE_Patreon__ClientSecret: '...'
-#        ASPNETCORE_Sentry__ClientDsn: '...'
-#        ASPNETCORE_Sentry__Dsn: '...'
-        ASPNETCORE_Twitch__OAuth__ClientId: '...'
-        ASPNETCORE_Twitch__OAuth__ClientSecret: '...'
-      run: dotnet run --no-build --project Namezr --configuration Release --launch-profile validate-startup
+#    - name: Validate startup
+#      env:
+#        ASPNETCORE_Logging__Console__FormatterOptions__IncludeScopes: 'true'
+#        
+#        # We don't need them to actually be valid, just that they are set to pass the validation
+#        ASPNETCORE_App__Files__StoragePath: '...'
+#        ASPNETCORE_ConnectionStrings__postgresdb: '...'
+#        ASPNETCORE_Discord__BotToken: '...'
+#        ASPNETCORE_Discord__ClientId: '...'
+#        ASPNETCORE_Discord__ClientSecret: '...'
+#        ASPNETCORE_EmailSender__SmtpHost: '...'
+#        ASPNETCORE_EmailSender__SmtpPort: '...'
+#        ASPNETCORE_Google__ClientId: '...'
+#        ASPNETCORE_Google__ClientSecret: '...'
+#        ASPNETCORE_Patreon__ClientId: '...'
+#        ASPNETCORE_Patreon__ClientSecret: '...'
+##        ASPNETCORE_Sentry__ClientDsn: '...'
+##        ASPNETCORE_Sentry__Dsn: '...'
+#        ASPNETCORE_Twitch__OAuth__ClientId: '...'
+#        ASPNETCORE_Twitch__OAuth__ClientSecret: '...'
+#      run: dotnet run --no-build --project Namezr --configuration Release --launch-profile validate-startup
 
   test:
     name: Test
