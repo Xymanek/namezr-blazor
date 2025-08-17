@@ -56,6 +56,16 @@
         ActivityTitle="@_versionEntity.Questionnaire.Title"
     />
 
+    @if (_isCurrentUserStaff)
+    {
+        <div class="mb-3">
+            <a href="/studio/@_versionEntity.Questionnaire.CreatorId.NoHyphens()/questionnaires/@QuestionnaireId.NoHyphens()"
+               class="btn btn-outline-primary">
+                <i class="bi bi-gear"></i> Studio
+            </a>
+        </div>
+    }
+
     <div>
         <pre>@_versionEntity?.Questionnaire.Description</pre>
     </div>
@@ -224,6 +234,7 @@
 
 @code {
     private QuestionnaireVersionEntity? _versionEntity;
+    private bool _isCurrentUserStaff;
 
     [Parameter]
     public Guid QuestionnaireId { get; set; }
@@ -263,6 +274,14 @@
 
         // Stage 2: Retrieve the user
         ApplicationUser? user = await UserAccessor.GetUserAsync(HttpContext);
+
+        // Stage 2.5: Check if current user is staff for this creator
+        if (user is not null)
+        {
+            _isCurrentUserStaff = await DbContext.Creators
+                .Where(c => c.Id == _versionEntity.Questionnaire.CreatorId)
+                .AnyAsync(c => c.Staff!.Any(s => s.UserId == user.Id));
+        }
 
         // Stage 3: Retrieve the submission context (multiple submissions)
         _context = await QuestionnaireSubmissionContextService.GetSubmissionContextAsync(
