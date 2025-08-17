@@ -24,10 +24,10 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore .\Namezr\
       
     - name: Build solution
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build --no-restore --configuration Release .\Namezr\
       
 #    - name: Publish artifacts
 #      run: dotnet publish --no-build --configuration Release --output ./publish
@@ -53,14 +53,16 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
-    - name: Restore dependencies
-      run: dotnet restore
+#    - name: Restore dependencies
+#      run: dotnet restore
+#      
+#    - name: Build solution
+#      run: dotnet build --no-restore --configuration Release
       
-    - name: Build solution
-      run: dotnet build --no-restore --configuration Release
-      
+    # This ensures that only the test projects are restored and built
     - name: Run tests
-      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory ./test-results
+#      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory ./test-results
+      run: dotnet test --configuration Release --verbosity normal --logger trx --results-directory ./test-results
       
     - name: Upload test results
       uses: actions/upload-artifact@v4
