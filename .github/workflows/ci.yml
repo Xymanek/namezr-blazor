@@ -24,7 +24,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: Restore dependencies
-      run: dotnet restore .\Namezr\
+      run: dotnet restore ./Namezr/
       
     - name: Build solution
       run: dotnet build --no-restore --configuration Release .\Namezr\
