@@ -55,8 +55,8 @@ jobs:
         ASPNETCORE_Google__ClientSecret: '...'
         ASPNETCORE_Patreon__ClientId: '...'
         ASPNETCORE_Patreon__ClientSecret: '...'
-        ASPNETCORE_Sentry__ClientDsn: '...'
-        ASPNETCORE_Sentry__Dsn: '...'
+#        ASPNETCORE_Sentry__ClientDsn: '...'
+#        ASPNETCORE_Sentry__Dsn: '...'
         ASPNETCORE_Twitch__OAuth__ClientId: '...'
         ASPNETCORE_Twitch__OAuth__ClientSecret: '...'
       run: dotnet run --no-build --project Namezr --configuration Release --launch-profile validate-startup
