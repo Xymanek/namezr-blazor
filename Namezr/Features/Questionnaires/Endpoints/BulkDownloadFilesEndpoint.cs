@@ -130,35 +130,38 @@ internal partial class BulkDownloadFilesEndpoint
         async Task<byte[]> BuildZipBytes()
         {
             using MemoryStream memoryStream = new();
-            using ZipArchive archive = new(memoryStream, ZipArchiveMode.Create, true);
-
-            foreach (QuestionnaireSubmissionEntity submission in submissions)
+            
+            // Create ZIP archive and ensure it's properly finalized before reading the bytes
+            using (ZipArchive archive = new(memoryStream, ZipArchiveMode.Create, true))
             {
-                QuestionnaireFieldValueEntity? fieldValueEntity = submission.FieldValues!
-                    .SingleOrDefault(fieldValue => fieldValue.FieldId == request.FieldId);
-
-                if (fieldValueEntity == null) continue;
-
-                SubmissionValueModel value = fieldValueSerializer
-                    .Deserialize(QuestionnaireFieldType.FileUpload, fieldValueEntity.ValueSerialized);
-
-                string folderName = GetArchiveFolderName(submission);
-
-                foreach (SubmissionFileData fileData in value.FileValue ?? [])
+                foreach (QuestionnaireSubmissionEntity submission in submissions)
                 {
-                    ZipArchiveEntry entry = archive.CreateEntry(folderName + "/" + fileData.Name);
+                    QuestionnaireFieldValueEntity? fieldValueEntity = submission.FieldValues!
+                        .SingleOrDefault(fieldValue => fieldValue.FieldId == request.FieldId);
 
-                    await using FileStream fileStream = fileStorageService.OpenRead(fileData.Id);
-                    await using Stream entrySteam = entry.Open();
+                    if (fieldValueEntity == null) continue;
 
-                    await fileStream.CopyToAsync(entrySteam, ct);
+                    SubmissionValueModel value = fieldValueSerializer
+                        .Deserialize(QuestionnaireFieldType.FileUpload, fieldValueEntity.ValueSerialized);
 
-                    // ReSharper disable once AccessToDisposedClosure
-                    auditDbContext.SubmissionHistoryEntries.Add(submissionAudit.DownloadFileStaffPrepare(
-                        submission, fieldValueEntity, fileData, inBatch: true
-                    ));
+                    string folderName = GetArchiveFolderName(submission);
+
+                    foreach (SubmissionFileData fileData in value.FileValue ?? [])
+                    {
+                        ZipArchiveEntry entry = archive.CreateEntry(folderName + "/" + fileData.Name);
+
+                        await using FileStream fileStream = fileStorageService.OpenRead(fileData.Id);
+                        await using Stream entrySteam = entry.Open();
+
+                        await fileStream.CopyToAsync(entrySteam, ct);
+
+                        // ReSharper disable once AccessToDisposedClosure
+                        auditDbContext.SubmissionHistoryEntries.Add(submissionAudit.DownloadFileStaffPrepare(
+                            submission, fieldValueEntity, fileData, inBatch: true
+                        ));
+                    }
                 }
-            }
+            } // ZipArchive is disposed here, finalizing the ZIP format
 
             return memoryStream.ToArray();
         }
