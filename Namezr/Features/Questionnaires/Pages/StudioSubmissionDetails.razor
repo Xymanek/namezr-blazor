@@ -130,7 +130,18 @@
         </tr>
 
         <tr>
-            <th>Is approved</th>
+            <th>
+                <div class="d-flex align-items-center gap-2">
+                    Is approved
+                    <HxButton
+                        Icon="@BootstrapIcon.QuestionCircle"
+                        Color="ThemeColor.Light"
+                        Size="ButtonSize.Small"
+                        Tooltip="This approval status is visible to the submitter"
+                        CssClass="p-1"
+                    />
+                </div>
+            </th>
             <td>
                 <div class="d-flex justify-content-between align-items-center gap-3">
                     <YesNoBadge Value="@(_submission.ApprovedAt is not null)"/>
