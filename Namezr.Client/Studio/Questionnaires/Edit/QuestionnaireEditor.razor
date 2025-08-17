@@ -262,8 +262,8 @@
     private static readonly IReadOnlyList<(QuestionnaireApprovalMode mode, string label)> ApprovalModeOptions =
     [
         (QuestionnaireApprovalMode.GrantAutomatically, "Granted automatically"),
-        (QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited, "Require approval (remove when edited)"),
-        (QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved, "Require approval (prohibit editing when approved)"),
+        (QuestionnaireApprovalMode.RequireApprovalRemoveWhenEdited, "Manual approval (remove when edited)"),
+        (QuestionnaireApprovalMode.RequireApprovalProhibitEditingApproved, "Manual approval (prohibit editing when approved)"),
     ];
 
     private static readonly IReadOnlyList<(QuestionnaireSubmissionOpenMode mode, string label)> SubmissionOpenModeOptions =
