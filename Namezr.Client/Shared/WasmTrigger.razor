@@ -1,3 +1,20 @@
 ﻿@rendermode InteractiveWebAssembly
+@inject IJSRuntime JSRuntime
 
-@* Does nothing, just allows WASM app to initialize on all pages *@
+@* Triggers WASM initialization and signals when ready *@
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Signal that WASM is ready
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                const loadingElement = document.getElementById('wasm-loading');
+                if (loadingElement) {
+                    loadingElement.classList.add('hidden');
+                }
+            ");
+        }
+    }
+}
