@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore nuget dependencies
+      run: dotnet restore ./Namezr/
+      
+    - name: Build project (and dependencies)
+      run: dotnet build --no-restore --configuration Release ./Namezr/
+      
+#    - name: Publish artifacts
+#      run: dotnet publish --no-build --configuration Release --output ./publish
+#      
+#    - name: Upload build artifacts
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: build-artifacts
+#        path: ./publish
+#        retention-days: 30
+
+#    - name: Validate startup
+#      env:
+#        ASPNETCORE_Logging__Console__FormatterOptions__IncludeScopes: 'true'
+#        
+#        # We don't need them to actually be valid, just that they are set to pass the validation
+#        ASPNETCORE_App__Files__StoragePath: '...'
+#        ASPNETCORE_ConnectionStrings__postgresdb: '...'
+#        ASPNETCORE_Discord__BotToken: '...'
+#        ASPNETCORE_Discord__ClientId: '...'
+#        ASPNETCORE_Discord__ClientSecret: '...'
+#        ASPNETCORE_EmailSender__SmtpHost: '...'
+#        ASPNETCORE_EmailSender__SmtpPort: '...'
+#        ASPNETCORE_Google__ClientId: '...'
+#        ASPNETCORE_Google__ClientSecret: '...'
+#        ASPNETCORE_Patreon__ClientId: '...'
+#        ASPNETCORE_Patreon__ClientSecret: '...'
+##        ASPNETCORE_Sentry__ClientDsn: '...'
+##        ASPNETCORE_Sentry__Dsn: '...'
+#        ASPNETCORE_Twitch__OAuth__ClientId: '...'
+#        ASPNETCORE_Twitch__OAuth__ClientSecret: '...'
+#      run: dotnet run --no-build --project Namezr --configuration Release --launch-profile validate-startup
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+#    - name: Restore dependencies
+#      run: dotnet restore
+#      
+#    - name: Build solution
+#      run: dotnet build --no-restore --configuration Release
+      
+    # This ensures that only the test projects are restored and built
+    - name: Run tests
+#      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory ./test-results
+      run: dotnet test --configuration Release --verbosity normal --logger trx --results-directory ./test-results
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: ./test-results
+        retention-days: 30
