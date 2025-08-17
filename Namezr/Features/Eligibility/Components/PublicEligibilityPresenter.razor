@@ -128,12 +128,19 @@
                             {
                                 // User is logged in but has not linked account with this service
 
-                                /* TODO: direct redirect to challenge */
-                                <a
-                                    href="/Account/Manage/ExternalLogins" class="btn btn-primary"
-                                >
-                                    Link account to use your status
-                                </a>
+                                <form class="form-horizontal" action="Account/Manage/LinkExternalLogin" method="post">
+                                    <div>
+                                        <AntiforgeryToken/>
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary"
+                                            name="provider"
+                                            value="@SupportServiceToAuthMap.ServiceTypeToAuthScheme(supportTarget.ServiceType)"
+                                        >
+                                            Link account to use your status
+                                        </button>
+                                    </div>
+                                </form>
                             }
                             else if (supportTarget.JoinUrl is not null || supportTarget.HomeUrl is not null)
                             {
