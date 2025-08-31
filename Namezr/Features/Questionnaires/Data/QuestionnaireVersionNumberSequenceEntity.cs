@@ -6,7 +6,7 @@ namespace Namezr.Features.Questionnaires.Data;
 /// <summary>
 /// While this is exposed as an EFC entity, it's mainly used by/via
 /// <c>questionnaire_version_get_next_number_by_questionnaire_id</c> - see
-/// <see cref="M:Namezr.Infrastructure.Data.Migrations.QuestionnaireVersionNumber.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)"/>
+/// <see cref="M:Namezr.Migrations.QuestionnaireVersionNumber.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)"/>
 /// </summary>
 [EntityTypeConfiguration(typeof(QuestionnaireVersionNumberSequenceEntityConfiguration))]
 public class QuestionnaireVersionNumberSequenceEntity

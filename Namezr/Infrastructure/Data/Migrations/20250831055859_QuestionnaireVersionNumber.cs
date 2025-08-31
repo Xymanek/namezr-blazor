@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Namezr.Infrastructure.Data.Migrations
+namespace Namezr.Migrations
 {
     /// <inheritdoc />
     public partial class QuestionnaireVersionNumber : Migration
@@ -107,6 +107,10 @@ namespace Namezr.Infrastructure.Data.Migrations
                 $$;
                 """
                 );
+            
+            migrationBuilder.DropIndex(
+                name: "IX_QuestionnaireVersions_QuestionnaireId",
+                table: "QuestionnaireVersions");
 
             migrationBuilder.CreateIndex(
                 name: "IX_QuestionnaireVersions_QuestionnaireId_Number",
@@ -131,7 +135,7 @@ namespace Namezr.Infrastructure.Data.Migrations
                 DROP FUNCTION IF EXISTS questionnaire_version_get_next_number_by_questionnaire_id();
                 """
             );
-
+            
             migrationBuilder.DropTable(
                 name: "QuestionnaireVersionNumberSequences");
 
@@ -146,6 +150,11 @@ namespace Namezr.Infrastructure.Data.Migrations
             migrationBuilder.DropColumn(
                 name: "Number",
                 table: "QuestionnaireVersions");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QuestionnaireVersions_QuestionnaireId",
+                table: "QuestionnaireVersions",
+                column: "QuestionnaireId");
         }
     }
 }
