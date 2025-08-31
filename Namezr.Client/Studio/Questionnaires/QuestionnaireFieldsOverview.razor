@@ -13,7 +13,7 @@
             Nullable="false"
             @bind-Value="@_selectedVersionId"
             ValueSelector="version => version.Id"
-            TextSelector="@(version => version.CreatedAt.ToString("dd/MM/yyyy HH:mm"))"
+            TextSelector="@(version => $"Version {version.Number} ({version.CreatedAt:dd/MM/yyyy HH:mm})")"
         />
     </HxTooltip>
 </div>
