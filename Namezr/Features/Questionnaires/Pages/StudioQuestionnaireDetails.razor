@@ -130,7 +130,7 @@
                     <YesNoBadge Value="@(submission.ApprovedAt != null)"/>
                 </td>
                 <td>
-                    @submission.Version.CreatedAt.ToDateTimeOffset().ToString("dd/MM/yyyy HH:mm")
+                    #@submission.Version.Number
                 </td>
                 <td>
                     <a href="/studio/@CreatorId.NoHyphens()/questionnaires/@Id.NoHyphens()/submissions/@submission.Id.NoHyphens()"

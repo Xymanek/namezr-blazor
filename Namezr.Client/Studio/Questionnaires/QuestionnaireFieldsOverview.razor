@@ -13,7 +13,8 @@
             Nullable="false"
             @bind-Value="@_selectedVersionId"
             ValueSelector="version => version.Id"
-            TextSelector="@(version => $"Version #{version.Number}")"
+            TextSelector="@(version => $"#{version.Number}")"
+            AutoSort="false"
         />
     </HxTooltip>
 </div>
