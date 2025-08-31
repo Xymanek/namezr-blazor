@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using AutoConstructor;
 using AutoRegisterInject;
 using CommunityToolkit.Diagnostics;
 using Microsoft.EntityFrameworkCore;
