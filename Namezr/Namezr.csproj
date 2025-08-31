@@ -21,8 +21,8 @@
         <PackageReference Include="AspNet.Security.OAuth.Patreon" />
         <PackageReference Include="AspNet.Security.OAuth.Twitch" />
         <PackageReference Include="AutoConstructor">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="AutoRegisterInject" />
         <PackageReference Include="CommunityToolkit.Diagnostics" />
@@ -42,6 +42,7 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
         <PackageReference Include="Patreon.Net" />
         <PackageReference Include="Sentry.AspNetCore" />

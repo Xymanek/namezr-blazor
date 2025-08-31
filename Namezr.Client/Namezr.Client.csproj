@@ -11,8 +11,8 @@
 
     <ItemGroup>
         <PackageReference Include="AutoConstructor">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="AutoRegisterInject">
             <PrivateAssets>all</PrivateAssets>

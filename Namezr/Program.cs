@@ -15,6 +15,8 @@ using Namezr.Components;
 using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Consumers.Services;
 using Namezr.Features.Files.Configuration;
+using Namezr.Features.Eligibility.Data;
+using Namezr.Features.Eligibility.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Identity.Endpoints;
 using Namezr.Features.Notifications.Services;
@@ -74,6 +76,7 @@ builder.Services.AutoRegister();
 
 builder.Services.AddHostedService<PeriodicConsumerStatusSyncer>();
 builder.Services.AddHostedService<ThreadPoolNotificationDispatcher>();
+builder.Services.AddHostedService<EligibilityCacheCleanupService>();
 
 builder.Services.AddNamezrHandlers();
 builder.Services.AddNamezrBehaviors();
@@ -238,6 +241,23 @@ builder.Services.AddSingleton<IDbContextFactory<ApplicationDbContext>>(
 );
 #pragma warning restore EF1001
 
+// SQLite cache database for eligibility caching
+builder.Services.AddDbContext<EligibilityCacheDbContext>(options =>
+{
+    string? dataDirectory = builder.Configuration["DataDirectory"];
+    if (string.IsNullOrEmpty(dataDirectory))
+    {
+        dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+    }
+    
+    Directory.CreateDirectory(dataDirectory);
+    string sqliteDbPath = Path.Combine(dataDirectory, "eligibility_cache.db");
+    
+    options.UseSqlite($"Data Source={sqliteDbPath}");
+});
+
+builder.Services.AddDbContextFactory<EligibilityCacheDbContext>();
+
 builder.Services.AddSingleton<IDistributedLockProvider>(_ => new PostgresDistributedSynchronizationProvider(
     builder.Configuration.GetConnectionString("postgresdb")!
 ));
@@ -271,6 +291,13 @@ if (args.FirstOrDefault() == "migrate-db")
         .CreateDbContext();
 
     dbContext.Database.Migrate();
+    
+    // Also ensure SQLite cache database is created
+    await using EligibilityCacheDbContext cacheDbContext = app.Services
+        .GetRequiredService<IDbContextFactory<EligibilityCacheDbContext>>()
+        .CreateDbContext();
+    
+    cacheDbContext.Database.EnsureCreated();
     return;
 }
 
@@ -325,8 +352,25 @@ if (args.FirstOrDefault() == "validate-startup")
     // Force the model to be built and validated
     _ = dbContext.Model;
     
+    // Also validate cache database model
+    await using EligibilityCacheDbContext cacheDbContext = app.Services
+        .GetRequiredService<IDbContextFactory<EligibilityCacheDbContext>>()
+        .CreateDbContext();
+    
+    _ = cacheDbContext.Model;
+    
     Console.WriteLine("Startup validation completed successfully.");
     return;
+}
+
+// Ensure SQLite cache database is created on startup
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await using EligibilityCacheDbContext cacheDbContext = scope.ServiceProvider
+        .GetRequiredService<IDbContextFactory<EligibilityCacheDbContext>>()
+        .CreateDbContext();
+    
+    cacheDbContext.Database.EnsureCreated();
 }
 
 app.Run();
