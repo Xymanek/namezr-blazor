@@ -13,7 +13,7 @@
             Nullable="false"
             @bind-Value="@_selectedVersionId"
             ValueSelector="version => version.Id"
-            TextSelector="@(version => $"Version {version.Number} ({version.CreatedAt:dd/MM/yyyy HH:mm})")"
+            TextSelector="@(version => $"Version #{version.Number}")"
         />
     </HxTooltip>
 </div>
@@ -59,7 +59,7 @@
 
     protected override void OnParametersSet()
     {
-        _versionsOrdered = Versions.OrderByDescending(x => x.CreatedAt).ToArray();
+        _versionsOrdered = Versions.OrderByDescending(x => x.Number).ToArray();
 
         _selectedVersionId ??= _versionsOrdered.FirstOrDefault()?.Id;
     }
