@@ -14,13 +14,13 @@ public class EligibilityCacheEntity
     
     public Guid UserId { get; set; }
     
-    public Guid EligibilityConfigurationId { get; set; }
+    public long EligibilityConfigurationId { get; set; }
     
     public string SerializedResult { get; set; } = null!;
     
     public Instant ExpiresAt { get; set; }
     
-    public static string GenerateId(Guid userId, Guid eligibilityConfigurationId)
+    public static string GenerateId(Guid userId, long eligibilityConfigurationId)
     {
         return $"{userId}:{eligibilityConfigurationId}";
     }

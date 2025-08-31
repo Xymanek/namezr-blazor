@@ -142,8 +142,8 @@
         // However, there is no value in running all the mapping code in parallel; it's not intensive enough.
         _items = await Task.WhenAll(loadedSubmissions.Select(async entry =>
         {
-            EligibilityResult? eligibility = EligibilityService
-                .GetCachedEligibility(entry.submission.UserId, _questionnaire.EligibilityConfiguration);
+            EligibilityResult? eligibility = await EligibilityService
+                .GetCachedEligibilityAsync(entry.submission.UserId, _questionnaire.EligibilityConfiguration);
 
             // If we don't have a cache, send the least requests possible
             eligibility ??= await EligibilityService
