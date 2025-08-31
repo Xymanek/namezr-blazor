@@ -20,7 +20,10 @@
         <PackageReference Include="AspNet.Security.OAuth.Discord" />
         <PackageReference Include="AspNet.Security.OAuth.Patreon" />
         <PackageReference Include="AspNet.Security.OAuth.Twitch" />
-        <PackageReference Include="AutoConstructor" />
+        <PackageReference Include="AutoConstructor">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="AutoRegisterInject" />
         <PackageReference Include="CommunityToolkit.Diagnostics" />
         <PackageReference Include="Discord.Net.Rest" />
