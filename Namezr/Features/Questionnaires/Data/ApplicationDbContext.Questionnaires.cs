@@ -17,6 +17,7 @@ public partial class ApplicationDbContext
     public DbSet<SubmissionHistoryEntryEntity> SubmissionHistoryEntries { get; set; } = null!;
 
     public DbSet<SubmissionNumberSequenceEntity> SubmissionNumberSequences { get; set; } = null!;
+    public DbSet<QuestionnaireVersionNumberSequenceEntity> QuestionnaireVersionNumberSequences { get; set; } = null!;
 
     public DbSet<SubmissionLabelEntity> SubmissionLabels { get; set; } = null!;
     public DbSet<CannedCommentEntity> CannedComments { get; set; } = null!;
