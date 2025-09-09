@@ -1,0 +1,11 @@
+@rendermode InteractiveWebAssembly
+
+<div class="wasm-loading-indicator @(IsLoading ? "visible" : "hidden")">
+    <div class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+@code {
+    private bool IsLoading => !RendererInfo.IsInteractive;
+}
