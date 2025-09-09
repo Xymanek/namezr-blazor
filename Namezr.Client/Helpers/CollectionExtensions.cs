@@ -13,4 +13,15 @@ public static class CollectionExtensions
             set.Remove(element);
         }
     }
+
+    public static void AddRange<TKey, TValue>(
+        this IDictionary<TKey, TValue> dictionary,
+        IEnumerable<KeyValuePair<TKey, TValue>> items
+    )
+    {
+        foreach (var item in items)
+        {
+            dictionary.Add(item.Key, item.Value);
+        }
+    }
 }
