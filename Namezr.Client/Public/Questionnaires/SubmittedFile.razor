@@ -63,7 +63,7 @@
                 throw new Exception("No submission ID but an existing file?");
             }
 
-            return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId.Value}&fileId={FileData.Id}";
+            return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={SubmissionId.Value}&fileId={FileData.Id}&isImageView=true";
         }
     }
 

@@ -148,7 +148,7 @@
 
     private string GetImageUrl(SubmissionFileData file)
     {
-        return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={Item.Id}&fileId={file.Id}";
+        return $"{ApiEndpointPaths.QuestionnaireSubmissionDownloadFile}?submissionId={Item.Id}&fileId={file.Id}&isImageView=true";
     }
 
     private SubmissionFileData? _currentlyHoveredFile;

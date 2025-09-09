@@ -24,6 +24,7 @@ internal partial class DownloadSubmissionFileEndpoint
     {
         public required Guid SubmissionId { get; init; }
         public required Guid FileId { get; init; }
+        public bool IsImageView { get; init; } = false;
     }
 
     private static async ValueTask<IResult> Handle(
@@ -77,14 +78,20 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("File not found");
         }
 
+        // Skip audit when viewing images (for display purposes)
+        bool skipAudit = parameters.IsImageView && fileData.IsDisplayableImage();
+
         // TODO: this should be passed from the client and hooked up to the access check
-        if (isOwnSubmission)
+        if (!skipAudit)
         {
-            await submissionAudit.DownloadFileSubmitter(submission, fieldValue, fileData, inBatch: false, ct);
-        }
-        else
-        {
-            await submissionAudit.DownloadFileStaff(submission, fieldValue, fileData, inBatch: false, ct);
+            if (isOwnSubmission)
+            {
+                await submissionAudit.DownloadFileSubmitter(submission, fieldValue, fileData, inBatch: false, ct);
+            }
+            else
+            {
+                await submissionAudit.DownloadFileStaff(submission, fieldValue, fileData, inBatch: false, ct);
+            }
         }
 
         return Results.File(
