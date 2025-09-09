@@ -16,6 +16,9 @@ public static class ApiEndpointPaths
     public const string SubmissionLabelsConfigSave = "/api/submission-labels/config/save";
     public const string SubmissionLabelsPresenceMutate = "/api/submission-labels/presence-mutate";
 
+    public const string SubmissionApprovalToggle = "/api/submission/approval-toggle";
+    public const string SubmissionCommentSubmit = "/api/submission/comment-submit";
+
     public const string CannedCommentsConfigSave = "/api/canned-comments/config/save";
 
     public const string SubmissionAttributesSet = "/api/submission-attributes/set";

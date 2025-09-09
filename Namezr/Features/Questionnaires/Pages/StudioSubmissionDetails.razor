@@ -393,6 +393,15 @@
     </HxCard>
 </div>
 
+<!-- Quick Actions Component -->
+<SubmissionQuickActions
+    IsApproved="@(_submission.ApprovedAt is not null)"
+    CreatorId="CreatorId"
+    SubmissionId="SubmissionId"
+    AppliedLabels="_appliedLabels"
+    PossibleLabels="_possibleLabels"
+/>
+
 @code {
 
     [CascadingParameter]
@@ -422,6 +431,8 @@
 
     private CannedCommentEntity[] _cannedComments = [];
     private List<SubmissionAttributeModel> _submissionAttributes = [];
+
+    // Quick Actions Component state - removed as it's now self-contained
 
     protected override async Task OnInitializedAsync()
     {
@@ -680,5 +691,7 @@
         // Refresh the page to show the new comment
         NavigationManager.Refresh();
     }
+
+    // Quick Actions Component methods removed - now handled via API endpoints
 
 }
