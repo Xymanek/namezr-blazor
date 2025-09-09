@@ -1,0 +1,180 @@
+@using System.Diagnostics
+@using Namezr.Client.Types
+@inject IJSRuntime JSRuntime
+
+<div class="hx-select-wrapper">
+    <label class="form-label" for="@InputId">@Label</label>
+    <div class="dropdown">
+        <button
+            class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center"
+            type="button"
+            id="@InputId"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            disabled="@Disabled">
+            <span>@GetSelectedText()</span>
+            <span class="dropdown-toggle-icon"></span>
+        </button>
+        <div class="dropdown-menu w-100 grouped-select-dropdown">
+            <div class="search-container px-3 py-2 border-bottom">
+                <HxInputText
+                    @bind-Value="searchText"
+                    @oninput="OnSearchInput"
+                    Placeholder="Search support plans..."
+                    class="form-control-sm"
+                />
+            </div>
+            <div class="options-container" style="max-height: 250px; overflow-y: auto;">
+            
+            @foreach (var group in filteredGroups)
+            {
+                <div class="dropdown-group">
+                    <h6 class="dropdown-header sticky-header">@group.Key</h6>
+                    @foreach (var item in group.Value)
+                    {
+                        <button
+                            type="button"
+                            class="dropdown-item @(IsSelected(item) ? "active" : "")"
+                            @onclick="() => SelectItem(item)"
+                            @onclick:preventDefault="true">
+                            @GetItemDisplayText(item)
+                        </button>
+                    }
+                </div>
+            }
+            
+            @if (!filteredGroups.Any())
+            {
+                <div class="dropdown-item-text text-muted">No matching support plans found</div>
+            }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    public List<EligibilityPlan> Data { get; set; } = new();
+
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public EligibilityPlanId? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<EligibilityPlanId?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnValueChanged { get; set; }
+
+    private string searchText = string.Empty;
+    private Dictionary<string, List<EligibilityPlan>> filteredGroups = new();
+
+    protected override void OnParametersSet()
+    {
+        FilterOptions();
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+        FilterOptions();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void FilterOptions()
+    {
+        var filtered = string.IsNullOrWhiteSpace(searchText)
+            ? Data
+            : Data.Where(plan => MatchesSearch(plan, searchText.Trim())).ToList();
+
+        filteredGroups = filtered
+            .GroupBy(GetGroupName)
+            .ToDictionary(g => g.Key, g => g.OrderBy(GetItemDisplayText).ToList());
+    }
+
+    private bool MatchesSearch(EligibilityPlan plan, string search)
+    {
+        var searchLower = search.ToLowerInvariant();
+        
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => 
+                plan.SupportPlan!.ServiceType.ToString().ToLowerInvariant().Contains(searchLower) ||
+                plan.SupportPlan!.DisplayName.ToLowerInvariant().Contains(searchLower),
+            EligibilityType.Virtual => 
+                "virtual".Contains(searchLower) ||
+                plan.VirtualEligibilityType.ToString()!.ToLowerInvariant().Contains(searchLower),
+            _ => false
+        };
+    }
+
+    private string GetGroupName(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => plan.SupportPlan!.ServiceType.ToString(),
+            EligibilityType.Virtual => "Virtual",
+            _ => throw new UnreachableException()
+        };
+    }
+
+    private string GetItemDisplayText(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => plan.SupportPlan!.DisplayName,
+            EligibilityType.Virtual => plan.VirtualEligibilityType.ToString()!,
+            _ => throw new UnreachableException()
+        };
+    }
+
+    private string GetSelectedText()
+    {
+        if (Value == null) return "Select a support plan...";
+        
+        var selectedPlan = Data.FirstOrDefault(p => p.Id.Equals(Value));
+        if (selectedPlan == null) return "Select a support plan...";
+        
+        return GetSelectedDisplayText(selectedPlan);
+    }
+
+    private string GetSelectedDisplayText(EligibilityPlan plan)
+    {
+        return plan.Type switch
+        {
+            EligibilityType.SupportPlan => $"{plan.SupportPlan!.ServiceType} - {plan.SupportPlan!.DisplayName}",
+            EligibilityType.Virtual => "Virtual - " + plan.VirtualEligibilityType,
+            _ => throw new UnreachableException()
+        };
+    }
+
+    private bool IsSelected(EligibilityPlan item)
+    {
+        return Value != null && item.Id.Equals(Value);
+    }
+
+    private async Task SelectItem(EligibilityPlan item)
+    {
+        Value = item.Id;
+        await ValueChanged.InvokeAsync(Value);
+        await OnValueChanged.InvokeAsync();
+        
+        // Close dropdown
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", $"bootstrap.Dropdown.getInstance(document.getElementById('{InputId}'))?.hide()");
+        }
+        catch
+        {
+            // Fallback if Bootstrap JS is not available
+        }
+    }
+
+    private string InputId { get; } = "grouped-select-" + Guid.NewGuid().ToString("N")[..8];
+}
