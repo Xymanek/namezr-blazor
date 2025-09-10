@@ -21,7 +21,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 internal sealed partial class MutateSubmissionLabelPresenceEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ISubmissionAuditService _submissionAudit;
     private readonly INotificationDispatcher _notificationDispatcher;
@@ -43,7 +42,6 @@ internal sealed partial class MutateSubmissionLabelPresenceEndpoint
             .SingleOrDefaultAsync(submission => submission.Id == request.SubmissionId, ct);
 
         if (submission == null) throw new Exception("Bad submission ID");
-        await ValidateAccess();
 
         SubmissionLabelEntity? label = await dbContext.SubmissionLabels
             .AsTracking()
@@ -112,22 +110,5 @@ internal sealed partial class MutateSubmissionLabelPresenceEndpoint
         await dbContext.SaveChangesAsync(ct);
         return;
 
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(httpContext);
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

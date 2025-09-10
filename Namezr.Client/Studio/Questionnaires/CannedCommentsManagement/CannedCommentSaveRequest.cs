@@ -1,9 +1,10 @@
 using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 using Namezr.Client.Shared;
 
 namespace Namezr.Client.Studio.Questionnaires.CannedCommentsManagement;
 
-public class CannedCommentSaveRequest
+public class CannedCommentSaveRequest : ICreatorManagementRequest
 {
     public required Guid CreatorId { get; init; }
     public required CannedCommentModel CannedComment { get; init; }

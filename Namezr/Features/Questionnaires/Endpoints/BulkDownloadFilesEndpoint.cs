@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
+using Namezr.Client.Contracts.Auth;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Files.Services;
-using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
@@ -24,12 +24,10 @@ internal sealed partial class BulkDownloadFilesEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IFieldValueSerializer _fieldValueSerializer;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly ISubmissionAuditService _submissionAudit;
 
-    public class Request
+    public class Request : IQuestionnaireManagementRequest
     {
         public required Guid QuestionnaireId { get; init; }
         public required Guid FieldId { get; init; }
@@ -73,8 +71,6 @@ internal sealed partial class BulkDownloadFilesEndpoint
             return Results.BadRequest("Invalid questionnaire ID");
         }
 
-        await ValidateAccess();
-
         if (questionnaire.Fields!.All(field => field.Id != request.FieldId))
         {
             return Results.BadRequest("Invalid field ID");
@@ -109,24 +105,6 @@ internal sealed partial class BulkDownloadFilesEndpoint
         await auditDbContext.SaveChangesAsync(ct);
 
         return TypedResults.File(outputZipBytes, "application/zip", "submissions.zip");
-
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
 
         // TODO: somehow limit this to prevent DOS attacks
         async Task<byte[]> BuildZipBytes()

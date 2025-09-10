@@ -18,8 +18,6 @@ namespace Namezr.Features.Polls.Endpoints;
 [MapPost(ApiEndpointPaths.PollsUpdate)]
 internal sealed partial class UpdatePollEndpoint
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly ApplicationDbContext _dbContext;
 
     private async ValueTask HandleAsync(
@@ -32,15 +30,13 @@ internal sealed partial class UpdatePollEndpoint
             .Include(x => x.EligibilityConfiguration.Options)
             .AsSplitQuery()
             .AsTracking()
-            .FirstOrDefaultAsync(x => x.Id == request.Id, ct);
+            .FirstOrDefaultAsync(x => x.Id == request.PollId, ct);
 
         if (pollEntity is null)
         {
             // TODO: return 400
             throw new Exception("Poll not found");
         }
-
-        await ValidateAccess();
 
         // TODO: updates the eligibility plan IDs to the same value since instances are not the same
         // since owned types are used
@@ -51,22 +47,5 @@ internal sealed partial class UpdatePollEndpoint
 
         return;
 
-        // TODO: unify with questionnaire
-        async Task ValidateAccess()
-        {
-            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
-
-            bool isCreatorStaff = await _dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == user.Id &&
-                    staff.CreatorId == pollEntity.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

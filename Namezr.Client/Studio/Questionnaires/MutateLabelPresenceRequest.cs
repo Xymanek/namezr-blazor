@@ -1,6 +1,8 @@
-﻿namespace Namezr.Client.Studio.Questionnaires;
+﻿using Namezr.Client.Contracts.Auth;
 
-public record MutateLabelPresenceRequest
+namespace Namezr.Client.Studio.Questionnaires;
+
+public record MutateLabelPresenceRequest : ISubmissionManagementRequest
 {
     public required Guid SubmissionId { get; init; }
     public required Guid LabelId { get; init; }

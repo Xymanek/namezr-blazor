@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 
 namespace Namezr.Client.Studio.Questionnaires.Selection;
 
-public class NewSelectionBatchRequest
+public class NewSelectionBatchRequest : ISeriesManagementRequest
 {
     public required Guid SeriesId { get; init; }
     public required NewSelectionBatchOptionsModel BatchOptions { get; init; }

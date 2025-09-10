@@ -17,8 +17,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [MapPost(ApiEndpointPaths.QuestionnairesUpdate)]
 internal sealed partial class UpdateQuestionnaireEndpoint
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly ApplicationDbContext _dbContext;
 
     private async ValueTask HandleAsync(
@@ -32,15 +30,13 @@ internal sealed partial class UpdateQuestionnaireEndpoint
             .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
             .AsSplitQuery()
             .AsTracking()
-            .FirstOrDefaultAsync(x => x.Id == request.Id, ct);
+            .FirstOrDefaultAsync(x => x.Id == request.QuestionnaireId, ct);
 
         if (questionnaireEntity is null)
         {
             // TODO: return 400
             throw new Exception("Questionnaire not found");
         }
-
-        await ValidateAccess();
 
         // TODO: updates the eligibility plan IDs to the same value since instances are not the same
         // since owned types are used
@@ -51,22 +47,5 @@ internal sealed partial class UpdateQuestionnaireEndpoint
 
         return;
 
-        async Task ValidateAccess()
-        {
-            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
-
-            bool isCreatorStaff = await _dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.CreatorId == questionnaireEntity.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

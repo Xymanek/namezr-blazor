@@ -20,9 +20,9 @@ public class CreateQuestionnaireCommand : ICreatorManagementRequest
     }
 }
 
-public class UpdateQuestionnaireCommand
+public class UpdateQuestionnaireCommand : IQuestionnaireManagementRequest
 {
-    public required Guid Id { get; set; }
+    public required Guid QuestionnaireId { get; set; }
 
     // TODO: convert description to null if empty
     public required QuestionnaireEditModel Model { get; set; }

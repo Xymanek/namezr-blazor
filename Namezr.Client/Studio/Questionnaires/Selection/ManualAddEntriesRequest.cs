@@ -1,8 +1,9 @@
 using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 
 namespace Namezr.Client.Studio.Questionnaires.Selection;
 
-public class ManualAddEntriesRequest
+public class ManualAddEntriesRequest : ISeriesManagementRequest
 {
     public required Guid SeriesId { get; init; }
     public required Guid[] SubmissionIds { get; init; }

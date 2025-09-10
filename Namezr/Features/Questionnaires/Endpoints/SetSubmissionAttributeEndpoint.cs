@@ -16,8 +16,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 internal sealed partial class SetSubmissionAttributeEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IdentityUserAccessor _userAccessor;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAttributeUpdaterService _attributeUpdater;
 
     private async ValueTask HandleAsync(
@@ -25,7 +23,6 @@ internal sealed partial class SetSubmissionAttributeEndpoint
         CancellationToken ct
     )
     {
-        HttpContext httpContext = _httpContextAccessor.HttpContext!;
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
@@ -34,7 +31,6 @@ internal sealed partial class SetSubmissionAttributeEndpoint
             .SingleOrDefaultAsync(submission => submission.Id == request.SubmissionId, ct);
 
         if (submission == null) throw new Exception("Bad submission ID");
-        await ValidateAccess();
 
         await _attributeUpdater.UpdateAttributeAsync(new AttributeUpdateCommand
         {
@@ -48,22 +44,5 @@ internal sealed partial class SetSubmissionAttributeEndpoint
 
         return;
 
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(httpContext);
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

@@ -17,16 +17,12 @@ namespace Namezr.Features.SelectionSeries.Endpoints;
 internal sealed partial class SelectionSeriesListEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
 
     private async ValueTask<SelectionSeriesModel[]> Handle(
         SelectionSeriesListRequest request,
         CancellationToken ct
     )
     {
-        await ValidateAccess();
-
         await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         SelectionSeriesModel[] series = await dbContext.SelectionSeries
@@ -41,24 +37,5 @@ internal sealed partial class SelectionSeriesListEndpoint
 
         return series;
 
-        async Task ValidateAccess()
-        {
-            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
-
-            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
-            
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.Creator.Questionnaires!.Any(ques => ques.Id == request.QuestionnaireId)
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

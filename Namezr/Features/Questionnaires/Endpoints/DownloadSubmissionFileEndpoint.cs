@@ -3,6 +3,7 @@ using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
+using Namezr.Client.Contracts.Auth;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Identity.Helpers;
@@ -15,13 +16,13 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
-[Behaviors] // Remove the global validation behavior
+[Behaviors] // Skip centralized authorization for complex user vs staff logic
 [Authorize]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
 [AutoConstructor]
 internal sealed partial class DownloadSubmissionFileEndpoint
 {
-    internal class Parameters
+    internal class Parameters : ISubmissionManagementRequest
     {
         public required Guid SubmissionId { get; init; }
         public required Guid FileId { get; init; }
@@ -107,7 +108,8 @@ internal sealed partial class DownloadSubmissionFileEndpoint
             // Can always download own files
             if (isOwnSubmission) return;
 
-            // ReSharper disable once AccessToDisposedClosure
+            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+
             bool isCreatorStaff = await dbContext.CreatorStaff
                 .Where(staff =>
                     staff.UserId == user.Id &&

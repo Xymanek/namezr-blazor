@@ -17,8 +17,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 internal sealed partial class SaveCannedCommentConfigEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IdentityUserAccessor _userAccessor;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private async ValueTask HandleAsync(
         CannedCommentSaveRequest request,
@@ -32,7 +30,6 @@ internal sealed partial class SaveCannedCommentConfigEndpoint
             .SingleAsync(creator => creator.Id == request.CreatorId, ct);
 
         // TODO: validate not null
-        await ValidateAccess();
 
         CannedCommentEntity? cannedCommentEntity = null;
         if (request.CannedComment.Id != Guid.Empty)
@@ -62,22 +59,5 @@ internal sealed partial class SaveCannedCommentConfigEndpoint
         await dbContext.SaveChangesAsync(ct);
         return;
 
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == request.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }
