@@ -25,10 +25,18 @@ using NodaTime;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionsExportCsv)]
-internal partial class ExportSubmissionsCsvEndpoint
+internal sealed partial class ExportSubmissionsCsvEndpoint
 {
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFieldValueSerializer _fieldValueSerializer;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IEligibilityService _eligibilityService;
+    private readonly ISupportPlansService _supportPlansService;
+
     public class Request
     {
         public required Guid QuestionnaireId { get; init; }
@@ -45,18 +53,12 @@ internal partial class ExportSubmissionsCsvEndpoint
         }
     }
 
-    private static async ValueTask<IResult> HandleAsync(
+    private async ValueTask<IResult> HandleAsync(
         [AsParameters] Request request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFieldValueSerializer fieldValueSerializer,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        IEligibilityService eligibilityService,
-        ISupportPlansService supportPlansService,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireEntity? questionnaire = await dbContext.Questionnaires
             .AsNoTracking()
@@ -72,9 +74,9 @@ internal partial class ExportSubmissionsCsvEndpoint
         await ValidateAccess();
 
         // Get eligibility descriptors for display names
-        List<EligibilityPlan> eligibilityDescriptors = eligibilityService
+        List<EligibilityPlan> eligibilityDescriptors = _eligibilityService
             .GetEligibilityDescriptorsFromAllSupportPlans(
-                await supportPlansService.GetSupportPlans(questionnaire.CreatorId)
+                await _supportPlansService.GetSupportPlans(questionnaire.CreatorId)
             )
             .ToList();
 
@@ -114,12 +116,12 @@ internal partial class ExportSubmissionsCsvEndpoint
         byte[] csvBytes = await GenerateCsvBytes();
 
         string fileName = $"submissions-{questionnaire.Title.Replace(" ", "-")}-{DateTime.UtcNow:yyyy-MM-dd}.csv";
-        
+
         return TypedResults.File(csvBytes, "text/csv", fileName);
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContextAccessor.HttpContext!);
+            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
             bool isCreatorStaff = await dbContext.CreatorStaff
                 .Where(staff =>
@@ -166,9 +168,9 @@ internal partial class ExportSubmissionsCsvEndpoint
             foreach (var submissionData in submissionsData.OrderBy(s => s.submission.Number))
             {
                 var submission = submissionData.submission;
-                
+
                 // Get eligibility for this submission
-                var eligibility = await eligibilityService.GetCachedEligibilityOrClassify(
+                var eligibility = await _eligibilityService.GetCachedEligibilityOrClassify(
                     submission.UserId,
                     questionnaire.EligibilityConfiguration,
                     UserStatusSyncEagerness.NoSyncSkipConsumerIfMissing
@@ -184,9 +186,13 @@ internal partial class ExportSubmissionsCsvEndpoint
                     initiallySubmittedAt.ToString("yyyy-MM-dd HH:mm:ss"),
                     lastUpdateAt.ToString("yyyy-MM-dd HH:mm:ss"),
                     submission.ApprovedAt != null ? "Yes" : "No",
-                    eligibility.EligiblePlanIds.Count > 0 
-                        ? string.Join("; ", eligibility.EligiblePlanIds.Select(planId => 
-                            GetEligibilityDescriptorDisplayName(eligibilityDescriptors.Single(x => x.Id == planId))))
+                    eligibility.EligiblePlanIds.Count > 0
+                        ? string.Join(
+                            "; ",
+                            eligibility.EligiblePlanIds.Select(planId =>
+                                GetEligibilityDescriptorDisplayName(eligibilityDescriptors.Single(x => x.Id == planId))
+                            )
+                        )
                         : "N/A",
                     eligibility.Modifier.ToString(CultureInfo.InvariantCulture),
                     string.Join("; ", submission.Labels!.Select(l => l.Text))
@@ -194,7 +200,10 @@ internal partial class ExportSubmissionsCsvEndpoint
 
                 // Add field values
                 var fieldValuesDict = submission.FieldValues!
-                    .ToDictionary(v => v.FieldId, v => fieldValueSerializer.Deserialize(v.Field.Type, v.ValueSerialized));
+                    .ToDictionary(
+                        v => v.FieldId,
+                        v => _fieldValueSerializer.Deserialize(v.Field.Type, v.ValueSerialized)
+                    );
 
                 foreach (var fieldVersion in latestVersion.Fields!.OrderBy(f => f.Order))
                 {
@@ -213,10 +222,14 @@ internal partial class ExportSubmissionsCsvEndpoint
                     .Where(attr => attr.SubmissionId == submission.Id)
                     .ToArrayAsync(ct);
                 var attributesDict = submissionAttributes.ToDictionary(a => a.Key, a => a.Value);
-                
+
                 foreach (string attributeKey in allAttributeKeys)
                 {
-                    values.Add(attributesDict.TryGetValue(attributeKey, out string? attributeValue) ? attributeValue : "");
+                    values.Add(
+                        attributesDict.TryGetValue(attributeKey, out string? attributeValue)
+                            ? attributeValue
+                            : ""
+                    );
                 }
 
                 await writer.WriteLineAsync(string.Join(",", values.Select(EscapeCsvValue)));

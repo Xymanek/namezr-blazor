@@ -15,13 +15,15 @@ namespace Namezr.Features.Polls.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.PollsNew)]
-internal static partial class NewPollEndpoint
+[AutoConstructor]
+internal sealed partial class NewPollEndpoint
 {
-    private static async ValueTask<Guid> HandleAsync(
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ApplicationDbContext _dbContext;
+
+    private async ValueTask<Guid> HandleAsync(
         CreatePollCommand command,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
@@ -30,17 +32,17 @@ internal static partial class NewPollEndpoint
         PollEntity entity = command.Model.MapToEntity();
         entity.CreatorId = command.CreatorId;
 
-        dbContext.Polls.Add(entity);
-        await dbContext.SaveChangesAsync(ct);
+        _dbContext.Polls.Add(entity);
+        await _dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
         
         // TODO: unify with questionnaire
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            bool isCreatorStaff = await dbContext.CreatorStaff
+            bool isCreatorStaff = await _dbContext.CreatorStaff
                 .Where(
                     staff =>
                         staff.UserId == user.Id &&

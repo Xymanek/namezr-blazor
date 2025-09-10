@@ -29,27 +29,29 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnaireSubmissionSave)]
-internal partial class SubmissionSaveEndpoint
+[AutoConstructor]
+internal sealed partial class SubmissionSaveEndpoint
 {
+    private readonly IClock _clock;
+    private readonly IDistributedLockProvider _distributedLockProvider;
+    private readonly IFieldValueSerializer _fieldValueSerializer;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFileUploadTicketHelper _fileTicketHelper;
+    private readonly ISubmissionAuditService _auditService;
+    private readonly INotificationDispatcher _notificationDispatcher;
+    private readonly IQuestionnaireSubmissionContextService _contextService;
+    private readonly IFieldAutomationService _fieldAutomationService;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
     // TODO: refactor, this has seriously overgrown
-    private static async ValueTask<Guid> HandleAsync(
+    private async ValueTask<Guid> HandleAsync(
         SubmissionCreateModel model,
-        IClock clock,
-        IDistributedLockProvider distributedLockProvider,
-        IFieldValueSerializer fieldValueSerializer,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFileUploadTicketHelper fileTicketHelper,
-        ISubmissionAuditService auditService,
-        INotificationDispatcher notificationDispatcher,
-        IQuestionnaireSubmissionContextService contextService,
-        IFieldAutomationService fieldAutomationService,
-        IdentityUserAccessor userAccessor,
-        IHttpContextAccessor httpContextAccessor,
         CancellationToken ct
     )
     {
         QuestionnaireVersionEntity? questionnaireVersion =
-            await contextService.GetQuestionnaireVersionAsync(model.QuestionnaireVersionId, ct);
+            await _contextService.GetQuestionnaireVersionAsync(model.QuestionnaireVersionId, ct);
         if (questionnaireVersion is null)
         {
             // TODO: return 400
@@ -57,15 +59,15 @@ internal partial class SubmissionSaveEndpoint
         }
 
         // Fetch the current user for the request
-        ApplicationUser? currentUser = await userAccessor.GetUserAsync(httpContextAccessor.HttpContext!);
+        ApplicationUser? currentUser = await _userAccessor.GetUserAsync(_httpContextAccessor.HttpContext!);
 
         // Ensure 1 submission per ques per user, even in race conditions.
-        await using var _2 = await distributedLockProvider.AcquireLockAsync(
+        await using var _2 = await _distributedLockProvider.AcquireLockAsync(
             GetLockName(questionnaireVersion.QuestionnaireId, currentUser!.Id),
             cancellationToken: ct
         );
 
-        QuestionnaireSubmissionContext context = await contextService.GetSubmissionContextAsync(
+        QuestionnaireSubmissionContext context = await _contextService.GetSubmissionContextAsync(
             new GetSubmissionContextArgs
             {
                 QuestionnaireVersion = questionnaireVersion,
@@ -85,7 +87,7 @@ internal partial class SubmissionSaveEndpoint
             throw new Exception($"Submission saving is not allowed: {context.DisabledReason.Value}");
         }
 
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         // Select the submission to edit if SubmissionId is provided, otherwise null (for new)
         QuestionnaireSubmissionEntity? submissionEntity = context.SubmissionForUpdate;
@@ -110,7 +112,7 @@ internal partial class SubmissionSaveEndpoint
         try
         {
             uploadedFileInfos = model.NewFileTickets
-                .Select(fileTicketHelper.UnprotectUploadedForCurrentUser)
+                .Select(_fileTicketHelper.UnprotectUploadedForCurrentUser)
                 .ToDictionary(x => x.FileId, x => x);
         }
         catch (TicketUnprotectionFailedException)
@@ -125,7 +127,7 @@ internal partial class SubmissionSaveEndpoint
         Dictionary<Guid, QuestionnaireFieldConfigurationEntity> fieldConfigsById
             = questionnaireVersion.Fields!.ToDictionary(x => x.Field.Id, x => x);
 
-        var httpContext = httpContextAccessor.HttpContext!;
+        var httpContext = _httpContextAccessor.HttpContext!;
 
         HashSet<Guid> fileUploadFieldIds = questionnaireVersion.Fields!
             .Where(x => x.Field.Type == QuestionnaireFieldType.FileUpload)
@@ -139,7 +141,7 @@ internal partial class SubmissionSaveEndpoint
                 .Where(x => fileUploadFieldIds.Contains(x.FieldId))
                 .ToDictionary(
                     valueEntity => valueEntity.FieldId,
-                    valueEntity => fieldValueSerializer
+                    valueEntity => _fieldValueSerializer
                         .Deserialize(QuestionnaireFieldType.FileUpload, valueEntity.ValueSerialized)
                         .FileValue!
                         .ToDictionary(x => x.Id, x => x)
@@ -207,12 +209,12 @@ internal partial class SubmissionSaveEndpoint
                 submissionEntity.ApproverId = null;
             }
 
-            dbContext.SubmissionHistoryEntries.Add(auditService.UpdateValues(submissionEntity));
+            dbContext.SubmissionHistoryEntries.Add(_auditService.UpdateValues(submissionEntity));
 
             // TODO: fire the notification only if there were ever some changes(/views?) by staff
             dbContext.OnSavedChangesOnce((_, _) =>
             {
-                notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
+                _notificationDispatcher.Dispatch(new SubmitterUpdatedValuesNotificationData
                 {
                     CreatorId = questionnaireVersion.Questionnaire.CreatorId,
                     CreatorDisplayName = questionnaireVersion.Questionnaire.Creator.DisplayName,
@@ -238,11 +240,11 @@ internal partial class SubmissionSaveEndpoint
                 VersionId = model.QuestionnaireVersionId,
                 UserId = currentUser.Id,
 
-                SubmittedAt = clock.GetCurrentInstant(),
+                SubmittedAt = _clock.GetCurrentInstant(),
             };
 
             dbContext.QuestionnaireSubmissions.Add(submissionEntity);
-            dbContext.SubmissionHistoryEntries.Add(auditService.InitialSubmit(submissionEntity));
+            dbContext.SubmissionHistoryEntries.Add(_auditService.InitialSubmit(submissionEntity));
         }
 
         // Even if we loaded an existing entity, outright replace old value entities/rows
@@ -250,20 +252,20 @@ internal partial class SubmissionSaveEndpoint
             .Select(pair => new QuestionnaireFieldValueEntity
             {
                 FieldId = pair.Key,
-                ValueSerialized = fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
+                ValueSerialized = _fieldValueSerializer.Serialize(fieldConfigsById[pair.Key].Field.Type, pair.Value),
             })
             .ToHashSet();
 
         if (questionnaireVersion.Questionnaire.ApprovalMode == QuestionnaireApprovalMode.GrantAutomatically)
         {
-            submissionEntity.ApprovedAt = clock.GetCurrentInstant();
+            submissionEntity.ApprovedAt = _clock.GetCurrentInstant();
             submissionEntity.ApproverId = null;
         }
 
         await dbContext.SaveChangesAsync(ct);
 
         // Process field automation in background after saving submission
-        fieldAutomationService.ProcessFieldAutomationInBackground(submissionEntity);
+        _fieldAutomationService.ProcessFieldAutomationInBackground(submissionEntity);
 
         return submissionEntity.Id;
 

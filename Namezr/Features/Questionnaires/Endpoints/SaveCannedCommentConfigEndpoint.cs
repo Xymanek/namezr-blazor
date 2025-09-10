@@ -12,18 +12,20 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [MapPost(ApiEndpointPaths.CannedCommentsConfigSave)]
-internal partial class SaveCannedCommentConfigEndpoint
+internal sealed partial class SaveCannedCommentConfigEndpoint
 {
-    private static async ValueTask HandleAsync(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    private async ValueTask HandleAsync(
         CannedCommentSaveRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IdentityUserAccessor userAccessor,
-        IHttpContextAccessor httpContextAccessor,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         CreatorEntity creator = await dbContext.Creators
             .AsTracking()
@@ -62,7 +64,7 @@ internal partial class SaveCannedCommentConfigEndpoint
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContextAccessor.HttpContext!);
+            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff

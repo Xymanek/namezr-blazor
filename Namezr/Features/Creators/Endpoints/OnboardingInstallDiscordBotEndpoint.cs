@@ -13,11 +13,16 @@ using Namezr.Infrastructure.Discord;
 namespace Namezr.Features.Creators.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [Behaviors] // Remove the default validator
 [MapPost(Route)]
-internal partial class OnboardingInstallDiscordBotEndpoint
+internal sealed partial class OnboardingInstallDiscordBotEndpoint
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ICreatorOnboardingService _onboardingService;
+
     public const string Route = "/studio/onboarding/discord/install-bot";
 
     public class Command
@@ -25,18 +30,15 @@ internal partial class OnboardingInstallDiscordBotEndpoint
         public required ulong GuildId { get; init; }
     }
 
-    private static async ValueTask<IResult> HandleAsync(
-        [FromForm] Command command,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ICreatorOnboardingService onboardingService
+    private async ValueTask<IResult> HandleAsync(
+        [FromForm] Command command
     )
     {
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
+        HttpContext httpContext = _httpContextAccessor.HttpContext!;
 
-        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContext);
+        ApplicationUser user = await _userAccessor.GetRequiredUserAsync(httpContext);
         IReadOnlyList<PotentialSupportTarget> potentialSupportTargets
-            = await onboardingService.GetPotentialSupportTargets(user.Id);
+            = await _onboardingService.GetPotentialSupportTargets(user.Id);
 
         bool legalGuildId = potentialSupportTargets.Any(
             target =>

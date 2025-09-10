@@ -10,24 +10,26 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Creators.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.SupportTargetsLogoDownload)]
-internal partial class SupportTargetLogoEndpoint
+internal sealed partial class SupportTargetLogoEndpoint
 {
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFileStorageService _fileStorageService;
+
     [UsedImplicitly]
     internal class Parameters
     {
         public required Guid SupportTargetId { get; init; }
     }
 
-    private static async ValueTask<IResult> HandleAsync(
+    private async ValueTask<IResult> HandleAsync(
         [AsParameters] Parameters parameters,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFileStorageService fileStorageService,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         SupportTargetEntity? supportTarget = await dbContext.SupportTargets
             .SingleOrDefaultAsync(x => x.Id == parameters.SupportTargetId, ct);
@@ -39,7 +41,7 @@ internal partial class SupportTargetLogoEndpoint
         }
 
         return Results.File(
-            fileStorageService.GetFilePath(supportTarget.LogoFileId.Value),
+            _fileStorageService.GetFilePath(supportTarget.LogoFileId.Value),
             contentType: "image/webp"
         );
     }

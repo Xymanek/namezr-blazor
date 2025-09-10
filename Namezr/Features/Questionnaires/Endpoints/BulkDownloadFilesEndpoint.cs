@@ -17,10 +17,18 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionsBulkDownloadFiles)]
-internal partial class BulkDownloadFilesEndpoint
+internal sealed partial class BulkDownloadFilesEndpoint
 {
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFieldValueSerializer _fieldValueSerializer;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ISubmissionAuditService _submissionAudit;
+
     public class Request
     {
         public required Guid QuestionnaireId { get; init; }
@@ -49,18 +57,12 @@ internal partial class BulkDownloadFilesEndpoint
         }
     }
 
-    private static async ValueTask<IResult> HandleAsync(
+    private async ValueTask<IResult> HandleAsync(
         [AsParameters] Request request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFieldValueSerializer fieldValueSerializer,
-        IHttpContextAccessor httpContextAccessor,
-        IFileStorageService fileStorageService,
-        IdentityUserAccessor userAccessor,
-        ISubmissionAuditService submissionAudit,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireEntity? questionnaire = await dbContext.Questionnaires
             .Include(q => q.Fields)
@@ -101,7 +103,7 @@ internal partial class BulkDownloadFilesEndpoint
             return Results.BadRequest("Invalid submission IDs");
         }
 
-        await using ApplicationDbContext auditDbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext auditDbContext = await _dbContextFactory.CreateDbContextAsync(ct);
         byte[] outputZipBytes = await BuildZipBytes();
 
         await auditDbContext.SaveChangesAsync(ct);
@@ -110,7 +112,7 @@ internal partial class BulkDownloadFilesEndpoint
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContextAccessor.HttpContext!);
+            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff
@@ -139,7 +141,7 @@ internal partial class BulkDownloadFilesEndpoint
 
                 if (fieldValueEntity == null) continue;
 
-                SubmissionValueModel value = fieldValueSerializer
+                SubmissionValueModel value = _fieldValueSerializer
                     .Deserialize(QuestionnaireFieldType.FileUpload, fieldValueEntity.ValueSerialized);
 
                 string folderName = GetArchiveFolderName(submission);
@@ -148,13 +150,13 @@ internal partial class BulkDownloadFilesEndpoint
                 {
                     ZipArchiveEntry entry = archive.CreateEntry(folderName + "/" + fileData.Name);
 
-                    await using FileStream fileStream = fileStorageService.OpenRead(fileData.Id);
+                    await using FileStream fileStream = _fileStorageService.OpenRead(fileData.Id);
                     await using Stream entrySteam = entry.Open();
 
                     await fileStream.CopyToAsync(entrySteam, ct);
 
                     // ReSharper disable once AccessToDisposedClosure
-                    auditDbContext.SubmissionHistoryEntries.Add(submissionAudit.DownloadFileStaffPrepare(
+                    auditDbContext.SubmissionHistoryEntries.Add(_submissionAudit.DownloadFileStaffPrepare(
                         submission, fieldValueEntity, fileData, inBatch: true
                     ));
                 }
@@ -164,7 +166,7 @@ internal partial class BulkDownloadFilesEndpoint
         }
     }
 
-    private static string GetArchiveFolderName(QuestionnaireSubmissionEntity submission)
+    private string GetArchiveFolderName(QuestionnaireSubmissionEntity submission)
     {
         // TODO: sanitize the user name
         return $"{submission.Number} - {submission.User.UserName}";

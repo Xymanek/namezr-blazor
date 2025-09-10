@@ -14,20 +14,22 @@ namespace Namezr.Features.SelectionSeries.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.SelectionNewBatch)]
-internal partial class NewBatchEndpoint
+[AutoConstructor]
+internal sealed partial class NewBatchEndpoint
 {
-    private static async ValueTask Handle(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ISelectionWorker _selectionWorker;
+
+    private async ValueTask Handle(
         NewSelectionBatchRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ISelectionWorker selectionWorker,
         CancellationToken ct
     )
     {
         await ValidateAccess();
 
-        await selectionWorker.Roll(
+        await _selectionWorker.Roll(
             request.SeriesId,
             request.BatchOptions.AllowRestarts,
             request.BatchOptions.ForceRecalculateEligibility,
@@ -39,9 +41,9 @@ internal partial class NewBatchEndpoint
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
             
             bool isCreatorStaff = await dbContext.CreatorStaff
                 .Where(

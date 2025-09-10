@@ -12,19 +12,21 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnairesUpdate)]
-internal static partial class UpdateQuestionnaireEndpoint
+internal sealed partial class UpdateQuestionnaireEndpoint
 {
-    private static async ValueTask HandleAsync(
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ApplicationDbContext _dbContext;
+
+    private async ValueTask HandleAsync(
         UpdateQuestionnaireCommand request,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        QuestionnaireEntity? questionnaireEntity = await dbContext.Questionnaires
+        QuestionnaireEntity? questionnaireEntity = await _dbContext.Questionnaires
             .Include(x => x.Versions)
             .Include(x => x.Fields)
             .Include(x => x.EligibilityConfiguration).ThenInclude(x => x.Options)
@@ -45,15 +47,15 @@ internal static partial class UpdateQuestionnaireEndpoint
         new QuestionnaireFormToEntityMapper(questionnaireEntity.Fields!)
             .UpdateEntityWithNewVersion(request.Model, questionnaireEntity);
 
-        await dbContext.SaveChangesAsync(ct);
+        await _dbContext.SaveChangesAsync(ct);
 
         return;
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            bool isCreatorStaff = await dbContext.CreatorStaff
+            bool isCreatorStaff = await _dbContext.CreatorStaff
                 .Where(
                     staff =>
                         staff.UserId == user.Id &&

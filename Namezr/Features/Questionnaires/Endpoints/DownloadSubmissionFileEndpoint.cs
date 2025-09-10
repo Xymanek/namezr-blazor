@@ -18,7 +18,8 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [Behaviors] // Remove the global validation behavior
 [Authorize]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
-internal partial class DownloadSubmissionFileEndpoint
+[AutoConstructor]
+internal sealed partial class DownloadSubmissionFileEndpoint
 {
     internal class Parameters
     {
@@ -27,19 +28,20 @@ internal partial class DownloadSubmissionFileEndpoint
         public bool IsImageView { get; init; } = false;
     }
 
-    private static async ValueTask<IResult> Handle(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFieldValueSerializer _fieldValueSerializer;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IDownloadContentTypeProvider _contentTypeProvider;
+    private readonly ISubmissionAuditService _submissionAudit;
+
+    private async ValueTask<IResult> Handle(
         [AsParameters] Parameters parameters,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFieldValueSerializer fieldValueSerializer,
-        IHttpContextAccessor httpContextAccessor,
-        IFileStorageService fileStorageService,
-        IdentityUserAccessor userAccessor,
-        IDownloadContentTypeProvider contentTypeProvider,
-        ISubmissionAuditService submissionAudit,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
             .AsNoTracking()
@@ -54,7 +56,7 @@ internal partial class DownloadSubmissionFileEndpoint
             throw new Exception("Submission not found");
         }
 
-        ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+        ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
         bool isOwnSubmission = user.Id == submission.UserId;
 
         await ValidateAccess();
@@ -62,7 +64,7 @@ internal partial class DownloadSubmissionFileEndpoint
         (QuestionnaireFieldValueEntity fieldValue, SubmissionFileData fileData) = submission.FieldValues!
             .SelectMany(fieldValue =>
             {
-                SubmissionValueModel value = fieldValueSerializer.Deserialize(
+                SubmissionValueModel value = _fieldValueSerializer.Deserialize(
                     QuestionnaireFieldType.FileUpload, // Safe assumption due to .Include() filter above
                     fieldValue.ValueSerialized
                 );
@@ -86,17 +88,17 @@ internal partial class DownloadSubmissionFileEndpoint
         {
             if (isOwnSubmission)
             {
-                await submissionAudit.DownloadFileSubmitter(submission, fieldValue, fileData, inBatch: false, ct);
+                await _submissionAudit.DownloadFileSubmitter(submission, fieldValue, fileData, inBatch: false, ct);
             }
             else
             {
-                await submissionAudit.DownloadFileStaff(submission, fieldValue, fileData, inBatch: false, ct);
+                await _submissionAudit.DownloadFileStaff(submission, fieldValue, fileData, inBatch: false, ct);
             }
         }
 
         return Results.File(
-            fileStorageService.GetFilePath(fileData.Id),
-            contentType: contentTypeProvider.MaybeGetFromFilename(fileData.Name),
+            _fileStorageService.GetFilePath(fileData.Id),
+            contentType: _contentTypeProvider.MaybeGetFromFilename(fileData.Name),
             fileDownloadName: fileData.Name
         );
 

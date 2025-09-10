@@ -10,7 +10,8 @@ namespace Namezr.Features.Files.Endpoints;
 [Handler]
 [Behaviors] // Remove the global validation behavior
 [MapPost(ApiEndpointPaths.FilesUpload)]
-public static partial class UploadFileEndpoint
+[AutoConstructor]
+public sealed partial class UploadFileEndpoint
 {
     internal static void CustomizeEndpoint(IEndpointConventionBuilder endpoint)
     {
@@ -26,15 +27,16 @@ public static partial class UploadFileEndpoint
         public required string Ticket { get; init; }
     }
 
-    private static async ValueTask<NewFileResult> Handle(
+    private readonly IFileUploadTicketHelper _ticketHelper;
+    private readonly IFileStorageService _storageService;
+
+    private async ValueTask<NewFileResult> Handle(
         [AsParameters] Payload payload,
-        IFileUploadTicketHelper ticketHelper,
-        IFileStorageService storageService,
         CancellationToken ct
     )
     {
         // TODO: catch exception and return 400 (+ return 400 in below cases)
-        NewFileRestrictions restrictions = ticketHelper.UnprotectRestrictionsForCurrentUser(payload.Ticket);
+        NewFileRestrictions restrictions = _ticketHelper.UnprotectRestrictionsForCurrentUser(payload.Ticket);
 
         if (restrictions.MinBytes != null && payload.File.Length < restrictions.MinBytes)
         {
@@ -66,9 +68,9 @@ public static partial class UploadFileEndpoint
         }
 
         await using Stream readStream = payload.File.OpenReadStream();
-        Guid fileId = await storageService.StoreFile(readStream, ct);
+        Guid fileId = await _storageService.StoreFile(readStream, ct);
 
-        string ticket = ticketHelper.CreateForCurrentUser(new UploadedFileInfo
+        string ticket = _ticketHelper.CreateForCurrentUser(new UploadedFileInfo
         {
             FileId = fileId,
             LengthBytes = payload.File.Length,

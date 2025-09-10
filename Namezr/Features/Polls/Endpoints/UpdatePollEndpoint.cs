@@ -13,19 +13,21 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Polls.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [MapPost(ApiEndpointPaths.PollsUpdate)]
-internal static partial class UpdatePollEndpoint
+internal sealed partial class UpdatePollEndpoint
 {
-    private static async ValueTask HandleAsync(
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ApplicationDbContext _dbContext;
+
+    private async ValueTask HandleAsync(
         UpdatePollCommand request,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
-        PollEntity? pollEntity = await dbContext.Polls
+        PollEntity? pollEntity = await _dbContext.Polls
             .Include(x => x.Options)
             .Include(x => x.EligibilityConfiguration.Options)
             .AsSplitQuery()
@@ -45,16 +47,16 @@ internal static partial class UpdatePollEndpoint
         request.Model.UpdateEntity(pollEntity);
         pollEntity.OptionsSetVersionMarker = Guid.NewGuid();
 
-        await dbContext.SaveChangesAsync(ct);
+        await _dbContext.SaveChangesAsync(ct);
 
         return;
 
         // TODO: unify with questionnaire
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            bool isCreatorStaff = await dbContext.CreatorStaff
+            bool isCreatorStaff = await _dbContext.CreatorStaff
                 .Where(staff =>
                     staff.UserId == user.Id &&
                     staff.CreatorId == pollEntity.CreatorId

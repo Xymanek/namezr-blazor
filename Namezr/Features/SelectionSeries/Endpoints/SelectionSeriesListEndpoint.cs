@@ -13,19 +13,21 @@ namespace Namezr.Features.SelectionSeries.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.SelectionSeriesList)]
-internal partial class SelectionSeriesListEndpoint
+[AutoConstructor]
+internal sealed partial class SelectionSeriesListEndpoint
 {
-    private static async ValueTask<SelectionSeriesModel[]> Handle(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+
+    private async ValueTask<SelectionSeriesModel[]> Handle(
         SelectionSeriesListRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
         CancellationToken ct
     )
     {
         await ValidateAccess();
 
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         SelectionSeriesModel[] series = await dbContext.SelectionSeries
             .AsNoTracking()
@@ -41,9 +43,9 @@ internal partial class SelectionSeriesListEndpoint
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
             
             bool isCreatorStaff = await dbContext.CreatorStaff
                 .Where(

@@ -15,22 +15,24 @@ using Namezr.Features.Notifications.Contracts;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Behaviors] // Clear out the validation
 [MapPost(ApiEndpointPaths.SubmissionLabelsPresenceMutate)]
-internal partial class MutateSubmissionLabelPresenceEndpoint
+internal sealed partial class MutateSubmissionLabelPresenceEndpoint
 {
-    private static async ValueTask HandleAsync(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ISubmissionAuditService _submissionAudit;
+    private readonly INotificationDispatcher _notificationDispatcher;
+
+    private async ValueTask HandleAsync(
         MutateLabelPresenceRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IdentityUserAccessor userAccessor,
-        IHttpContextAccessor httpContextAccessor,
-        ISubmissionAuditService submissionAudit,
-        INotificationDispatcher notificationDispatcher,
         CancellationToken ct
     )
     {
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        HttpContext httpContext = _httpContextAccessor.HttpContext!;
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
             .AsTracking()
@@ -62,12 +64,12 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
         if (request.NewPresent)
         {
             submission.Labels!.Add(label);
-            dbContext.SubmissionHistoryEntries.Add(submissionAudit.LabelAddedStaff(submission, label));
+            dbContext.SubmissionHistoryEntries.Add(_submissionAudit.LabelAddedStaff(submission, label));
         }
         else
         {
             submission.Labels!.Remove(label);
-            dbContext.SubmissionHistoryEntries.Add(submissionAudit.LabelRemovedStaff(submission, label));
+            dbContext.SubmissionHistoryEntries.Add(_submissionAudit.LabelRemovedStaff(submission, label));
         }
 
         // Trigger notification to submitter about staff label action, only if label is visible to submitter
@@ -75,7 +77,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
         {
             dbContext.OnSavedChangesOnce((_, _) =>
             {
-                notificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
+                _notificationDispatcher.Dispatch(new SubmissionStaffActionUserNotificationData
                 {
                     CreatorId = submission.Version.Questionnaire.CreatorId,
                     CreatorDisplayName = submission.Version.Questionnaire.Creator.DisplayName,
@@ -112,7 +114,7 @@ internal partial class MutateSubmissionLabelPresenceEndpoint
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContext);
+            Guid userId = _userAccessor.GetRequiredUserId(httpContext);
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff

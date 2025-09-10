@@ -16,20 +16,22 @@ namespace Namezr.Features.SelectionSeries.Endpoints;
 [Handler]
 [Authorize]
 [MapPost(ApiEndpointPaths.SelectionManualAddEntries)]
-internal partial class ManualAddEntriesEndpoint
+[AutoConstructor]
+internal sealed partial class ManualAddEntriesEndpoint
 {
-    private static async ValueTask<ManualAddEntriesResponse> Handle(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IClock _clock;
+
+    private async ValueTask<ManualAddEntriesResponse> Handle(
         ManualAddEntriesRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        IClock clock,
         CancellationToken ct
     )
     {
         await ValidateAccess();
 
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         // Get the selection series
         SelectionSeriesEntity series = await dbContext.SelectionSeries
@@ -82,7 +84,7 @@ internal partial class ManualAddEntriesEndpoint
         // If we have entries to add, create a batch
         if (entriesToAdd.Count > 0)
         {
-            Instant now = clock.GetCurrentInstant();
+            Instant now = _clock.GetCurrentInstant();
             
             SelectionBatchEntity batch = new()
             {
@@ -113,9 +115,9 @@ internal partial class ManualAddEntriesEndpoint
 
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
             
             bool isCreatorStaff = await dbContext.CreatorStaff
                 .Where(

@@ -11,21 +11,23 @@ namespace Namezr.Features.Creators.Endpoints;
 [Handler]
 [Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.CreatorsLogoDownload)]
-internal partial class CreatorLogoEndpoint
+[AutoConstructor]
+internal sealed partial class CreatorLogoEndpoint
 {
     internal class Parameters
     {
         public required Guid CreatorId { get; init; }
     }
 
-    private static async ValueTask<IResult> HandleAsync(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IFileStorageService _fileStorageService;
+
+    private async ValueTask<IResult> HandleAsync(
         [AsParameters] Parameters parameters,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IFileStorageService fileStorageService,
         CancellationToken ct
     )
     {
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         CreatorEntity? creator = await dbContext.Creators
             .SingleOrDefaultAsync(x => x.Id == parameters.CreatorId, ct);
@@ -42,7 +44,7 @@ internal partial class CreatorLogoEndpoint
         }
 
         return Results.File(
-            fileStorageService.GetFilePath(creator.LogoFileId.Value),
+            _fileStorageService.GetFilePath(creator.LogoFileId.Value),
             contentType: "image/webp"
         );
     }

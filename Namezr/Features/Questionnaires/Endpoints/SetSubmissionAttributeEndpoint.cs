@@ -12,19 +12,21 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [MapPost(ApiEndpointPaths.SubmissionAttributesSet)]
-internal partial class SetSubmissionAttributeEndpoint
+[AutoConstructor]
+internal sealed partial class SetSubmissionAttributeEndpoint
 {
-    private static async ValueTask HandleAsync(
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAttributeUpdaterService _attributeUpdater;
+
+    private async ValueTask HandleAsync(
         SetSubmissionAttributeRequest request,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
-        IdentityUserAccessor userAccessor,
-        IHttpContextAccessor httpContextAccessor,
-        IAttributeUpdaterService attributeUpdater,
         CancellationToken ct
     )
     {
-        HttpContext httpContext = httpContextAccessor.HttpContext!;
-        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(ct);
+        HttpContext httpContext = _httpContextAccessor.HttpContext!;
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
 
         QuestionnaireSubmissionEntity? submission = await dbContext.QuestionnaireSubmissions
             .AsTracking()
@@ -34,7 +36,7 @@ internal partial class SetSubmissionAttributeEndpoint
         if (submission == null) throw new Exception("Bad submission ID");
         await ValidateAccess();
 
-        await attributeUpdater.UpdateAttributeAsync(new AttributeUpdateCommand
+        await _attributeUpdater.UpdateAttributeAsync(new AttributeUpdateCommand
         {
             InstigatorIsProgrammatic = false,
 
@@ -48,7 +50,7 @@ internal partial class SetSubmissionAttributeEndpoint
 
         async Task ValidateAccess()
         {
-            Guid userId = userAccessor.GetRequiredUserId(httpContext);
+            Guid userId = _userAccessor.GetRequiredUserId(httpContext);
 
             // ReSharper disable once AccessToDisposedClosure
             bool isCreatorStaff = await dbContext.CreatorStaff

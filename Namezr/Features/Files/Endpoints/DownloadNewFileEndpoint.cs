@@ -8,10 +8,15 @@ using Namezr.Features.Files.Services;
 namespace Namezr.Features.Files.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.FilesDownloadNew)]
-public partial class DownloadNewFileEndpoint
+public sealed partial class DownloadNewFileEndpoint
 {
+    private readonly IFileUploadTicketHelper _ticketHelper;
+    private readonly IFileStorageService _storageService;
+    private readonly IDownloadContentTypeProvider _contentTypeProvider;
+
     public sealed record Payload
     {
         [FromQuery]
@@ -19,18 +24,15 @@ public partial class DownloadNewFileEndpoint
     }
 
     [SuppressMessage("ImmediateHandler", "IHR0012:Handler method should use CancellationToken")]
-    private static ValueTask<IResult> Handle(
-        [AsParameters] Payload payload,
-        IFileUploadTicketHelper ticketHelper,
-        IFileStorageService storageService,
-        IDownloadContentTypeProvider contentTypeProvider
+    private ValueTask<IResult> Handle(
+        [AsParameters] Payload payload
     )
     {
-        UploadedFileInfo fileInfo = ticketHelper.UnprotectUploadedForCurrentUser(payload.Ticket);
+        UploadedFileInfo fileInfo = _ticketHelper.UnprotectUploadedForCurrentUser(payload.Ticket);
 
         return ValueTask.FromResult(Results.File(
-            storageService.GetFilePath(fileInfo.FileId),
-            contentType: contentTypeProvider.MaybeGetFromFilename(fileInfo.OriginalFileName),
+            _storageService.GetFilePath(fileInfo.FileId),
+            contentType: _contentTypeProvider.MaybeGetFromFilename(fileInfo.OriginalFileName),
             fileDownloadName: fileInfo.OriginalFileName
         ));
     }

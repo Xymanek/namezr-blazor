@@ -12,15 +12,16 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
+[AutoConstructor]
 [Authorize]
 [MapPost(ApiEndpointPaths.QuestionnairesNew)]
-internal static partial class NewQuestionnaireEndpoint
+internal sealed partial class NewQuestionnaireEndpoint
 {
-    private static async ValueTask<Guid> HandleAsync(
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IdentityUserAccessor _userAccessor;
+    private readonly ApplicationDbContext _dbContext;
+    private async ValueTask<Guid> HandleAsync(
         CreateQuestionnaireCommand command,
-        IHttpContextAccessor httpContextAccessor,
-        IdentityUserAccessor userAccessor,
-        ApplicationDbContext dbContext,
         CancellationToken ct
     )
     {
@@ -31,16 +32,16 @@ internal static partial class NewQuestionnaireEndpoint
 
         entity.CreatorId = command.CreatorId;
 
-        dbContext.Questionnaires.Add(entity);
-        await dbContext.SaveChangesAsync(ct);
+        _dbContext.Questionnaires.Add(entity);
+        await _dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
         
         async Task ValidateAccess()
         {
-            ApplicationUser user = await userAccessor.GetRequiredUserAsync(httpContextAccessor.HttpContext!);
+            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
 
-            bool isCreatorStaff = await dbContext.CreatorStaff
+            bool isCreatorStaff = await _dbContext.CreatorStaff
                 .Where(
                     staff =>
                         staff.UserId == user.Id &&
