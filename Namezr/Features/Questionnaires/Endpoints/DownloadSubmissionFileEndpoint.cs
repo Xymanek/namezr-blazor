@@ -16,13 +16,12 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
-[Behaviors] // Skip centralized authorization for complex user vs staff logic
 [Authorize]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
 [AutoConstructor]
 internal sealed partial class DownloadSubmissionFileEndpoint
 {
-    internal class Parameters : ISubmissionManagementRequest
+    internal class Parameters : ISubmissionOwnOrManagementRequest
     {
         public required Guid SubmissionId { get; init; }
         public required Guid FileId { get; init; }
@@ -59,8 +58,6 @@ internal sealed partial class DownloadSubmissionFileEndpoint
 
         ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
         bool isOwnSubmission = user.Id == submission.UserId;
-
-        await ValidateAccess();
 
         (QuestionnaireFieldValueEntity fieldValue, SubmissionFileData fileData) = submission.FieldValues!
             .SelectMany(fieldValue =>
@@ -102,25 +99,5 @@ internal sealed partial class DownloadSubmissionFileEndpoint
             contentType: _contentTypeProvider.MaybeGetFromFilename(fileData.Name),
             fileDownloadName: fileData.Name
         );
-
-        async Task ValidateAccess()
-        {
-            // Can always download own files
-            if (isOwnSubmission) return;
-
-            await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
-
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == user.Id &&
-                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

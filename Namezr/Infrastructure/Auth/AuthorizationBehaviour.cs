@@ -27,25 +27,31 @@ internal partial class AuthorizationBehaviour<TRequest, TResponse> : Behavior<TR
             ThrowHelper.ThrowInvalidOperationException("Unauthorized request: no user ID found in the HTTP context.");
         }
 
-        if (request is ICreatorManagementRequest creatorManagementRequest)
+        switch (request)
         {
-            await CheckCreatorManagementRequestAsync(creatorManagementRequest, userId, ct);
-        }
-        else if (request is IQuestionnaireManagementRequest questionnaireManagementRequest)
-        {
-            await CheckQuestionnaireManagementRequestAsync(questionnaireManagementRequest, userId, ct);
-        }
-        else if (request is ISeriesManagementRequest seriesManagementRequest)
-        {
-            await CheckSeriesManagementRequestAsync(seriesManagementRequest, userId, ct);
-        }
-        else if (request is ISubmissionManagementRequest submissionManagementRequest)
-        {
-            await CheckSubmissionManagementRequestAsync(submissionManagementRequest, userId, ct);
-        }
-        else if (request is IPollManagementRequest pollManagementRequest)
-        {
-            await CheckPollManagementRequestAsync(pollManagementRequest, userId, ct);
+            case ICreatorManagementRequest creatorManagementRequest:
+                await CheckCreatorManagementRequestAsync(creatorManagementRequest, userId, ct);
+                break;
+            
+            case IQuestionnaireManagementRequest questionnaireManagementRequest:
+                await CheckQuestionnaireManagementRequestAsync(questionnaireManagementRequest, userId, ct);
+                break;
+            
+            case ISeriesManagementRequest seriesManagementRequest:
+                await CheckSeriesManagementRequestAsync(seriesManagementRequest, userId, ct);
+                break;
+            
+            case ISubmissionManagementRequest submissionManagementRequest:
+                await CheckSubmissionManagementRequestAsync(submissionManagementRequest, userId, ct);
+                break;
+            
+            case ISubmissionOwnOrManagementRequest submissionOwnOrManagementRequest:
+                await CheckSubmissionOwnOrManagementRequestAsync(submissionOwnOrManagementRequest, userId, ct);
+                break;
+            
+            case IPollManagementRequest pollManagementRequest:
+                await CheckPollManagementRequestAsync(pollManagementRequest, userId, ct);
+                break;
         }
 
         // If the request does not require specific authorization, proceed to the next behavior.
@@ -130,6 +136,34 @@ internal partial class AuthorizationBehaviour<TRequest, TResponse> : Behavior<TR
         ThrowAuthFailed("Current user is not staff of the creator that owns the submission.");
     }
 
+    private async ValueTask CheckSubmissionOwnOrManagementRequestAsync(
+        ISubmissionOwnOrManagementRequest request,
+        Guid userId,
+        CancellationToken ct
+    )
+    {
+        await using ApplicationDbContext dbContext = await _dbContextFactory.CreateDbContextAsync(ct);
+        Guid submissionId = request.SubmissionId;
+
+        // Check if user owns the submission
+        bool isOwnSubmission = await dbContext.QuestionnaireSubmissions
+            .Where(s => s.Id == submissionId && s.UserId == userId)
+            .AnyAsync(ct);
+
+        if (isOwnSubmission) return;
+
+        // Check if user is staff of the creator that owns the submission
+        bool isCreatorStaff = await dbContext.CreatorStaff
+            .Where(staff => staff.UserId == userId && staff.Creator.Questionnaires!
+                .Any(q => q.Versions!.Any(v => v.Submissions!.Any(s => s.Id == submissionId))))
+            .AnyAsync(ct);
+
+        if (isCreatorStaff) return;
+
+        LogAuthorizationFailedNotSubmissionOwnOrStaff(userId, submissionId);
+        ThrowAuthFailed("Current user is not the owner of the submission and not staff of the creator that owns it.");
+    }
+
     private async ValueTask CheckPollManagementRequestAsync(
         IPollManagementRequest request,
         Guid userId,
@@ -189,4 +223,10 @@ internal partial class AuthorizationBehaviour<TRequest, TResponse> : Behavior<TR
         Message = "Authorization failed: User {UserId} is not staff of the creator that owns poll {PollId}."
     )]
     private partial void LogAuthorizationFailedNotPollStaff(Guid userId, Guid pollId);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Authorization failed: User {UserId} is not the owner of submission {SubmissionId} and not staff of the creator that owns it."
+    )]
+    private partial void LogAuthorizationFailedNotSubmissionOwnOrStaff(Guid userId, Guid submissionId);
 }
