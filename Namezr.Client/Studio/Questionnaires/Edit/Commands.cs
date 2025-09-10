@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 
 namespace Namezr.Client.Studio.Questionnaires.Edit;
 
-public class CreateQuestionnaireCommand
+public class CreateQuestionnaireCommand : ICreatorManagementRequest
 {
     public required Guid CreatorId { get; set; }
 

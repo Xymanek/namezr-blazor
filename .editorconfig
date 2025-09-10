@@ -1,4 +1,12 @@
-﻿[*.cs]
+﻿root = true
+
+[*]
+
+insert_final_newline = true
+
+[*.cs]
+
+csharp_insert_final_newline = true
 
 csharp_style_var_when_type_is_apparent = false
 csharp_style_var_for_built_in_types = false
