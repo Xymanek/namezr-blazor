@@ -215,7 +215,7 @@
                     ApiEndpointPaths.QuestionnairesUpdate,
                     new UpdateQuestionnaireCommand
                     {
-                        Id = QuestionnaireId.Value,
+                        QuestionnaireId = QuestionnaireId.Value,
                         Model = Model.Clone(),
                     }
                 );

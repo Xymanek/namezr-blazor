@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 
 namespace Namezr.Client.Studio.Polls.Edit;
 
-public class CreatePollCommand
+public class CreatePollCommand : ICreatorManagementRequest
 {
     public required Guid CreatorId { get; init; }
 
@@ -19,9 +20,9 @@ public class CreatePollCommand
     }
 }
 
-public class UpdatePollCommand
+public class UpdatePollCommand : IPollManagementRequest
 {
-    public required Guid Id { get; init; }
+    public required Guid PollId { get; init; }
 
     // TODO: convert description to null if empty
     public required PollEditModel Model { get; init; }

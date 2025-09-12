@@ -115,3 +115,4 @@ dotnet run --project Namezr print-third-party-token [args]
 ## Logging Guidelines
 - Logging should use the `[LoggerMessage]` pattern
 - Always try to follow rules in @.editorconfig
+- When creating new `[LoggerMessage]` methods, do NOT specify `EventId`

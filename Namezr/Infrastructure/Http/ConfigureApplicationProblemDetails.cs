@@ -1,11 +1,12 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Namezr.Infrastructure.Auth;
 
-namespace Namezr.Infrastructure.Validation;
+namespace Namezr.Infrastructure.Http;
 
 [RegisterSingleton]
-public class ConfigureValidationProblemDetails : IConfigureOptions<ProblemDetailsOptions>
+public class ConfigureApplicationProblemDetails : IConfigureOptions<ProblemDetailsOptions>
 {
     public void Configure(ProblemDetailsOptions options)
     {
@@ -33,6 +34,12 @@ public class ConfigureValidationProblemDetails : IConfigureOptions<ProblemDetail
                 )
                 {
                     Status = StatusCodes.Status400BadRequest,
+                },
+
+                AuthorizationFailedException ex => new ProblemDetails
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Forbidden",
                 },
 
                 // other exception handling as desired goes here

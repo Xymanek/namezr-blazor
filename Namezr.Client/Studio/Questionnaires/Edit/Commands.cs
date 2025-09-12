@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Auth;
 
 namespace Namezr.Client.Studio.Questionnaires.Edit;
 
-public class CreateQuestionnaireCommand
+public class CreateQuestionnaireCommand : ICreatorManagementRequest
 {
     public required Guid CreatorId { get; set; }
 
@@ -19,9 +20,9 @@ public class CreateQuestionnaireCommand
     }
 }
 
-public class UpdateQuestionnaireCommand
+public class UpdateQuestionnaireCommand : IQuestionnaireManagementRequest
 {
-    public required Guid Id { get; set; }
+    public required Guid QuestionnaireId { get; set; }
 
     // TODO: convert description to null if empty
     public required QuestionnaireEditModel Model { get; set; }

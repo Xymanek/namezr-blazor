@@ -5,18 +5,15 @@ using FluentValidation;
 using Immediate.Apis.Shared;
 using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
+using Namezr.Client.Contracts.Auth;
 using Namezr.Client.Public.Questionnaires;
-using Namezr.Client.Shared;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Client.Types;
 using Namezr.Features.Consumers.Services;
 using Namezr.Features.Creators.Services;
-using Namezr.Features.Eligibility.Mappers;
 using Namezr.Features.Eligibility.Services;
-using Namezr.Features.Identity.Helpers;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
@@ -32,12 +29,10 @@ internal sealed partial class ExportSubmissionsCsvEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly IFieldValueSerializer _fieldValueSerializer;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly IEligibilityService _eligibilityService;
     private readonly ISupportPlansService _supportPlansService;
 
-    public class Request
+    public class Request : IQuestionnaireManagementRequest
     {
         public required Guid QuestionnaireId { get; init; }
 
@@ -70,8 +65,6 @@ internal sealed partial class ExportSubmissionsCsvEndpoint
         {
             return Results.BadRequest("Invalid questionnaire ID");
         }
-
-        await ValidateAccess();
 
         // Get eligibility descriptors for display names
         List<EligibilityPlan> eligibilityDescriptors = _eligibilityService
@@ -118,22 +111,6 @@ internal sealed partial class ExportSubmissionsCsvEndpoint
         string fileName = $"submissions-{questionnaire.Title.Replace(" ", "-")}-{DateTime.UtcNow:yyyy-MM-dd}.csv";
 
         return TypedResults.File(csvBytes, "text/csv", fileName);
-
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
-
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            throw new Exception("Access denied");
-        }
 
         async Task<byte[]> GenerateCsvBytes()
         {

@@ -17,8 +17,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 internal sealed partial class SaveLabelConfigEndpoint
 {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly IdentityUserAccessor _userAccessor;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private async ValueTask HandleAsync(
         LabelSaveRequest request,
@@ -32,7 +30,6 @@ internal sealed partial class SaveLabelConfigEndpoint
             .SingleAsync(creator => creator.Id == request.CreatorId, ct);
 
         // TODO: validate not null
-        await ValidateAccess();
 
         SubmissionLabelEntity? labelEntity = null;
         if (request.Label.Id != Guid.Empty)
@@ -62,22 +59,5 @@ internal sealed partial class SaveLabelConfigEndpoint
         await dbContext.SaveChangesAsync(ct);
         return;
 
-        async Task ValidateAccess()
-        {
-            Guid userId = _userAccessor.GetRequiredUserId(_httpContextAccessor.HttpContext!);
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == userId &&
-                    staff.CreatorId == request.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

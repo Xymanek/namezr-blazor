@@ -18,8 +18,6 @@ namespace Namezr.Features.Polls.Endpoints;
 [AutoConstructor]
 internal sealed partial class NewPollEndpoint
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly ApplicationDbContext _dbContext;
 
     private async ValueTask<Guid> HandleAsync(
@@ -27,8 +25,6 @@ internal sealed partial class NewPollEndpoint
         CancellationToken ct
     )
     {
-        await ValidateAccess();
-
         PollEntity entity = command.Model.MapToEntity();
         entity.CreatorId = command.CreatorId;
 
@@ -37,23 +33,5 @@ internal sealed partial class NewPollEndpoint
 
         return entity.Id;
         
-        // TODO: unify with questionnaire
-        async Task ValidateAccess()
-        {
-            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
-
-            bool isCreatorStaff = await _dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.CreatorId == command.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

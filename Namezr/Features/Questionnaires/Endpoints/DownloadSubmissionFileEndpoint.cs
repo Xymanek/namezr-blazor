@@ -3,6 +3,7 @@ using Immediate.Handlers.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
+using Namezr.Client.Contracts.Auth;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Identity.Helpers;
@@ -10,18 +11,22 @@ using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
+using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
-[Behaviors] // Remove the global validation behavior
 [Authorize]
+[Behaviors(
+    // Remove the global validation behavior
+    typeof(AuthorizationBehaviour<,>)
+)]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
 [AutoConstructor]
 internal sealed partial class DownloadSubmissionFileEndpoint
 {
-    internal class Parameters
+    internal class Parameters : ISubmissionOwnOrManagementRequest
     {
         public required Guid SubmissionId { get; init; }
         public required Guid FileId { get; init; }
@@ -58,8 +63,6 @@ internal sealed partial class DownloadSubmissionFileEndpoint
 
         ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
         bool isOwnSubmission = user.Id == submission.UserId;
-
-        await ValidateAccess();
 
         (QuestionnaireFieldValueEntity fieldValue, SubmissionFileData fileData) = submission.FieldValues!
             .SelectMany(fieldValue =>
@@ -101,24 +104,5 @@ internal sealed partial class DownloadSubmissionFileEndpoint
             contentType: _contentTypeProvider.MaybeGetFromFilename(fileData.Name),
             fileDownloadName: fileData.Name
         );
-
-        async Task ValidateAccess()
-        {
-            // Can always download own files
-            if (isOwnSubmission) return;
-
-            // ReSharper disable once AccessToDisposedClosure
-            bool isCreatorStaff = await dbContext.CreatorStaff
-                .Where(staff =>
-                    staff.UserId == user.Id &&
-                    staff.CreatorId == submission.Version.Questionnaire.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }

@@ -17,16 +17,13 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 [MapPost(ApiEndpointPaths.QuestionnairesNew)]
 internal sealed partial class NewQuestionnaireEndpoint
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IdentityUserAccessor _userAccessor;
     private readonly ApplicationDbContext _dbContext;
+
     private async ValueTask<Guid> HandleAsync(
         CreateQuestionnaireCommand command,
         CancellationToken ct
     )
     {
-        await ValidateAccess();
-
         QuestionnaireEntity entity = new QuestionnaireFormToEntityMapper()
             .MapToEntity(command.Model);
 
@@ -36,23 +33,5 @@ internal sealed partial class NewQuestionnaireEndpoint
         await _dbContext.SaveChangesAsync(ct);
 
         return entity.Id;
-        
-        async Task ValidateAccess()
-        {
-            ApplicationUser user = await _userAccessor.GetRequiredUserAsync(_httpContextAccessor.HttpContext!);
-
-            bool isCreatorStaff = await _dbContext.CreatorStaff
-                .Where(
-                    staff =>
-                        staff.UserId == user.Id &&
-                        staff.CreatorId == command.CreatorId
-                )
-                .AnyAsync(ct);
-
-            if (isCreatorStaff) return;
-
-            // TODO: correct
-            throw new Exception("Access denied");
-        }
     }
 }
