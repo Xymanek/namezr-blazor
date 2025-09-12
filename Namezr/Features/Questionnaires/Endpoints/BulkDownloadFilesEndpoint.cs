@@ -105,7 +105,8 @@ internal sealed partial class BulkDownloadFilesEndpoint
 
         await auditDbContext.SaveChangesAsync(ct);
 
-        return TypedResults.File(outputZipBytes, "application/zip", "submissions.zip");
+        string fileName = $"submissions-{questionnaire.Title.Replace(" ", "-")}-{DateTime.UtcNow:yyyy-MM-dd}.zip";
+        return TypedResults.File(outputZipBytes, "application/zip", fileName);
 
         // TODO: somehow limit this to prevent DOS attacks
         async Task<byte[]> BuildZipBytes()
