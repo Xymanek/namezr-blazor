@@ -71,6 +71,102 @@
                     />
                 </div>
             </div>
+
+            @if (AvailableAttributeKeys.Count > 0)
+            {
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Submission Attributes</h6>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <HxInputText
+                            Label="Attribute key filter"
+                            @bind-Value="_attributeKeyInput"
+                            Placeholder="Enter attribute key"
+                        />
+                    </div>
+                    <div class="col-lg-4">
+                        <HxInputText
+                            Label="Required value"
+                            @bind-Value="_attributeValueInput"
+                            Placeholder="Enter required value"
+                        />
+                    </div>
+                    <div class="col-lg-2 d-flex align-items-end">
+                        <HxButton
+                            Text="Add Required"
+                            Color="ThemeColor.Success"
+                            OnClick="AddRequiredAttribute"
+                            CssClass="w-100"
+                            Enabled="!string.IsNullOrWhiteSpace(_attributeKeyInput) && !string.IsNullOrWhiteSpace(_attributeValueInput)"
+                        />
+                    </div>
+                </div>
+                
+                @if (Model.RequiredAttributes.Count > 0)
+                {
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-1">
+                                <small class="text-muted me-2">Required:</small>
+                                @foreach (var attr in Model.RequiredAttributes)
+                                {
+                                    <HxBadge Color="ThemeColor.Success" CssClass="d-flex align-items-center">
+                                        @attr.Key = @attr.Value
+                                        <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.7em;" @onclick="() => RemoveRequiredAttribute(attr.Key)"></button>
+                                    </HxBadge>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="row mt-2">
+                    <div class="col-lg-6">
+                        <HxInputText
+                            Label="Exclude attribute key"
+                            @bind-Value="_excludeAttributeKeyInput"
+                            Placeholder="Enter attribute key"
+                        />
+                    </div>
+                    <div class="col-lg-4">
+                        <HxInputText
+                            Label="Exclude value"
+                            @bind-Value="_excludeAttributeValueInput"
+                            Placeholder="Enter value to exclude"
+                        />
+                    </div>
+                    <div class="col-lg-2 d-flex align-items-end">
+                        <HxButton
+                            Text="Add Excluded"
+                            Color="ThemeColor.Danger"
+                            OnClick="AddExcludedAttribute"
+                            CssClass="w-100"
+                            Enabled="!string.IsNullOrWhiteSpace(_excludeAttributeKeyInput) && !string.IsNullOrWhiteSpace(_excludeAttributeValueInput)"
+                        />
+                    </div>
+                </div>
+                
+                @if (Model.ExcludedAttributes.Count > 0)
+                {
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-1">
+                                <small class="text-muted me-2">Excluded:</small>
+                                @foreach (var attr in Model.ExcludedAttributes)
+                                {
+                                    <HxBadge Color="ThemeColor.Danger" CssClass="d-flex align-items-center">
+                                        @attr.Key = @attr.Value
+                                        <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.7em;" @onclick="() => RemoveExcludedAttribute(attr.Key)"></button>
+                                    </HxBadge>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
         </EditForm>
     </BodyTemplate>
 </HxCard>
@@ -82,6 +178,9 @@
 
     [Parameter]
     public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    [Parameter]
+    public List<string> AvailableAttributeKeys { get; set; } = [];
     
     private NewSelectionBatchOptionsModel Model { get; } = new();
 
@@ -102,4 +201,39 @@
         NavigationManager.Refresh();
     }
 
+    // Attribute filter input fields
+    private string _attributeKeyInput = "";
+    private string _attributeValueInput = "";
+    private string _excludeAttributeKeyInput = "";
+    private string _excludeAttributeValueInput = "";
+
+    private void AddRequiredAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(_attributeKeyInput) || string.IsNullOrWhiteSpace(_attributeValueInput))
+            return;
+
+        Model.RequiredAttributes[_attributeKeyInput.Trim()] = _attributeValueInput.Trim();
+        _attributeKeyInput = "";
+        _attributeValueInput = "";
+    }
+
+    private void RemoveRequiredAttribute(string key)
+    {
+        Model.RequiredAttributes.Remove(key);
+    }
+
+    private void AddExcludedAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(_excludeAttributeKeyInput) || string.IsNullOrWhiteSpace(_excludeAttributeValueInput))
+            return;
+
+        Model.ExcludedAttributes[_excludeAttributeKeyInput.Trim()] = _excludeAttributeValueInput.Trim();
+        _excludeAttributeKeyInput = "";
+        _excludeAttributeValueInput = "";
+    }
+
+    private void RemoveExcludedAttribute(string key)
+    {
+        Model.ExcludedAttributes.Remove(key);
+    }
 }

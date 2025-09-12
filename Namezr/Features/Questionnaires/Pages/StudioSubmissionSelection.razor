@@ -56,6 +56,7 @@
 <NewSelectionBatchForm
     SelectionSeriesId="SelectionId"
     PossibleLabels="_possibleLabels"
+    AvailableAttributeKeys="_availableAttributeKeys"
 />
 
 <h4>Results</h4>
@@ -217,6 +218,7 @@
     private QuestionnaireEntity? _questionnaire;
     private SelectionSeriesEntity? _selectionSeries;
     private List<SubmissionLabelModel> _possibleLabels = [];
+    private List<string> _availableAttributeKeys = [];
 
     [SupplyParameterFromForm]
     private NewSelectionBatchOptionsModel? NewSelectionBatchOptions { get; set; }
@@ -247,6 +249,13 @@
             .ToArrayAsync();
 
         _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
+
+        _availableAttributeKeys = await dbContext.SubmissionAttributes
+            .Where(attr => attr.Submission.Version.QuestionnaireId == QuestionnaireId)
+            .Select(attr => attr.Key)
+            .Distinct()
+            .OrderBy(key => key)
+            .ToListAsync();
     }
 
     private IEnumerable<SelectionUserDataEntity> GetUserDataSorted()

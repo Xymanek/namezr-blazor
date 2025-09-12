@@ -19,4 +19,5 @@ public class SubmissionTableItemModel
 
     public required List<SubmissionLabelModel> Labels { get; init; }
     public required Dictionary<Guid, SubmissionValueModel> Values { get; set; }
+    public required Dictionary<string, string> Attributes { get; set; }
 }

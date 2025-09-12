@@ -12,6 +12,18 @@ public class NewSelectionBatchOptionsModel : IValidatableRequest
 
     public List<Guid> IncludedLabelIds { get; set; } = [];
     public List<Guid> ExcludedLabelIds { get; set; } = [];
+
+    /// <summary>
+    /// Filter submissions by attribute key-value pairs. Dictionary keys are attribute keys, values are the required attribute values.
+    /// Only submissions that have attributes matching ALL specified key-value pairs will be included.
+    /// </summary>
+    public Dictionary<string, string> RequiredAttributes { get; set; } = new();
+
+    /// <summary>
+    /// Filter out submissions that have any of these attribute key-value pairs.
+    /// Dictionary keys are attribute keys, values are the attribute values to exclude.
+    /// </summary>
+    public Dictionary<string, string> ExcludedAttributes { get; set; } = new();
     
     [RegisterSingleton(typeof(IValidator<NewSelectionBatchOptionsModel>))]
     public class Validator : AbstractValidator<NewSelectionBatchOptionsModel>
