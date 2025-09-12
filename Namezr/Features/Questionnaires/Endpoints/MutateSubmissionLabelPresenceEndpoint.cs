@@ -11,12 +11,16 @@ using Namezr.Features.Questionnaires.Services;
 using Namezr.Infrastructure.Data;
 using Namezr.Features.Questionnaires.Notifications;
 using Namezr.Features.Notifications.Contracts;
+using Namezr.Infrastructure.Auth;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [AutoConstructor]
-[Behaviors] // Clear out the validation
+[Behaviors(
+    // Remove the global validation behavior
+    typeof(AuthorizationBehaviour<,>)
+)]
 [MapPost(ApiEndpointPaths.SubmissionLabelsPresenceMutate)]
 internal sealed partial class MutateSubmissionLabelPresenceEndpoint
 {
@@ -108,7 +112,5 @@ internal sealed partial class MutateSubmissionLabelPresenceEndpoint
         }
 
         await dbContext.SaveChangesAsync(ct);
-        return;
-
     }
 }

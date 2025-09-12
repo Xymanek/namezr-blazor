@@ -11,12 +11,17 @@ using Namezr.Features.Files.Services;
 using Namezr.Features.Identity.Data;
 using Namezr.Features.Questionnaires.Data;
 using Namezr.Features.Questionnaires.Services;
+using Namezr.Infrastructure.Auth;
 using Namezr.Infrastructure.Data;
 
 namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [Authorize]
+[Behaviors(
+    // Remove the global validation behavior
+    typeof(AuthorizationBehaviour<,>)
+)]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
 [AutoConstructor]
 internal sealed partial class DownloadSubmissionFileEndpoint
