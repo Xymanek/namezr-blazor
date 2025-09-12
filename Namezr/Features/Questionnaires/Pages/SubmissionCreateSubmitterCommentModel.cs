@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Features.Questionnaires.Data;
 
 namespace Namezr.Features.Questionnaires.Pages;
 
-public class SubmissionCreateSubmitterCommentModel
+public class SubmissionCreateSubmitterCommentModel : IValidatableRequest
 {
     public string Content { get; set; } = string.Empty;
 

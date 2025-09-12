@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Public.Questionnaires;
 
-public class SubmissionCreateModel
+public class SubmissionCreateModel : IValidatableRequest
 {
     // TODO: this needs to be encrypted by server
     public required Guid QuestionnaireVersionId { get; set; }

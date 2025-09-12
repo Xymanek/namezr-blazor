@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Studio.Eligibility.Edit;
 
 namespace Namezr.Client.Studio.Polls.Edit;
 
-public class PollEditModel
+public class PollEditModel : IValidatableRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -63,7 +64,7 @@ public class PollEditModel
     public const int DescriptionMaxLength = 500;
 }
 
-public class PollOptionEditModel
+public class PollOptionEditModel : IValidatableRequest
 {
     public required Guid Id { get; init; }
 

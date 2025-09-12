@@ -9,7 +9,6 @@ namespace Namezr.Features.Files.Endpoints;
 
 [Handler]
 [AutoConstructor]
-[Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.FilesDownloadNew)]
 public sealed partial class DownloadNewFileEndpoint
 {

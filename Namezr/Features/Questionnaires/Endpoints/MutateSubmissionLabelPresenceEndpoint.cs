@@ -17,10 +17,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [AutoConstructor]
-[Behaviors(
-    // Remove the global validation behavior
-    typeof(AuthorizationBehaviour<,>)
-)]
 [MapPost(ApiEndpointPaths.SubmissionLabelsPresenceMutate)]
 internal sealed partial class MutateSubmissionLabelPresenceEndpoint
 {

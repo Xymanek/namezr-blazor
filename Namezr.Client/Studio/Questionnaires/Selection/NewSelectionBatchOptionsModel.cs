@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Studio.Questionnaires.Selection;
 
-public class NewSelectionBatchOptionsModel
+public class NewSelectionBatchOptionsModel : IValidatableRequest
 {
     public bool AllowRestarts { get; set; }
     public bool ForceRecalculateEligibility { get; set; }

@@ -18,10 +18,6 @@ namespace Namezr.Features.Questionnaires.Endpoints;
 
 [Handler]
 [Authorize]
-[Behaviors(
-    // Remove the global validation behavior
-    typeof(AuthorizationBehaviour<,>)
-)]
 [MapGet(ApiEndpointPaths.QuestionnaireSubmissionDownloadFile)]
 [AutoConstructor]
 internal sealed partial class DownloadSubmissionFileEndpoint

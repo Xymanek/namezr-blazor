@@ -15,7 +15,6 @@ namespace Namezr.Features.Creators.Endpoints;
 [Handler]
 [AutoConstructor]
 [Authorize]
-[Behaviors] // Remove the default validator
 [MapPost(Route)]
 internal sealed partial class OnboardingInstallDiscordBotEndpoint
 {

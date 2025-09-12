@@ -1,10 +1,11 @@
 using FluentValidation;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Shared;
 
 namespace Namezr.Client.Studio.Questionnaires;
 
-public record SetSubmissionAttributeRequest : ISubmissionManagementRequest
+public record SetSubmissionAttributeRequest : IValidatableRequest, ISubmissionManagementRequest
 {
     public required Guid SubmissionId { get; init; }
     public required string Key { get; init; }

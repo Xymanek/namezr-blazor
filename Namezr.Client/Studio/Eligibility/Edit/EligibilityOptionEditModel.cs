@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Types;
 
 namespace Namezr.Client.Studio.Eligibility.Edit;
 
-public class EligibilityOptionEditModel
+public class EligibilityOptionEditModel : IValidatableRequest
 {
     public EligibilityPlanId? PlanId { get; set; }
 

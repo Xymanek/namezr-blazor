@@ -11,7 +11,6 @@ namespace Namezr.Features.Creators.Endpoints;
 
 [Handler]
 [AutoConstructor]
-[Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.SupportTargetsLogoDownload)]
 internal sealed partial class SupportTargetLogoEndpoint
 {

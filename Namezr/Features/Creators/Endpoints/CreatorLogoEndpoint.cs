@@ -9,7 +9,6 @@ using Namezr.Infrastructure.Data;
 namespace Namezr.Features.Creators.Endpoints;
 
 [Handler]
-[Behaviors] // Remove the global validation behavior
 [MapGet(ApiEndpointPaths.CreatorsLogoDownload)]
 [AutoConstructor]
 internal sealed partial class CreatorLogoEndpoint

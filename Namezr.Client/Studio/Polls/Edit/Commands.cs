@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Studio.Polls.Edit;
 
-public class CreatePollCommand : ICreatorManagementRequest
+public class CreatePollCommand : ICreatorManagementRequest, IValidatableRequest
 {
     public required Guid CreatorId { get; init; }
 
@@ -20,7 +21,7 @@ public class CreatePollCommand : ICreatorManagementRequest
     }
 }
 
-public class UpdatePollCommand : IPollManagementRequest
+public class UpdatePollCommand : IPollManagementRequest, IValidatableRequest
 {
     public required Guid PollId { get; init; }
 

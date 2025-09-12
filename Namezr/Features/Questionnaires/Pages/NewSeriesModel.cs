@@ -1,8 +1,9 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Features.Questionnaires.Pages;
 
-public class NewSeriesModel
+public class NewSeriesModel : IValidatableRequest
 {
     public string Name { get; set; } = string.Empty;
     

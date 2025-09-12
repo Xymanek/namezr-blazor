@@ -1,10 +1,11 @@
 ﻿using FluentValidation;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Shared;
 
 namespace Namezr.Client.Studio.Questionnaires.LabelsManagement;
 
-public class LabelSaveRequest : ICreatorManagementRequest
+public class LabelSaveRequest : IValidatableRequest, ICreatorManagementRequest
 {
     public required Guid CreatorId { get; init; }
     public required SubmissionLabelModel Label { get; init; }

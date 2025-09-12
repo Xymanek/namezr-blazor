@@ -1,9 +1,10 @@
 using FluentValidation;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Studio.Questionnaires.Selection;
 
-public class SelectionSeriesListRequest : IQuestionnaireManagementRequest
+public class SelectionSeriesListRequest : IQuestionnaireManagementRequest, IValidatableRequest
 {
     public required Guid QuestionnaireId { get; init; }
 

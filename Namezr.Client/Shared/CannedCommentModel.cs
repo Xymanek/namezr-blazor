@@ -1,8 +1,9 @@
 using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Shared;
 
-public partial class CannedCommentModel
+public partial class CannedCommentModel : IValidatableRequest
 {
     public Guid Id { get; set; }
 

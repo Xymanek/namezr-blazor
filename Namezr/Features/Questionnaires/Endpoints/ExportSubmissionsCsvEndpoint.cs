@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Client.Types;
@@ -32,7 +33,7 @@ internal sealed partial class ExportSubmissionsCsvEndpoint
     private readonly IEligibilityService _eligibilityService;
     private readonly ISupportPlansService _supportPlansService;
 
-    public class Request : IQuestionnaireManagementRequest
+    public class Request : IQuestionnaireManagementRequest, IValidatableRequest
     {
         public required Guid QuestionnaireId { get; init; }
 

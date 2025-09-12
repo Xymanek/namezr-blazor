@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Features.Creators.Data;
 
 namespace Namezr.Features.Creators.Models;
 
-public class CreatorProfileFromModel
+public class CreatorProfileFromModel : IValidatableRequest
 {
     public string DisplayName { get; set; } = string.Empty;
     public CreatorVisibility Visibility { get; set; }

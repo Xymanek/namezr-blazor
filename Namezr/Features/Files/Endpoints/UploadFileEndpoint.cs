@@ -8,7 +8,6 @@ using Namezr.Features.Files.Services;
 namespace Namezr.Features.Files.Endpoints;
 
 [Handler]
-[Behaviors] // Remove the global validation behavior
 [MapPost(ApiEndpointPaths.FilesUpload)]
 [AutoConstructor]
 public sealed partial class UploadFileEndpoint

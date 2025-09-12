@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Studio.Eligibility.Edit;
 
 namespace Namezr.Client.Studio.Questionnaires.Edit;
 
-public class QuestionnaireEditModel
+public class QuestionnaireEditModel : IValidatableRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

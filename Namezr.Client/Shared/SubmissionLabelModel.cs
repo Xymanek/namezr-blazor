@@ -1,9 +1,10 @@
 ﻿using System.Text.RegularExpressions;
 using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Shared;
 
-public partial class SubmissionLabelModel
+public partial class SubmissionLabelModel : IValidatableRequest
 {
     public Guid Id { get; set; }
 

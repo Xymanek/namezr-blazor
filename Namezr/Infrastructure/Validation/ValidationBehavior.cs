@@ -1,11 +1,13 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 using Immediate.Handlers.Shared;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Infrastructure.Validation;
 
 [AutoConstructor]
 public sealed partial class ValidationBehavior<TRequest, TResponse> : Behavior<TRequest, TResponse>
+    where TRequest : IValidatableRequest
 {
     private readonly IValidator<TRequest> _validator;
 

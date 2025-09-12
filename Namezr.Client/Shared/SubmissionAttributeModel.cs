@@ -1,8 +1,9 @@
 using FluentValidation;
+using Namezr.Client.Contracts.Validation;
 
 namespace Namezr.Client.Shared;
 
-public class SubmissionAttributeModel
+public class SubmissionAttributeModel : IValidatableRequest
 {
     public required string Key { get; set; }
     public required string Value { get; set; }

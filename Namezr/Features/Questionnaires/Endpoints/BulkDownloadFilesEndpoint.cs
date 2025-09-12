@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Namezr.Client;
 using Namezr.Client.Contracts.Auth;
+using Namezr.Client.Contracts.Validation;
 using Namezr.Client.Public.Questionnaires;
 using Namezr.Client.Studio.Questionnaires.Edit;
 using Namezr.Features.Files.Services;
@@ -27,7 +28,7 @@ internal sealed partial class BulkDownloadFilesEndpoint
     private readonly IFileStorageService _fileStorageService;
     private readonly ISubmissionAuditService _submissionAudit;
 
-    public class Request : IQuestionnaireManagementRequest
+    public class Request : IQuestionnaireManagementRequest, IValidatableRequest
     {
         public required Guid QuestionnaireId { get; init; }
         public required Guid FieldId { get; init; }
