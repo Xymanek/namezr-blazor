@@ -1,0 +1,334 @@
+@rendermode InteractiveWebAssembly
+
+@using Namezr.Client.Shared
+@using Namezr.Client.Studio.Questionnaires
+@using Namezr.Client.Infra
+@using vNext.BlazorComponents.FluentValidation
+@using Humanizer
+
+@inject ISpaHttpClientProvider HttpClientProvider
+
+<!-- Floating Action Button -->
+<div class="quick-actions-icon position-fixed" style="right: 20px; top: 50%; transform: translateY(-50%); z-index: 1040;">
+    <HxButton 
+        Color="ThemeColor.Primary"
+        Icon="BootstrapIcon.GearFill"
+        Tooltip="Quick Actions"
+        TooltipPlacement="TooltipPlacement.Left"
+        OnClick="ToggleSidebar"
+        CssClass="rounded-circle p-3 shadow"
+    />
+</div>
+
+<!-- Sidebar -->
+@if (_sidebarVisible)
+{
+    <div class="quick-actions-sidebar position-fixed top-0 end-0 h-100 bg-dark border-start border-secondary shadow" 
+         style="width: 400px; z-index: 1050; overflow-y: auto;">
+        
+        <div class="d-flex flex-column h-100">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-secondary bg-dark">
+                <h5 class="mb-0 text-light">Quick Actions</h5>
+                <HxButton 
+                    Icon="BootstrapIcon.X"
+                    Color="ThemeColor.Secondary"
+                    Outline="true"
+                    OnClick="CloseSidebar"
+                    Size="ButtonSize.Small"
+                />
+            </div>
+
+            <!-- Content -->
+            <div class="flex-grow-1 p-3 bg-dark text-light">
+                <div class="d-flex flex-column gap-4">
+                    
+                    <!-- Approval Actions -->
+                    <div class="border border-secondary rounded p-3 bg-dark">
+                        <h6 class="border-bottom border-secondary pb-2 mb-3 text-light">Approval</h6>
+                        <div class="d-flex gap-2">
+                            @if (IsApproved)
+                            {
+                                <HxButton
+                                    Text="Remove Approval"
+                                    Color="ThemeColor.Danger"
+                                    OnClick="HandleRemoveApproval"
+                                    Enabled="!_isSubmitting"
+                                />
+                            }
+                            else
+                            {
+                                <HxButton
+                                    Text="Approve"
+                                    Color="ThemeColor.Success"
+                                    OnClick="HandleGrantApproval"
+                                    Enabled="!_isSubmitting"
+                                />
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Label Management -->
+                    <div class="border border-secondary rounded p-3 bg-dark">
+                        <h6 class="border-bottom border-secondary pb-2 mb-3 text-light">Labels</h6>
+                        
+                        <div class="d-flex flex-row flex-wrap gap-2 mb-3">
+                            @foreach (SubmissionLabelModel label in AppliedLabels)
+                            {
+                                <SubmissionLabelPresenter Label="label">
+                                    <Button>
+                                        <HxButton
+                                            Icon="BootstrapIcon.Trash"
+                                            Size="ButtonSize.Small"
+                                            Color="ThemeColor.Danger"
+                                            Outline="true"
+                                            OnClick="() => RemoveLabel(label)"
+                                            Enabled="!_isSubmitting"
+                                        />
+                                    </Button>
+                                </SubmissionLabelPresenter>
+                            }
+
+                            @if (AppliedLabels.Count == 0)
+                            {
+                                <i class="text-muted">Currently none</i>
+                            }
+                        </div>
+
+                        <HxButton
+                            Text="Add Label"
+                            Icon="BootstrapIcon.Plus"
+                            Color="ThemeColor.Secondary"
+                            Outline="true"
+                            OnClick="() => _applyLabelModal!.ShowAsync()"
+                            Enabled="!_isSubmitting"
+                        />
+                    </div>
+
+                    <!-- Comment Section -->
+                    <div class="border border-secondary rounded p-3 bg-dark">
+                        <h6 class="border-bottom border-secondary pb-2 mb-3 text-light">Leave a Comment</h6>
+                        
+                        <EditForm Model="_newComment" OnValidSubmit="OnValidSubmitNewComment">
+                            <FluentValidationValidator/>
+
+                            <HxSelect
+                                TItem="StudioSubmissionCommentType"
+                                TValue="StudioSubmissionCommentType"
+                                Label="Type"
+                                Nullable="false"
+                                Data="Enum.GetValues<StudioSubmissionCommentType>()"
+                                @bind-Value="@_newComment!.Type"
+                                TextSelector="@(type => type.Humanize())"
+                                Enabled="!_isSubmitting"
+                            />
+
+                            <HxInputTextArea 
+                                @bind-Value="_newComment.Content" 
+                                Label="Comment"
+                                Rows="3"
+                                Enabled="!_isSubmitting"
+                            />
+
+                            <HxSubmit 
+                                Color="ThemeColor.Primary" 
+                                Text="Submit Comment"
+                                Enabled="!_isSubmitting"
+                            />
+
+                            @if (_isSubmitting)
+                            {
+                                <div class="text-muted small mt-2">
+                                    <HxSpinner Size="SpinnerSize.Small" /> Working...
+                                </div>
+                            }
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div class="position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-75" 
+         style="z-index: 1040;" 
+         @onclick="CloseSidebar">
+    </div>
+}
+
+<!-- Label Picker Modal -->
+<LabelPickerModal
+    @ref="_applyLabelModal"
+    HeaderText="Pick label to apply"
+    PreventInteraction="_isSubmitting"
+    CreatorId="CreatorId"
+    Options="GetApplyableLabels().ToList()"
+    OnSelected="ApplyLabel"
+>
+    <BodyEnd>
+        @if (_isSubmitting)
+        {
+            <p>Working...</p>
+        }
+    </BodyEnd>
+</LabelPickerModal>
+
+@code {
+    private LabelPickerModal? _applyLabelModal;
+    private bool _isSubmitting;
+    private bool _sidebarVisible = false;
+    private StudioSubmissionCommentModel _newComment = new();
+
+    [Parameter]
+    public bool IsApproved { get; set; }
+
+    [Parameter]
+    public Guid CreatorId { get; set; }
+
+    [Parameter]
+    public Guid SubmissionId { get; set; }
+
+    [Parameter]
+    public List<SubmissionLabelModel> AppliedLabels { get; set; } = [];
+
+    [Parameter]
+    public List<SubmissionLabelModel> PossibleLabels { get; set; } = [];
+
+    // Event callbacks removed - using direct API calls now
+
+    private void ToggleSidebar()
+    {
+        _sidebarVisible = !_sidebarVisible;
+    }
+
+    private void CloseSidebar()
+    {
+        _sidebarVisible = false;
+    }
+
+    private async Task HandleGrantApproval()
+    {
+        await HandleApprovalToggle(true);
+    }
+
+    private async Task HandleRemoveApproval()
+    {
+        await HandleApprovalToggle(false);
+    }
+
+    private async Task HandleApprovalToggle(bool shouldApprove)
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionApprovalToggle,
+                new ToggleSubmissionApprovalRequest
+                {
+                    SubmissionId = SubmissionId,
+                    ShouldApprove = shouldApprove
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            // Update the approval state locally
+            IsApproved = shouldApprove;
+            StateHasChanged();
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<SubmissionLabelModel> GetApplyableLabels()
+    {
+        return PossibleLabels
+            .ExceptBy(AppliedLabels.Select(label => label.Id), label => label.Id);
+    }
+
+    private async Task ApplyLabel(SubmissionLabelModel label)
+    {
+        await DoUpdateLabelPresence(label, true);
+
+        AppliedLabels.Add(label);
+        StateHasChanged();
+
+        await _applyLabelModal!.HideAsync();
+    }
+
+    private async Task RemoveLabel(SubmissionLabelModel label)
+    {
+        await DoUpdateLabelPresence(label, false);
+
+        AppliedLabels.Remove(label);
+        StateHasChanged();
+    }
+
+    private async Task DoUpdateLabelPresence(SubmissionLabelModel label, bool newPresent)
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+
+        _isSubmitting = true;
+        StateHasChanged();
+        
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionLabelsPresenceMutate,
+                new MutateLabelPresenceRequest
+                {
+                    LabelId = label.Id,
+                    SubmissionId = SubmissionId,
+                    NewPresent = newPresent,
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnValidSubmitNewComment()
+    {
+        HttpClient httpClient = HttpClientProvider.HttpClient;
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                ApiEndpointPaths.SubmissionCommentSubmit,
+                new SubmitSubmissionCommentRequest
+                {
+                    SubmissionId = SubmissionId,
+                    Content = _newComment.Content,
+                    Type = _newComment.Type
+                }
+            );
+
+            response.EnsureSuccessStatusCode();
+            
+            // Reset the comment form and close sidebar
+            _newComment = new StudioSubmissionCommentModel();
+            _sidebarVisible = false;
+            StateHasChanged();
+
+            // Comment submitted successfully - the page will need to be refreshed to see the new comment
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

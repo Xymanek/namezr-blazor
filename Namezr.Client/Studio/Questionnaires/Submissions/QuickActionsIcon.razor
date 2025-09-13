@@ -1,0 +1,22 @@
+@rendermode InteractiveWebAssembly
+
+<div class="quick-actions-icon position-fixed" style="right: 20px; top: 50%; transform: translateY(-50%); z-index: 1040;">
+    <HxButton 
+        Color="ThemeColor.Primary"
+        Icon="BootstrapIcon.GearFill"
+        Tooltip="Quick Actions"
+        TooltipPlacement="TooltipPlacement.Left"
+        OnClick="ToggleSidebar"
+        CssClass="rounded-circle p-3 shadow"
+    />
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback OnToggleSidebar { get; set; }
+
+    private async Task ToggleSidebar()
+    {
+        await OnToggleSidebar.InvokeAsync();
+    }
+}
