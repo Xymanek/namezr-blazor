@@ -10,7 +10,10 @@
     <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="9.1.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Patreon" Version="9.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Twitch" Version="9.0.0" />
-    <PackageVersion Include="AutoConstructor" Version="5.6.0" />
+    <PackageVersion Include="AutoConstructor" Version="5.6.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
     <PackageVersion Include="BlazorColorPicker" Version="4.0.2" />
     <PackageVersion Include="CommunityToolkit.Diagnostics" Version="8.4.0" />
     <PackageVersion Include="Discord.Net.Rest" Version="3.17.2" />
@@ -26,7 +29,10 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.3" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
-    <PackageVersion Include="AutoRegisterInject" Version="1.4.1" />
+    <PackageVersion Include="AutoRegisterInject" Version="1.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageVersion>
     <PackageVersion Include="Havit.Blazor.Components.Web.Bootstrap" Version="4.7.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
@@ -35,6 +41,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.3" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="9.0.4" />
     <PackageVersion Include="Patreon.Net" Version="1.0.3" />
     <PackageVersion Include="Riok.Mapperly" Version="4.1.1" />
