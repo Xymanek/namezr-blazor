@@ -21,6 +21,8 @@ public interface ISelectionWorker
         int numberOfEntriesToSelect,
         List<Guid> includedLabelIds,
         List<Guid> excludedLabelIds,
+        Dictionary<string, string> requiredAttributes,
+        Dictionary<string, string> excludedAttributes,
         CancellationToken ct = default
     );
 }
@@ -40,6 +42,8 @@ public partial class SelectionWorker : ISelectionWorker
         int numberOfEntriesToSelect, // TODO: slightly better name to indicate that only picks count
         List<Guid> includedLabelIds,
         List<Guid> excludedLabelIds,
+        Dictionary<string, string> requiredAttributes,
+        Dictionary<string, string> excludedAttributes,
         CancellationToken ct = default
     )
     {
@@ -61,7 +65,7 @@ public partial class SelectionWorker : ISelectionWorker
 
         // 1) Fetch all candidates
         List<(SelectionCandidateEntity Candidate, Guid UserId)> candidates =
-            await GetAllCandidates(seriesEntity, includedLabelIds, excludedLabelIds, ct);
+            await GetAllCandidates(seriesEntity, includedLabelIds, excludedLabelIds, requiredAttributes, excludedAttributes, ct);
 
         // 1.2) Remove all ineligible users
 
@@ -331,6 +335,8 @@ public partial class SelectionWorker : ISelectionWorker
         SelectionSeriesEntity series,
         List<Guid> includedLabelIds,
         List<Guid> excludedLabelIds,
+        Dictionary<string, string> requiredAttributes,
+        Dictionary<string, string> excludedAttributes,
         CancellationToken ct
     )
     {
@@ -354,7 +360,39 @@ public partial class SelectionWorker : ISelectionWorker
                     query = query.Where(s => s.Labels!.All(label => !excludedLabelIds.Contains(label.Id)));
                 }
 
+                // Include attributes for filtering
+                query = query.Include(s => s.Attributes);
+
                 QuestionnaireSubmissionEntity[] submissions = await query.ToArrayAsync(ct);
+
+                // Apply attribute filtering in memory (as LINQ-to-SQL doesn't handle dictionary-based queries well)
+                if (requiredAttributes.Count > 0 || excludedAttributes.Count > 0)
+                {
+                    submissions = submissions
+                        .Where(s => 
+                        {
+                            var submissionAttributes = s.Attributes!.ToDictionary(attr => attr.Key, attr => attr.Value);
+
+                            // Check required attributes - all must match
+                            foreach (var requiredAttribute in requiredAttributes)
+                            {
+                                if (!submissionAttributes.TryGetValue(requiredAttribute.Key, out string? actualValue) || 
+                                    actualValue != requiredAttribute.Value)
+                                    return false;
+                            }
+
+                            // Check excluded attributes - any match excludes the item
+                            foreach (var excludedAttribute in excludedAttributes)
+                            {
+                                if (submissionAttributes.TryGetValue(excludedAttribute.Key, out string? actualValue) && 
+                                    actualValue == excludedAttribute.Value)
+                                    return false;
+                            }
+
+                            return true;
+                        })
+                        .ToArray();
+                }
 
                 return submissions
                     .Select(s => ((SelectionCandidateEntity)s, s.UserId))

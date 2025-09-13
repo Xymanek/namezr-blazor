@@ -32,6 +32,8 @@ internal sealed partial class NewBatchEndpoint
             request.BatchOptions.NumberOfEntriesToSelect,
             request.BatchOptions.IncludedLabelIds,
             request.BatchOptions.ExcludedLabelIds,
+            request.BatchOptions.RequiredAttributes,
+            request.BatchOptions.ExcludedAttributes,
             ct
         );
 

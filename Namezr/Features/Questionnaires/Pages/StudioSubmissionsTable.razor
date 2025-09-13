@@ -73,6 +73,7 @@
     EligibilityDescriptors="_eligibilityDescriptors"
     QuestionnaireConfig="_questionnaireConfig"
     PossibleLabels="_possibleLabels"
+    AvailableAttributeKeys="_availableAttributeKeys"
     Items="_items"
 />
 
@@ -96,6 +97,7 @@
     private List<SubmissionLabelModel> _possibleLabels = [];
     private QuestionnaireConfigModel? _questionnaireConfig;
     private SubmissionTableItemModel[] _items = [];
+    private List<string> _availableAttributeKeys = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,6 +125,7 @@
             .Include(submission => submission.Labels)
             .Include(submission => submission.FieldValues!).ThenInclude(value => value.Field)
             .Include(submission => submission.User)
+            .Include(submission => submission.Attributes)
             .Select(submission => new
             {
                 submission,
@@ -175,6 +178,9 @@
                         ValueSerializer.Deserialize(value.Field.Type, value.ValueSerialized)
                     ))
                     .ToDictionary(),
+
+                Attributes = entry.submission.Attributes!
+                    .ToDictionary(attr => attr.Key, attr => attr.Value),
             };
         }));
 
@@ -190,6 +196,13 @@
             .ToArrayAsync();
 
         _possibleLabels = possibleLabels.Select(SubmissionLabelMapper.ToModel).ToList();
+
+        _availableAttributeKeys = await dbContext.SubmissionAttributes
+            .Where(attr => attr.Submission.Version.QuestionnaireId == QuestionnaireId)
+            .Select(attr => attr.Key)
+            .Distinct()
+            .OrderBy(key => key)
+            .ToListAsync();
     }
 
 }
